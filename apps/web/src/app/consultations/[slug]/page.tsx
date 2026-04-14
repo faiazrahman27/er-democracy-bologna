@@ -1,0 +1,266 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { fetchPublicVoteBySlug } from '@/lib/votes';
+import { formatDateTime, formatEnumLabel } from '@/lib/format';
+import { ConsultationInteractions } from './consultation-interactions';
+
+type PageProps = {
+  params: Promise<{
+    slug: string;
+  }>;
+};
+
+export default async function ConsultationDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+
+  let response;
+  try {
+    response = await fetchPublicVoteBySlug(slug);
+  } catch {
+    notFound();
+  }
+
+  const vote = response.vote;
+
+  return (
+    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8">
+          <Link
+            href="/consultations"
+            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          >
+            ← Back to consultations
+          </Link>
+        </div>
+
+        <section className="pb-10">
+          <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
+
+          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+            <div>
+              <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <StatusBadge label={formatEnumLabel(vote.voteType)} />
+                <StatusBadge label={vote.topicCategory} tone="muted" />
+                <StatusBadge
+                  label={vote.derivedStatus ?? 'Unknown'}
+                  tone={deriveStatusTone(vote.derivedStatus)}
+                />
+              </div>
+
+              <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+                {vote.title}
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600">
+                {vote.summary}
+              </p>
+
+              {vote.methodologySummary ? (
+                <div className="mt-8 max-w-4xl rounded-2xl bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Methodology
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    {vote.methodologySummary}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
+            <aside className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Consultation overview
+              </p>
+
+              <div className="mt-5 grid gap-4">
+                <OverviewRow
+                  label="Vote type"
+                  value={formatEnumLabel(vote.voteType)}
+                />
+                <OverviewRow
+                  label="Topic category"
+                  value={vote.topicCategory}
+                />
+                <OverviewRow
+                  label="Status"
+                  value={vote.derivedStatus ?? 'Unknown'}
+                />
+                <OverviewRow
+                  label="Starts"
+                  value={formatDateTime(vote.startAt)}
+                />
+                <OverviewRow
+                  label="Ends"
+                  value={formatDateTime(vote.endAt)}
+                />
+                <OverviewRow
+                  label="Published"
+                  value={
+                    vote.publishedAt
+                      ? formatDateTime(vote.publishedAt)
+                      : 'Not published'
+                  }
+                />
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section className="border-t border-slate-200 pt-10">
+          <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Consultation details
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                Key information
+              </h2>
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <InfoCard
+                  title="Type"
+                  value={formatEnumLabel(vote.voteType)}
+                />
+                <InfoCard title="Topic" value={vote.topicCategory} />
+                <InfoCard
+                  title="Status"
+                  value={vote.derivedStatus ?? 'Unknown'}
+                />
+                <InfoCard title="Starts" value={formatDateTime(vote.startAt)} />
+                <InfoCard title="Ends" value={formatDateTime(vote.endAt)} />
+                <InfoCard
+                  title="Published"
+                  value={
+                    vote.publishedAt
+                      ? formatDateTime(vote.publishedAt)
+                      : 'Not published'
+                  }
+                />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Available options
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                Review the choices
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Read through the available consultation options before you move
+                to the participation section below.
+              </p>
+
+              <div className="mt-5 grid gap-4">
+                {vote.options.map((option) => (
+                  <div
+                    key={option.id}
+                    className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 h-2.5 w-2.5 rounded-full bg-green-600" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Option {option.displayOrder}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-slate-900">
+                          {option.optionText}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="mt-10">
+          <ConsultationInteractions vote={vote} />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function InfoCard({
+  title,
+  value,
+}: {
+  title: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </p>
+      <p className="mt-2 text-sm font-medium leading-6 text-slate-900">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function OverviewRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function StatusBadge({
+  label,
+  tone = 'default',
+}: {
+  label: string;
+  tone?: 'default' | 'muted' | 'success' | 'warning' | 'danger';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'bg-emerald-100 text-emerald-700'
+      : tone === 'warning'
+      ? 'bg-amber-100 text-amber-700'
+      : tone === 'danger'
+      ? 'bg-red-100 text-red-700'
+      : tone === 'muted'
+      ? 'bg-slate-200 text-slate-600'
+      : 'bg-slate-100 text-slate-700';
+
+  return <span className={`rounded-full px-3 py-1 ${toneClass}`}>{label}</span>;
+}
+
+function deriveStatusTone(
+  status:
+    | 'UPCOMING'
+    | 'ONGOING'
+    | 'PAST'
+    | 'CANCELLED'
+    | 'ARCHIVED'
+    | undefined,
+): 'success' | 'warning' | 'muted' | 'danger' {
+  if (status === 'ONGOING') {
+    return 'success';
+  }
+
+  if (status === 'UPCOMING') {
+    return 'warning';
+  }
+
+  if (status === 'CANCELLED') {
+    return 'danger';
+  }
+
+  return 'muted';
+}

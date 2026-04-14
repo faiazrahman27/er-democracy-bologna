@@ -1,0 +1,50 @@
+# dependencies
+node_modules
+
+# build output
+.next
+dist
+build
+out
+coverage
+
+# env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS / editor
+.DS_Store
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# temp
+.temp
+.tmp
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# prisma generated
+/generated/prisma

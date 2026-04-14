@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  SUPER_ADMIN
+  CONSULTATION_ADMIN
+  CONTENT_ADMIN
+  ANALYTICS_ADMIN
+  AUDITOR
+}
+
+enum VoteType {
+  GENERAL
+  SPECIALIZED
+  SELF_ASSESSMENT
+}
+
+enum VoteStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+  CANCELLED
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ResultVisibilityMode {
+  HIDE_ALL
+  SHOW_RAW_ONLY
+  SHOW_WEIGHTED_ONLY
+  SHOW_BOTH
+}
+
+enum CalculationType {
+  GENERAL
+  SPECIALIZED
+  SELF_ASSESSMENT
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  fullName                String                   @db.VarChar(150)
+  email                   String                   @unique @db.VarChar(255)
+  passwordHash            String                   @db.VarChar(255)
+  role                    UserRole                 @default(USER)
+  emailVerified           Boolean                  @default(false)
+  isActive                Boolean                  @default(true)
+  lastLoginAt             DateTime?
+  failedLoginCount        Int                      @default(0)
+  lockedUntil             DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  assessment              Assessment?
+  createdVotes            Vote[]                   @relation("VotesCreatedByAdmin")
+  createdArticles         Article[]                @relation("ArticlesCreatedByUser")
+  voteSubmissions         VoteSubmission[]
+  auditLogs               AdminAuditLog[]
+  refreshTokens           RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+
+  @@index([role])
+  @@index([emailVerified])
+  @@index([isActive])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @db.VarChar(255)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model EmailVerificationToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @db.VarChar(255)
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([verifiedAt])
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @db.VarChar(255)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([usedAt])
+}
+
+model Assessment {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  secretUserId        String    @unique @db.VarChar(64)
+  ageRange            String?   @db.VarChar(50)
+  gender              String?   @db.VarChar(50)
+  city                String?   @db.VarChar(100)
+  region              String?   @db.VarChar(100)
+  country             String?   @db.VarChar(100)
+  stakeholderRole     String?   @db.VarChar(100)
+  backgroundCategory  String?   @db.VarChar(100)
+  experienceLevel     String?   @db.VarChar(100)
+  relationshipToArea  String?   @db.VarChar(100)
+  assessmentCompleted Boolean   @default(false)
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secretUserId])
+  @@index([assessmentCompleted])
+  @@index([stakeholderRole])
+  @@index([backgroundCategory])
+  @@index([experienceLevel])
+  @@index([country])
+  @@index([region])
+  @@index([city])
+}
+
+model Vote {
+  id                 String               @id @default(cuid())
+  slug               String               @unique @db.VarChar(180)
+  title              String               @db.VarChar(200)
+  summary            String               @db.VarChar(1000)
+  methodologySummary String?              @db.VarChar(2000)
+  voteType           VoteType
+  topicCategory      String               @db.VarChar(100)
+  status             VoteStatus           @default(DRAFT)
+  coverImageUrl      String?              @db.VarChar(500)
+  coverImageAlt      String?              @db.VarChar(255)
+  startAt            DateTime
+  endAt              DateTime
+  isPublished        Boolean              @default(false)
+  publishedAt        DateTime?
+  lockedAt           DateTime?
+  createdByAdminId   String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  createdByAdmin     User                 @relation("VotesCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  options            VoteOption[]
+  displaySettings    VoteDisplaySettings?
+  submissions        VoteSubmission[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([voteType])
+  @@index([topicCategory])
+  @@index([isPublished])
+  @@index([startAt])
+  @@index([endAt])
+  @@index([createdByAdminId])
+}
+
+model VoteOption {
+  id           String         @id @default(cuid())
+  voteId       String
+  optionText   String         @db.VarChar(300)
+  displayOrder Int
+  createdAt    DateTime       @default(now())
+
+  vote         Vote           @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  submissions  VoteSubmission[]
+
+  @@index([voteId])
+  @@unique([voteId, displayOrder])
+}
+
+model VoteDisplaySettings {
+  id                       String               @id @default(cuid())
+  voteId                   String               @unique
+  resultVisibilityMode     ResultVisibilityMode @default(HIDE_ALL)
+  showParticipationStats   Boolean              @default(false)
+  showStakeholderBreakdown Boolean              @default(false)
+  showBackgroundBreakdown  Boolean              @default(false)
+  showLocationBreakdown    Boolean              @default(false)
+  showAfterVotingOnly      Boolean              @default(false)
+  showOnlyAfterVoteCloses  Boolean              @default(false)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  vote                     Vote                 @relation(fields: [voteId], references: [id], onDelete: Cascade)
+}
+
+model VoteSubmission {
+  id                  String          @id @default(cuid())
+  voteId              String
+  userId              String
+  selectedOptionId    String
+  selfAssessmentScore Int?
+  weightUsed          Decimal         @db.Decimal(10, 4)
+  calculationType     CalculationType
+  submittedAt         DateTime        @default(now())
+  createdAt           DateTime        @default(now())
+
+  vote                Vote            @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selectedOption      VoteOption      @relation(fields: [selectedOptionId], references: [id], onDelete: Restrict)
+
+  @@unique([voteId, userId])
+  @@index([voteId])
+  @@index([userId])
+  @@index([selectedOptionId])
+  @@index([submittedAt])
+}
+
+model Article {
+  id            String        @id @default(cuid())
+  slug          String        @unique @db.VarChar(180)
+  title         String        @db.VarChar(200)
+  summary       String        @db.VarChar(1000)
+  content       String        @db.Text
+  coverImageUrl String?       @db.VarChar(500)
+  coverImageAlt String?       @db.VarChar(255)
+  status        ArticleStatus @default(DRAFT)
+  publishedAt   DateTime?
+  createdById   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  createdBy     User          @relation("ArticlesCreatedByUser", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([createdById])
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String
+  actionType  String   @db.VarChar(100)
+  targetType  String   @db.VarChar(100)
+  targetId    String   @db.VarChar(100)
+  beforeJson  Json?
+  afterJson   Json?
+  reason      String?  @db.VarChar(500)
+  createdAt   DateTime @default(now())
+
+  adminUser   User     @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+
+  @@index([adminUserId])
+  @@index([actionType])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([createdAt])
+}
