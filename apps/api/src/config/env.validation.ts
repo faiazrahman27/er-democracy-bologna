@@ -22,4 +22,8 @@ export const envValidationSchema = Joi.object({
   SUPABASE_URL: Joi.string().uri().required(),
   SUPABASE_SERVICE_ROLE_KEY: Joi.string().min(20).required(),
   SUPABASE_STORAGE_BUCKET: Joi.string().min(1).required(),
+
+  UPLOAD_MAX_FILE_SIZE_BYTES: Joi.number().integer().min(1).default(2 * 1024 * 1024),
+  UPLOAD_ALLOWED_IMAGE_MIME_TYPES: Joi.string()
+    .default('image/jpeg,image/png,image/webp'),
 });

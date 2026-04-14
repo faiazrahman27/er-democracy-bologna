@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/providers/auth-provider';
 import { isAdminRole } from '@/lib/roles';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
-import { createAdminVote } from '@/lib/admin-votes';
+import { createAdminVote, uploadAdminVoteCover } from '@/lib/admin-votes';
 
 type OptionInput = {
   optionText: string;
@@ -41,6 +41,12 @@ export default function AdminVotesPage() {
   const [endAt, setEndAt] = useState('2026-04-20T20:00');
   const [isPublished, setIsPublished] = useState(true);
 
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [coverImageAlt, setCoverImageAlt] = useState('');
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [coverUploadMessage, setCoverUploadMessage] = useState<string | null>(null);
+
   const [options, setOptions] = useState<OptionInput[]>([
     { optionText: 'Increase bus frequency during peak hours', displayOrder: 1 },
     { optionText: 'Improve route reliability and punctuality', displayOrder: 2 },
@@ -74,7 +80,7 @@ export default function AdminVotesPage() {
   const normalizedOptions = useMemo(
     () =>
       options.map((option, index) => ({
-        optionText: option.optionText,
+        optionText: option.optionText.trim(),
         displayOrder: index + 1,
       })),
     [options],
@@ -108,9 +114,79 @@ export default function AdminVotesPage() {
     );
   }
 
+  function handleCoverFileChange(file: File | null) {
+    setSelectedCoverFile(file);
+    setCoverUploadMessage(null);
+  }
+
+  async function handleUploadCoverImage() {
+    if (!token) {
+      setError('You must be signed in');
+      return;
+    }
+
+    if (!selectedCoverFile) {
+      setError('Please choose an image file first');
+      return;
+    }
+
+    setError(null);
+    setSuccessMessage(null);
+    setCoverUploadMessage(null);
+    setIsUploadingCover(true);
+
+    try {
+      const response = await uploadAdminVoteCover(token, selectedCoverFile, slug);
+
+      setCoverImageUrl(response.file.publicUrl);
+
+      if (!coverImageAlt.trim()) {
+        setCoverImageAlt(title.trim() || 'Consultation cover image');
+      }
+
+      setCoverUploadMessage('Cover image uploaded successfully');
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to upload cover image',
+      );
+    } finally {
+      setIsUploadingCover(false);
+    }
+  }
+
   async function handleCreateVote() {
     if (!token) {
       setError('You must be signed in');
+      return;
+    }
+
+    if (!title.trim()) {
+      setError('Title is required');
+      return;
+    }
+
+    if (!slug.trim()) {
+      setError('Slug is required');
+      return;
+    }
+
+    if (!summary.trim()) {
+      setError('Summary is required');
+      return;
+    }
+
+    if (!topicCategory.trim()) {
+      setError('Topic category is required');
+      return;
+    }
+
+    if (normalizedOptions.some((option) => !option.optionText)) {
+      setError('All options must have text');
+      return;
+    }
+
+    if (selectedCoverFile && !coverImageUrl) {
+      setError('Please upload the selected cover image before creating the consultation');
       return;
     }
 
@@ -120,15 +196,15 @@ export default function AdminVotesPage() {
 
     try {
       const response = await createAdminVote(token, {
-        slug,
-        title,
-        summary,
-        methodologySummary,
+        slug: slug.trim(),
+        title: title.trim(),
+        summary: summary.trim(),
+        methodologySummary: methodologySummary.trim(),
         voteType,
-        topicCategory,
+        topicCategory: topicCategory.trim(),
         status,
-        coverImageUrl: '',
-        coverImageAlt: '',
+        coverImageUrl: coverImageUrl.trim() || undefined,
+        coverImageAlt: coverImageAlt.trim() || undefined,
         startAt: new Date(startAt).toISOString(),
         endAt: new Date(endAt).toISOString(),
         isPublished,
@@ -264,6 +340,64 @@ export default function AdminVotesPage() {
             </div>
           </div>
 
+          <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+            <h2 className="text-lg font-semibold">Cover image</h2>
+
+            <div className="mt-4 grid gap-5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Select image
+                </label>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) =>
+                    handleCoverFileChange(event.target.files?.[0] ?? null)
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  Allowed: JPG, PNG, WEBP. Maximum size: 2MB.
+                </p>
+              </div>
+
+              <Field
+                label="Cover image alt text"
+                value={coverImageAlt}
+                onChange={setCoverImageAlt}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleUploadCoverImage}
+                disabled={isUploadingCover || !selectedCoverFile}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-60"
+              >
+                {isUploadingCover ? 'Uploading...' : 'Upload cover image'}
+              </button>
+
+              {coverUploadMessage ? (
+                <span className="text-sm text-green-700">{coverUploadMessage}</span>
+              ) : null}
+            </div>
+
+            {coverImageUrl ? (
+              <div className="mt-5">
+                <p className="mb-2 text-sm font-medium text-slate-700">Preview</p>
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  <img
+                    src={coverImageUrl}
+                    alt={coverImageAlt || 'Consultation cover preview'}
+                    className="h-64 w-full object-cover"
+                  />
+                </div>
+                <p className="mt-2 break-all text-xs text-slate-500">{coverImageUrl}</p>
+              </div>
+            ) : null}
+          </div>
+
           <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <label className="flex items-start gap-3 text-sm text-slate-700">
               <input
@@ -382,7 +516,7 @@ export default function AdminVotesPage() {
           <div className="mt-8">
             <button
               onClick={handleCreateVote}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingCover}
               className="rounded-lg bg-slate-900 px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
             >
               {isSubmitting ? 'Creating...' : 'Create consultation'}

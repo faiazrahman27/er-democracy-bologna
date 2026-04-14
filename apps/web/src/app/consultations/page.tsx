@@ -78,6 +78,16 @@ export default async function ConsultationsPage() {
                   href={`/consultations/${vote.slug}`}
                   className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                 >
+                  {vote.coverImageUrl ? (
+                    <div className="overflow-hidden border-b border-slate-100 bg-slate-100">
+                      <img
+                        src={vote.coverImageUrl}
+                        alt={vote.coverImageAlt ?? vote.title}
+                        className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      />
+                    </div>
+                  ) : null}
+
                   <div className="grid gap-0 lg:grid-cols-[1fr_auto]">
                     <div className="p-6">
                       <div className="flex flex-wrap items-center gap-3">

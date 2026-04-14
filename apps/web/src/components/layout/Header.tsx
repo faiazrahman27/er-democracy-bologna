@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/providers/auth-provider';
+import { isAdminRole } from '@/lib/roles';
+import { hasPermission } from '@/lib/permissions';
+import { ADMIN_NAV, PUBLIC_NAV } from '@/lib/navigation';
+import { ROUTES } from '@/lib/routes';
 
 type HeaderProps = {
   variant?: 'public' | 'admin';
@@ -17,13 +21,44 @@ export default function Header({ variant = 'public' }: HeaderProps) {
 
   const isAuthenticated = !!user;
   const isAdminVariant = variant === 'admin';
+  const isAdminUser = !!user && isAdminRole(user.role);
+
+  const adminHomeHref = useMemo(() => {
+    if (!user || !isAdminUser) {
+      return ROUTES.admin.root;
+    }
+
+    const firstAllowedAdminItem = ADMIN_NAV.find((item) => {
+      if (!item.permission) {
+        return true;
+      }
+
+      return hasPermission(user.role, item.permission);
+    });
+
+    return firstAllowedAdminItem?.href ?? ROUTES.admin.root;
+  }, [user, isAdminUser]);
+
+  const visibleAdminNav = useMemo(() => {
+    if (!user) {
+      return ADMIN_NAV.filter((item) => !item.permission);
+    }
+
+    return ADMIN_NAV.filter((item) => {
+      if (!item.permission) {
+        return true;
+      }
+
+      return hasPermission(user.role, item.permission);
+    });
+  }, [user]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
 
     try {
       await logout();
-      router.replace('/login');
+      router.replace(ROUTES.public.login);
     } finally {
       setIsLoggingOut(false);
     }
@@ -49,7 +84,7 @@ export default function Header({ variant = 'public' }: HeaderProps) {
     <header className={headerClass}>
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
         <Link
-          href={isAdminVariant ? '/admin' : '/'}
+          href={isAdminVariant ? adminHomeHref : ROUTES.public.home}
           className="group flex shrink-0 items-center gap-3"
         >
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
@@ -75,25 +110,22 @@ export default function Header({ variant = 'public' }: HeaderProps) {
 
         {!isAdminVariant ? (
           <nav className="hidden items-center gap-6 md:flex">
-            <Link href="/" className={navLinkClass}>
-              Home
-            </Link>
-
-            <Link href="/consultations" className={navLinkClass}>
-              Consultations
-            </Link>
-
-            <Link href="/articles" className={navLinkClass}>
-              Articles
-            </Link>
+            {PUBLIC_NAV.map((item) => (
+              <Link key={item.href} href={item.href} className={navLinkClass}>
+                {item.label}
+              </Link>
+            ))}
 
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard" className={navLinkClass}>
-                  Dashboard
+                <Link
+                  href={isAdminUser ? adminHomeHref : ROUTES.user.dashboard}
+                  className={navLinkClass}
+                >
+                  {isAdminUser ? 'Admin' : 'Dashboard'}
                 </Link>
 
-                <Link href="/assessment" className={navLinkClass}>
+                <Link href={ROUTES.user.assessment} className={navLinkClass}>
                   Assessment
                 </Link>
 
@@ -108,11 +140,11 @@ export default function Header({ variant = 'public' }: HeaderProps) {
               </>
             ) : (
               <>
-                <Link href="/login" className={subtleActionClass}>
+                <Link href={ROUTES.public.login} className={subtleActionClass}>
                   Login
                 </Link>
 
-                <Link href="/register" className={primaryActionClass}>
+                <Link href={ROUTES.public.register} className={primaryActionClass}>
                   Sign up
                 </Link>
               </>
@@ -124,23 +156,13 @@ export default function Header({ variant = 'public' }: HeaderProps) {
           </nav>
         ) : (
           <nav className="hidden items-center gap-4 md:flex">
-            <Link href="/" className={navLinkClass}>
-              Home
-            </Link>
+            {visibleAdminNav.map((item) => (
+              <Link key={item.href} href={item.href} className={navLinkClass}>
+                {item.label}
+              </Link>
+            ))}
 
-            <Link href="/admin" className={navLinkClass}>
-              Overview
-            </Link>
-
-            <Link href="/admin/consultations" className={navLinkClass}>
-              Consultations
-            </Link>
-
-            <Link href="/admin/articles" className={navLinkClass}>
-              Articles
-            </Link>
-
-            <Link href="/consultations" className={subtleActionClass}>
+            <Link href={ROUTES.public.consultations} className={subtleActionClass}>
               Public view
             </Link>
 
@@ -156,7 +178,7 @@ export default function Header({ variant = 'public' }: HeaderProps) {
                 {isLoggingOut ? 'Logging out...' : 'Logout'}
               </button>
             ) : (
-              <Link href="/login" className={darkActionClass}>
+              <Link href={ROUTES.public.login} className={darkActionClass}>
                 Login
               </Link>
             )}

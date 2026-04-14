@@ -394,6 +394,16 @@ export default function AdminConsultationDetailPage() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+            {vote.coverImageUrl ? (
+              <div className="mb-6 overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
+                <img
+                  src={vote.coverImageUrl}
+                  alt={vote.coverImageAlt ?? vote.title}
+                  className="h-72 w-full object-cover md:h-96"
+                />
+              </div>
+            ) : null}
+
             <p className="text-sm leading-7 text-slate-600">{vote.summary}</p>
 
             {vote.methodologySummary ? (
@@ -452,57 +462,75 @@ export default function AdminConsultationDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-lg font-semibold">Visibility controls</h2>
-            {vote.displaySettings ? (
-              <div className="mt-4 grid gap-3">
-                <VisibilityRow
-                  label="Result visibility"
-                  value={vote.displaySettings.resultVisibilityMode}
-                />
-                <VisibilityRow
-                  label="Participation stats"
-                  value={
-                    vote.displaySettings.showParticipationStats ? 'Shown' : 'Hidden'
-                  }
-                />
-                <VisibilityRow
-                  label="Stakeholder breakdown"
-                  value={
-                    vote.displaySettings.showStakeholderBreakdown
-                      ? 'Shown'
-                      : 'Hidden'
-                  }
-                />
-                <VisibilityRow
-                  label="Background breakdown"
-                  value={
-                    vote.displaySettings.showBackgroundBreakdown
-                      ? 'Shown'
-                      : 'Hidden'
-                  }
-                />
-                <VisibilityRow
-                  label="Location breakdown"
-                  value={
-                    vote.displaySettings.showLocationBreakdown ? 'Shown' : 'Hidden'
-                  }
-                />
-                <VisibilityRow
-                  label="After voting only"
-                  value={vote.displaySettings.showAfterVotingOnly ? 'Yes' : 'No'}
-                />
-                <VisibilityRow
-                  label="Only after close"
-                  value={
-                    vote.displaySettings.showOnlyAfterVoteCloses ? 'Yes' : 'No'
-                  }
-                />
+          <div className="space-y-6">
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <h2 className="text-lg font-semibold">Visibility controls</h2>
+              {vote.displaySettings ? (
+                <div className="mt-4 grid gap-3">
+                  <VisibilityRow
+                    label="Result visibility"
+                    value={vote.displaySettings.resultVisibilityMode}
+                  />
+                  <VisibilityRow
+                    label="Participation stats"
+                    value={
+                      vote.displaySettings.showParticipationStats ? 'Shown' : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="Stakeholder breakdown"
+                    value={
+                      vote.displaySettings.showStakeholderBreakdown
+                        ? 'Shown'
+                        : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="Background breakdown"
+                    value={
+                      vote.displaySettings.showBackgroundBreakdown
+                        ? 'Shown'
+                        : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="Location breakdown"
+                    value={
+                      vote.displaySettings.showLocationBreakdown ? 'Shown' : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="After voting only"
+                    value={vote.displaySettings.showAfterVotingOnly ? 'Yes' : 'No'}
+                  />
+                  <VisibilityRow
+                    label="Only after close"
+                    value={
+                      vote.displaySettings.showOnlyAfterVoteCloses ? 'Yes' : 'No'
+                    }
+                  />
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-slate-600">
+                  No display settings found.
+                </p>
+              )}
+            </div>
+
+            {(vote.coverImageUrl || vote.coverImageAlt) && (
+              <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                <h2 className="text-lg font-semibold">Cover image metadata</h2>
+                <div className="mt-4 grid gap-3">
+                  <VisibilityRow
+                    label="Image URL"
+                    value={vote.coverImageUrl ?? 'Not provided'}
+                  />
+                  <VisibilityRow
+                    label="Alt text"
+                    value={vote.coverImageAlt ?? 'Not provided'}
+                  />
+                </div>
               </div>
-            ) : (
-              <p className="mt-4 text-sm text-slate-600">
-                No display settings found.
-              </p>
             )}
           </div>
         </div>
@@ -843,7 +871,9 @@ function VisibilityRow({
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
+      <p className="mt-1 break-words text-sm font-medium text-slate-900">
+        {value}
+      </p>
     </div>
   );
 }

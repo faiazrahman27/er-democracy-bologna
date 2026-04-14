@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
-import { fetchAdminVoteBySlug, updateAdminVote } from '@/lib/admin-votes';
+import {
+  fetchAdminVoteBySlug,
+  updateAdminVote,
+  uploadAdminVoteCover,
+} from '@/lib/admin-votes';
 import { isAdminRole } from '@/lib/roles';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
 
@@ -22,6 +26,12 @@ export default function AdminEditConsultationPage() {
   const [startAt, setStartAt] = useState('');
   const [endAt, setEndAt] = useState('');
   const [isPublished, setIsPublished] = useState(false);
+
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [coverImageAlt, setCoverImageAlt] = useState('');
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [coverUploadMessage, setCoverUploadMessage] = useState<string | null>(null);
 
   const [resultVisibilityMode, setResultVisibilityMode] = useState<
     'HIDE_ALL' | 'SHOW_RAW_ONLY' | 'SHOW_WEIGHTED_ONLY' | 'SHOW_BOTH'
@@ -78,6 +88,8 @@ export default function AdminEditConsultationPage() {
         setStartAt(toDateTimeLocal(vote.startAt));
         setEndAt(toDateTimeLocal(vote.endAt));
         setIsPublished(vote.isPublished);
+        setCoverImageUrl(vote.coverImageUrl ?? '');
+        setCoverImageAlt(vote.coverImageAlt ?? '');
 
         setResultVisibilityMode(
           vote.displaySettings?.resultVisibilityMode ?? 'HIDE_ALL',
@@ -125,9 +137,54 @@ export default function AdminEditConsultationPage() {
 
   const coreFieldsLocked = useMemo(() => hasSubmissions, [hasSubmissions]);
 
+  function handleCoverFileChange(file: File | null) {
+    setSelectedCoverFile(file);
+    setCoverUploadMessage(null);
+  }
+
+  async function handleUploadCoverImage() {
+    if (!token) {
+      setPageError('You must be signed in');
+      return;
+    }
+
+    if (!selectedCoverFile) {
+      setPageError('Please choose an image file first');
+      return;
+    }
+
+    setPageError(null);
+    setSuccessMessage(null);
+    setCoverUploadMessage(null);
+    setIsUploadingCover(true);
+
+    try {
+      const response = await uploadAdminVoteCover(token, selectedCoverFile, params.slug);
+
+      setCoverImageUrl(response.file.publicUrl);
+
+      if (!coverImageAlt.trim()) {
+        setCoverImageAlt(title.trim() || 'Consultation cover image');
+      }
+
+      setCoverUploadMessage('Cover image uploaded successfully');
+    } catch (err) {
+      setPageError(
+        err instanceof Error ? err.message : 'Failed to upload cover image',
+      );
+    } finally {
+      setIsUploadingCover(false);
+    }
+  }
+
   async function handleSave() {
     if (!token) {
       setPageError('You must be signed in');
+      return;
+    }
+
+    if (selectedCoverFile && !coverImageUrl) {
+      setPageError('Please upload the selected cover image before saving');
       return;
     }
 
@@ -139,6 +196,8 @@ export default function AdminEditConsultationPage() {
       const payload = coreFieldsLocked
         ? {
             status,
+            coverImageUrl: coverImageUrl.trim() || undefined,
+            coverImageAlt: coverImageAlt.trim() || undefined,
             endAt: new Date(endAt).toISOString(),
             isPublished,
             resultVisibilityMode,
@@ -154,6 +213,8 @@ export default function AdminEditConsultationPage() {
             summary,
             methodologySummary,
             status,
+            coverImageUrl: coverImageUrl.trim() || undefined,
+            coverImageAlt: coverImageAlt.trim() || undefined,
             startAt: new Date(startAt).toISOString(),
             endAt: new Date(endAt).toISOString(),
             isPublished,
@@ -169,6 +230,8 @@ export default function AdminEditConsultationPage() {
       await updateAdminVote(token, params.slug, payload);
 
       setSuccessMessage('Consultation updated successfully');
+      setSelectedCoverFile(null);
+      setCoverUploadMessage(null);
     } catch (err) {
       setPageError(
         err instanceof Error ? err.message : 'Failed to update consultation',
@@ -255,7 +318,7 @@ export default function AdminEditConsultationPage() {
             <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
               This consultation already has submissions. Core fields are locked.
               You can still change safe fields such as status, publication
-              state, end date, and public visibility settings.
+              state, end date, cover image, and public visibility settings.
             </div>
           ) : null}
 
@@ -359,6 +422,75 @@ export default function AdminEditConsultationPage() {
                     onChange={setEndAt}
                   />
                 </div>
+              </section>
+
+              <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
+                <div className="mb-5">
+                  <h2 className="text-lg font-semibold">Cover image</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Upload or replace the public image for this consultation.
+                  </p>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      Select image
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) =>
+                        handleCoverFileChange(event.target.files?.[0] ?? null)
+                      }
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-900"
+                    />
+                    <p className="mt-2 text-xs text-slate-500">
+                      Allowed: JPG, PNG, WEBP. Maximum size: 2MB.
+                    </p>
+                  </div>
+
+                  <Field
+                    label="Cover image alt text"
+                    value={coverImageAlt}
+                    onChange={setCoverImageAlt}
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleUploadCoverImage}
+                    disabled={isUploadingCover || !selectedCoverFile}
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    {isUploadingCover ? 'Uploading...' : 'Upload cover image'}
+                  </button>
+
+                  {coverUploadMessage ? (
+                    <span className="text-sm text-green-700">{coverUploadMessage}</span>
+                  ) : null}
+                </div>
+
+                {coverImageUrl ? (
+                  <div className="mt-5">
+                    <p className="mb-2 text-sm font-medium text-slate-700">Preview</p>
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <img
+                        src={coverImageUrl}
+                        alt={coverImageAlt || 'Consultation cover preview'}
+                        className="h-64 w-full object-cover"
+                      />
+                    </div>
+                    <p className="mt-2 break-all text-xs text-slate-500">
+                      {coverImageUrl}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
+                    No cover image uploaded yet.
+                  </div>
+                )}
               </section>
 
               <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
@@ -487,6 +619,11 @@ export default function AdminEditConsultationPage() {
                     tone="success"
                   />
                   <PolicyItem
+                    label="Cover image"
+                    value="Editable"
+                    tone="success"
+                  />
+                  <PolicyItem
                     label="Publication state"
                     value="Editable"
                     tone="success"
@@ -509,7 +646,7 @@ export default function AdminEditConsultationPage() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || isUploadingCover}
               className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
               {isSaving ? 'Saving...' : 'Save changes'}

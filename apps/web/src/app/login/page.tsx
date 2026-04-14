@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { isAdminRole } from '@/lib/roles';
@@ -12,6 +12,102 @@ type ResendVerificationResponse = {
 };
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+          <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
+            <section>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Sign in
+              </p>
+
+              <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
+                Access your civic workspace.
+              </h1>
+
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
+                Participate in consultations, explore results, and manage your
+                account with a secure and transparent platform.
+              </p>
+
+              <div className="mt-8 flex gap-4">
+                <Link
+                  href="/consultations"
+                  className="text-sm font-medium text-slate-700 hover:text-green-700"
+                >
+                  Browse consultations →
+                </Link>
+
+                <Link
+                  href="/register"
+                  className="text-sm font-medium text-slate-700 hover:text-red-600"
+                >
+                  Create account →
+                </Link>
+              </div>
+            </section>
+
+            <section>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    disabled
+                    className="mt-2 w-full border-b border-slate-300 bg-transparent px-0 py-2 text-sm outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-700">
+                      Password
+                    </label>
+
+                    <span className="text-xs text-slate-400">
+                      Forgot password?
+                    </span>
+                  </div>
+
+                  <input
+                    type="password"
+                    disabled
+                    className="mt-2 w-full border-b border-slate-300 bg-transparent px-0 py-2 text-sm outline-none"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  disabled
+                  className="mt-4 inline-flex items-center justify-center rounded-xl bg-green-600 px-6 py-3 text-sm font-medium text-white opacity-60"
+                >
+                  Sign in
+                </button>
+              </div>
+
+              <p className="mt-6 text-sm text-slate-600">
+                Don&apos;t have an account?{' '}
+                <Link
+                  href="/register"
+                  className="font-medium text-slate-900 hover:text-red-600"
+                >
+                  Sign up
+                </Link>
+              </p>
+            </section>
+          </div>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, user, isLoading } = useAuth();

@@ -208,75 +208,87 @@ export default function AdminConsultationsPage() {
             {votes.map((vote) => (
               <article
                 key={vote.id}
-                className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 transition-all duration-200 hover:shadow-md"
+                className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-200 hover:shadow-md"
               >
-                <div className="flex flex-wrap items-start justify-between gap-6">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                      <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                      <StatusBadge label={vote.topicCategory} tone="muted" />
-                      <StatusBadge
-                        label={vote.status}
-                        tone={deriveWorkflowTone(vote.status)}
-                      />
-                      <StatusBadge
-                        label={vote.derivedStatus ?? 'Unknown'}
-                        tone={deriveStatusTone(vote.derivedStatus)}
-                      />
-                      <StatusBadge
-                        label={vote.isPublished ? 'Published' : 'Unpublished'}
-                        tone={vote.isPublished ? 'success' : 'warning'}
-                      />
-                    </div>
-
-                    <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-                      {vote.title}
-                    </h2>
-
-                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                      {vote.summary}
-                    </p>
-
-                    <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                      <InfoTile
-                        label="Starts"
-                        value={formatDateTime(vote.startAt)}
-                      />
-                      <InfoTile
-                        label="Ends"
-                        value={formatDateTime(vote.endAt)}
-                      />
-                      <InfoTile
-                        label="Derived status"
-                        value={vote.derivedStatus ?? 'Unknown'}
-                      />
-                      <InfoTile
-                        label="Workflow status"
-                        value={vote.status}
-                      />
-                      <InfoTile
-                        label="Submissions"
-                        value={String(vote.submissionCount ?? 0)}
-                      />
-                    </div>
+                {vote.coverImageUrl ? (
+                  <div className="overflow-hidden border-b border-slate-100 bg-slate-100">
+                    <img
+                      src={vote.coverImageUrl}
+                      alt={vote.coverImageAlt ?? vote.title}
+                      className="h-56 w-full object-cover"
+                    />
                   </div>
+                ) : null}
 
-                  <div className="flex w-full flex-wrap gap-3 sm:w-auto sm:flex-col sm:items-stretch">
-                    <Link
-                      href={`/consultations/${vote.slug}`}
-                      className="inline-flex justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
-                    >
-                      Open public view
-                    </Link>
+                <div className="p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-6">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <StatusBadge label={formatEnumLabel(vote.voteType)} />
+                        <StatusBadge label={vote.topicCategory} tone="muted" />
+                        <StatusBadge
+                          label={vote.status}
+                          tone={deriveWorkflowTone(vote.status)}
+                        />
+                        <StatusBadge
+                          label={vote.derivedStatus ?? 'Unknown'}
+                          tone={deriveStatusTone(vote.derivedStatus)}
+                        />
+                        <StatusBadge
+                          label={vote.isPublished ? 'Published' : 'Unpublished'}
+                          tone={vote.isPublished ? 'success' : 'warning'}
+                        />
+                      </div>
 
-                    {canViewAdminDetail ? (
+                      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+                        {vote.title}
+                      </h2>
+
+                      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                        {vote.summary}
+                      </p>
+
+                      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                        <InfoTile
+                          label="Starts"
+                          value={formatDateTime(vote.startAt)}
+                        />
+                        <InfoTile
+                          label="Ends"
+                          value={formatDateTime(vote.endAt)}
+                        />
+                        <InfoTile
+                          label="Derived status"
+                          value={vote.derivedStatus ?? 'Unknown'}
+                        />
+                        <InfoTile
+                          label="Workflow status"
+                          value={vote.status}
+                        />
+                        <InfoTile
+                          label="Submissions"
+                          value={String(vote.submissionCount ?? 0)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex w-full flex-wrap gap-3 sm:w-auto sm:flex-col sm:items-stretch">
                       <Link
-                        href={`/admin/consultations/${vote.slug}`}
-                        className="inline-flex justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
+                        href={`/consultations/${vote.slug}`}
+                        className="inline-flex justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
                       >
-                        Open admin detail
+                        Open public view
                       </Link>
-                    ) : null}
+
+                      {canViewAdminDetail ? (
+                        <Link
+                          href={`/admin/consultations/${vote.slug}`}
+                          className="inline-flex justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
+                        >
+                          Open admin detail
+                        </Link>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </article>

@@ -207,6 +207,18 @@ export type AdminParticipantsResponse = {
   };
 };
 
+export type AdminUploadVoteCoverResponse = {
+  message: string;
+  file: {
+    bucket: string;
+    path: string;
+    publicUrl: string;
+    mimeType: string;
+    size: number;
+    originalName: string;
+  };
+};
+
 export async function createAdminVote(
   token: string,
   payload: AdminCreateVotePayload,
@@ -266,6 +278,55 @@ export async function fetchAdminParticipants(token: string, slug: string) {
       token,
     },
   );
+}
+
+export async function uploadAdminVoteCover(
+  token: string,
+  file: File,
+  slug?: string,
+) {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!apiBaseUrl) {
+    throw new Error('NEXT_PUBLIC_API_URL is not configured');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  if (slug && slug.trim()) {
+    formData.append('slug', slug.trim());
+  }
+
+  const response = await fetch(`${apiBaseUrl}/votes/admin/upload-cover`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let message = 'Failed to upload vote cover image';
+
+    try {
+      const errorData = (await response.json()) as {
+        message?: string | string[];
+      };
+
+      if (Array.isArray(errorData?.message)) {
+        message = errorData.message.join(', ');
+      } else if (typeof errorData?.message === 'string') {
+        message = errorData.message;
+      }
+    } catch {
+      // ignore JSON parsing failure and keep default message
+    }
+
+    throw new Error(message);
+  }
+
+  return (await response.json()) as AdminUploadVoteCoverResponse;
 }
 
 export async function exportAdminAnalyticsExcel(

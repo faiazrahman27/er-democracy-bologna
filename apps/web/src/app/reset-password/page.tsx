@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
 
@@ -10,6 +10,78 @@ type ResetPasswordResponse = {
 };
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+          <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
+            <section>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Account recovery
+              </p>
+
+              <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
+                Set a new password.
+              </h1>
+
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
+                Enter your new password below. This will replace your current
+                password and log out any active sessions.
+              </p>
+
+              <div className="mt-8">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-slate-700 hover:text-green-700"
+                >
+                  Back to login →
+                </Link>
+              </div>
+            </section>
+
+            <section>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    New password
+                  </label>
+                  <input
+                    type="password"
+                    disabled
+                    className="mt-2 w-full border-b border-slate-300 bg-transparent px-0 py-2 text-sm outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Confirm password
+                  </label>
+                  <input
+                    type="password"
+                    disabled
+                    className="mt-2 w-full border-b border-slate-300 bg-transparent px-0 py-2 text-sm outline-none"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex items-center justify-center rounded-xl bg-green-600 px-6 py-3 text-sm font-medium text-white opacity-60"
+                >
+                  Reset password
+                </button>
+              </div>
+            </section>
+          </div>
+        </main>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -61,7 +133,6 @@ export default function ResetPasswordPage() {
 
       setSuccessMessage(response.message);
 
-      // redirect after short delay
       setTimeout(() => {
         router.push('/login');
       }, 2000);

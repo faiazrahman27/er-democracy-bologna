@@ -107,6 +107,18 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
           </div>
         </section>
 
+        {vote.coverImageUrl ? (
+          <section className="border-t border-slate-200 pt-10">
+            <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+              <img
+                src={vote.coverImageUrl}
+                alt={vote.coverImageAlt ?? vote.title}
+                className="h-72 w-full object-cover md:h-[28rem]"
+              />
+            </div>
+          </section>
+        ) : null}
+
         <section className="border-t border-slate-200 pt-10">
           <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
             <div>

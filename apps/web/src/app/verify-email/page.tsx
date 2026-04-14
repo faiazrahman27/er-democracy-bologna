@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiRequest } from '@/lib/api';
 
@@ -22,6 +22,37 @@ type ResendVerificationResponse = {
 };
 
 export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+          <div className="mx-auto max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Email verification
+            </p>
+
+            <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
+              Verify your account
+            </h1>
+
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
+              Complete your email verification to activate sign-in access for ER
+              Democracy Bologna.
+            </p>
+
+            <div className="mt-10">
+              <p className="text-base text-slate-700">Verifying your email...</p>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
+  );
+}
+
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
 
   const token = useMemo(() => searchParams.get('token') ?? '', [searchParams]);

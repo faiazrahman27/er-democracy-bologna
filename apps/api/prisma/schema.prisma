@@ -51,27 +51,27 @@ enum CalculationType {
 }
 
 model User {
-  id                      String                   @id @default(cuid())
-  fullName                String                   @db.VarChar(150)
-  email                   String                   @unique @db.VarChar(255)
-  passwordHash            String                   @db.VarChar(255)
-  role                    UserRole                 @default(USER)
-  emailVerified           Boolean                  @default(false)
-  isActive                Boolean                  @default(true)
-  lastLoginAt             DateTime?
-  failedLoginCount        Int                      @default(0)
-  lockedUntil             DateTime?
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
+  id                     String                   @id @default(cuid())
+  fullName               String                   @db.VarChar(150)
+  email                  String                   @unique @db.VarChar(255)
+  passwordHash           String                   @db.VarChar(255)
+  role                   UserRole                 @default(USER)
+  emailVerified          Boolean                  @default(false)
+  isActive               Boolean                  @default(true)
+  lastLoginAt            DateTime?
+  failedLoginCount       Int                      @default(0)
+  lockedUntil            DateTime?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
 
-  assessment              Assessment?
-  createdVotes            Vote[]                   @relation("VotesCreatedByAdmin")
-  createdArticles         Article[]                @relation("ArticlesCreatedByUser")
-  voteSubmissions         VoteSubmission[]
-  auditLogs               AdminAuditLog[]
-  refreshTokens           RefreshToken[]
+  assessment             Assessment?
+  createdVotes           Vote[]                   @relation("VotesCreatedByAdmin")
+  createdArticles        Article[]                @relation("ArticlesCreatedByUser")
+  voteSubmissions        VoteSubmission[]
+  auditLogs              AdminAuditLog[]
+  refreshTokens          RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
-  passwordResetTokens     PasswordResetToken[]
+  passwordResetTokens    PasswordResetToken[]
 
   @@index([role])
   @@index([emailVerified])
@@ -157,29 +157,29 @@ model Assessment {
 }
 
 model Vote {
-  id                 String               @id @default(cuid())
-  slug               String               @unique @db.VarChar(180)
-  title              String               @db.VarChar(200)
-  summary            String               @db.VarChar(1000)
-  methodologySummary String?              @db.VarChar(2000)
-  voteType           VoteType
-  topicCategory      String               @db.VarChar(100)
-  status             VoteStatus           @default(DRAFT)
-  coverImageUrl      String?              @db.VarChar(500)
-  coverImageAlt      String?              @db.VarChar(255)
-  startAt            DateTime
-  endAt              DateTime
-  isPublished        Boolean              @default(false)
-  publishedAt        DateTime?
-  lockedAt           DateTime?
-  createdByAdminId   String
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  id                  String               @id @default(cuid())
+  slug                String               @unique @db.VarChar(180)
+  title               String               @db.VarChar(200)
+  summary             String               @db.VarChar(1000)
+  methodologySummary  String?              @db.VarChar(2000)
+  voteType            VoteType
+  topicCategory       String               @db.VarChar(100)
+  status              VoteStatus           @default(DRAFT)
+  coverImageUrl       String?              @db.VarChar(500)
+  coverImageAlt       String?              @db.VarChar(255)
+  startAt             DateTime
+  endAt               DateTime
+  isPublished         Boolean              @default(false)
+  publishedAt         DateTime?
+  lockedAt            DateTime?
+  createdByAdminId    String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
-  createdByAdmin     User                 @relation("VotesCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
-  options            VoteOption[]
-  displaySettings    VoteDisplaySettings?
-  submissions        VoteSubmission[]
+  createdByAdmin      User                 @relation("VotesCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  options             VoteOption[]
+  displaySettings     VoteDisplaySettings?
+  submissions         VoteSubmission[]
 
   @@index([slug])
   @@index([status])
@@ -199,26 +199,26 @@ model VoteOption {
   createdAt    DateTime       @default(now())
 
   vote         Vote           @relation(fields: [voteId], references: [id], onDelete: Cascade)
-  submissions  VoteSubmission[]
+  submissions   VoteSubmission[]
 
   @@index([voteId])
   @@unique([voteId, displayOrder])
 }
 
 model VoteDisplaySettings {
-  id                       String               @id @default(cuid())
-  voteId                   String               @unique
-  resultVisibilityMode     ResultVisibilityMode @default(HIDE_ALL)
-  showParticipationStats   Boolean              @default(false)
-  showStakeholderBreakdown Boolean              @default(false)
-  showBackgroundBreakdown  Boolean              @default(false)
-  showLocationBreakdown    Boolean              @default(false)
-  showAfterVotingOnly      Boolean              @default(false)
-  showOnlyAfterVoteCloses  Boolean              @default(false)
-  createdAt                DateTime             @default(now())
-  updatedAt                DateTime             @updatedAt
+  id                        String               @id @default(cuid())
+  voteId                    String               @unique
+  resultVisibilityMode      ResultVisibilityMode @default(HIDE_ALL)
+  showParticipationStats    Boolean              @default(false)
+  showStakeholderBreakdown  Boolean              @default(false)
+  showBackgroundBreakdown   Boolean              @default(false)
+  showLocationBreakdown     Boolean              @default(false)
+  showAfterVotingOnly       Boolean              @default(false)
+  showOnlyAfterVoteCloses   Boolean              @default(false)
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
 
-  vote                     Vote                 @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  vote                      Vote                 @relation(fields: [voteId], references: [id], onDelete: Cascade)
 }
 
 model VoteSubmission {

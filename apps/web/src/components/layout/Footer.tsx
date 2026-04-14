@@ -2,17 +2,32 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { useMemo } from 'react';
 import { useAuth } from '@/providers/auth-provider';
 import { isAdminRole } from '@/lib/roles';
+import { hasPermission } from '@/lib/permissions';
+import { ADMIN_NAV, PUBLIC_NAV } from '@/lib/navigation';
+import { ROUTES } from '@/lib/routes';
 
 export default function Footer() {
-  const pathname = usePathname();
   const { user } = useAuth();
 
   const isAuthenticated = !!user;
-  const isAdminRoute = pathname.startsWith('/admin');
   const isAdminUser = !!user && isAdminRole(user.role);
+
+  const visibleAdminNav = useMemo(() => {
+    if (!user) {
+      return ADMIN_NAV.filter((item) => !item.permission);
+    }
+
+    return ADMIN_NAV.filter((item) => {
+      if (!item.permission) {
+        return true;
+      }
+
+      return hasPermission(user.role, item.permission);
+    });
+  }, [user]);
 
   return (
     <footer className="mt-20 bg-white text-slate-700">
@@ -22,7 +37,7 @@ export default function Footer() {
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <Link
-              href={isAdminRoute ? '/admin' : '/'}
+              href={isAdminUser ? ROUTES.admin.root : ROUTES.public.home}
               className="group inline-flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
             >
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition-all duration-200 group-hover:shadow-md">
@@ -40,7 +55,7 @@ export default function Footer() {
                   ER Democracy Bologna
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {isAdminRoute
+                  {isAdminUser
                     ? 'Administrative control surface'
                     : 'Secure civic participation platform'}
                 </p>
@@ -48,7 +63,7 @@ export default function Footer() {
             </Link>
 
             <p className="mt-5 max-w-md text-sm leading-7 text-slate-600">
-              {isAdminRoute
+              {isAdminUser
                 ? 'Administrative access for consultation management, assessment review, analytics oversight, and governance workflows.'
                 : 'A modern platform for transparent consultations, public participation, and trusted digital democratic processes.'}
             </p>
@@ -56,42 +71,31 @@ export default function Footer() {
 
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              {isAdminRoute ? 'Administration' : 'Platform'}
+              {isAdminUser ? 'Administration' : 'Platform'}
             </h3>
 
             <div className="mt-4 space-y-3 text-sm">
-              {isAdminRoute ? (
+              {isAdminUser ? (
                 <>
-                  <Link
-                    href="/admin"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Admin dashboard
-                  </Link>
+                  {visibleAdminNav.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="block transition-colors duration-200 hover:text-slate-900"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
 
                   <Link
-                    href="/admin/consultations"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Consultations
-                  </Link>
-
-                  <Link
-                    href="/admin/articles"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Articles
-                  </Link>
-
-                  <Link
-                    href="/assessment"
+                    href={ROUTES.user.assessment}
                     className="block transition-colors duration-200 hover:text-slate-900"
                   >
                     My assessment
                   </Link>
 
                   <Link
-                    href="/consultations"
+                    href={ROUTES.public.consultations}
                     className="block transition-colors duration-200 hover:text-slate-900"
                   >
                     Public consultations
@@ -99,47 +103,27 @@ export default function Footer() {
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Home
-                  </Link>
-
-                  <Link
-                    href="/consultations"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Consultations
-                  </Link>
-
-                  <Link
-                    href="/articles"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Articles
-                  </Link>
+                  {PUBLIC_NAV.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="block transition-colors duration-200 hover:text-slate-900"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
 
                   {isAuthenticated ? (
                     <>
-                      {!isAdminUser ? (
-                        <Link
-                          href="/dashboard"
-                          className="block transition-colors duration-200 hover:text-slate-900"
-                        >
-                          Dashboard
-                        </Link>
-                      ) : (
-                        <Link
-                          href="/admin"
-                          className="block transition-colors duration-200 hover:text-slate-900"
-                        >
-                          Admin dashboard
-                        </Link>
-                      )}
+                      <Link
+                        href={ROUTES.user.dashboard}
+                        className="block transition-colors duration-200 hover:text-slate-900"
+                      >
+                        Dashboard
+                      </Link>
 
                       <Link
-                        href="/assessment"
+                        href={ROUTES.user.assessment}
                         className="block transition-colors duration-200 hover:text-slate-900"
                       >
                         Assessment
@@ -148,14 +132,14 @@ export default function Footer() {
                   ) : (
                     <>
                       <Link
-                        href="/login"
+                        href={ROUTES.public.login}
                         className="block transition-colors duration-200 hover:text-slate-900"
                       >
                         Login
                       </Link>
 
                       <Link
-                        href="/register"
+                        href={ROUTES.public.register}
                         className="block font-medium text-slate-900 transition-colors duration-200 hover:text-green-700"
                       >
                         Sign up
@@ -169,57 +153,30 @@ export default function Footer() {
 
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              {isAdminRoute ? 'Reference' : 'Legal'}
+              {isAdminUser ? 'Reference' : 'Legal'}
             </h3>
 
             <div className="mt-4 space-y-3 text-sm">
-              {isAdminRoute ? (
-                <>
-                  <Link
-                    href="/privacy"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Privacy
-                  </Link>
+              <Link
+                href="/privacy"
+                className="block transition-colors duration-200 hover:text-slate-900"
+              >
+                Privacy
+              </Link>
 
-                  <Link
-                    href="/terms"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Terms
-                  </Link>
+              <Link
+                href={ROUTES.public.terms}
+                className="block transition-colors duration-200 hover:text-slate-900"
+              >
+                Terms
+              </Link>
 
-                  <Link
-                    href="/contact"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Contact
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/privacy"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Privacy
-                  </Link>
-
-                  <Link
-                    href="/terms"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Terms
-                  </Link>
-
-                  <Link
-                    href="/contact"
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
-                    Contact
-                  </Link>
-                </>
-              )}
+              <Link
+                href={ROUTES.public.contact}
+                className="block transition-colors duration-200 hover:text-slate-900"
+              >
+                Contact
+              </Link>
             </div>
           </div>
         </div>
@@ -230,7 +187,7 @@ export default function Footer() {
             reserved.
           </p>
           <p>
-            {isAdminRoute
+            {isAdminUser
               ? 'Administrative workspace for secure and accountable civic operations.'
               : 'Designed for transparent and trustworthy civic participation.'}
           </p>

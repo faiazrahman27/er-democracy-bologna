@@ -6,8 +6,12 @@ import {
   Patch,
   Post,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { VotesService } from './votes.service';
@@ -19,6 +23,7 @@ import { SubmitVoteDto } from './dto/submit-vote.dto';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/permissions/require-permissions.decorator';
 import { PERMISSIONS } from '../auth/permissions/permissions.constants';
+import { SupabaseService } from '../common/supabase/supabase.service';
 
 type AuthenticatedUser = {
   id: string;
@@ -31,7 +36,10 @@ type AuthenticatedUser = {
 
 @Controller('votes')
 export class VotesController {
-  constructor(private readonly votesService: VotesService) {}
+  constructor(
+    private readonly votesService: VotesService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   @Get('public')
   async getPublicVotes() {
@@ -158,6 +166,34 @@ export class VotesController {
     );
 
     return response.send(file.buffer);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.MEDIA_UPLOAD)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('admin/upload-cover')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 2 * 1024 * 1024,
+        files: 1,
+      },
+    }),
+  )
+  async uploadVoteCoverImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('slug') slug?: string,
+  ) {
+    const uploadedFile = await this.supabaseService.uploadVoteCoverImage(
+      file,
+      slug,
+    );
+
+    return {
+      message: 'Vote cover image uploaded successfully',
+      file: uploadedFile,
+    };
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
