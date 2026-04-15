@@ -820,8 +820,12 @@ export class VotesService {
               select: {
                 assessment: {
                   select: {
+                    ageRange: true,
+                    gender: true,
                     stakeholderRole: true,
                     backgroundCategory: true,
+                    experienceLevel: true,
+                    relationshipToArea: true,
                     city: true,
                     region: true,
                     country: true,
@@ -901,6 +905,30 @@ export class VotesService {
       );
     }
 
+    analytics.ageRangeBreakdown = buildPublicSafeBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.ageRange,
+      ),
+    );
+
+    analytics.genderBreakdown = buildPublicSafeBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.gender,
+      ),
+    );
+
+    analytics.experienceLevelBreakdown = buildPublicSafeBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.experienceLevel,
+      ),
+    );
+
+    analytics.relationshipToAreaBreakdown = buildPublicSafeBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.relationshipToArea,
+      ),
+    );
+
     return {
       slug: vote.slug,
       title: vote.title,
@@ -929,8 +957,12 @@ export class VotesService {
                 assessment: {
                   select: {
                     secretUserId: true,
+                    ageRange: true,
+                    gender: true,
                     stakeholderRole: true,
                     backgroundCategory: true,
+                    experienceLevel: true,
+                    relationshipToArea: true,
                     city: true,
                     region: true,
                     country: true,
@@ -978,6 +1010,26 @@ export class VotesService {
               submission.user.assessment?.city ||
               submission.user.assessment?.region ||
               submission.user.assessment?.country,
+          ),
+        ),
+        ageRangeBreakdown: buildBreakdown(
+          vote.submissions.map(
+            (submission) => submission.user.assessment?.ageRange,
+          ),
+        ),
+        genderBreakdown: buildBreakdown(
+          vote.submissions.map(
+            (submission) => submission.user.assessment?.gender,
+          ),
+        ),
+        experienceLevelBreakdown: buildBreakdown(
+          vote.submissions.map(
+            (submission) => submission.user.assessment?.experienceLevel,
+          ),
+        ),
+        relationshipToAreaBreakdown: buildBreakdown(
+          vote.submissions.map(
+            (submission) => submission.user.assessment?.relationshipToArea,
           ),
         ),
       },
@@ -1093,9 +1145,12 @@ export class VotesService {
                 assessment: {
                   select: {
                     secretUserId: true,
+                    ageRange: true,
+                    gender: true,
                     stakeholderRole: true,
                     backgroundCategory: true,
                     experienceLevel: true,
+                    relationshipToArea: true,
                     city: true,
                     region: true,
                     country: true,
@@ -1173,6 +1228,30 @@ export class VotesService {
       ),
     );
 
+    const ageRangeBreakdown = buildBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.ageRange,
+      ),
+    );
+
+    const genderBreakdown = buildBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.gender,
+      ),
+    );
+
+    const experienceLevelBreakdown = buildBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.experienceLevel,
+      ),
+    );
+
+    const relationshipToAreaBreakdown = buildBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.relationshipToArea,
+      ),
+    );
+
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'OpenAI';
     workbook.created = new Date();
@@ -1235,6 +1314,42 @@ export class VotesService {
     ];
     locationSheet.addRows(locationBreakdown);
 
+    const ageRangeSheet = workbook.addWorksheet('Age Range Breakdown');
+    ageRangeSheet.columns = [
+      { header: 'Label', key: 'label', width: 36 },
+      { header: 'Count', key: 'count', width: 12 },
+      { header: 'Percentage', key: 'percentage', width: 14 },
+    ];
+    ageRangeSheet.addRows(ageRangeBreakdown);
+
+    const genderSheet = workbook.addWorksheet('Gender Breakdown');
+    genderSheet.columns = [
+      { header: 'Label', key: 'label', width: 36 },
+      { header: 'Count', key: 'count', width: 12 },
+      { header: 'Percentage', key: 'percentage', width: 14 },
+    ];
+    genderSheet.addRows(genderBreakdown);
+
+    const experienceLevelSheet = workbook.addWorksheet(
+      'Experience Level Breakdown',
+    );
+    experienceLevelSheet.columns = [
+      { header: 'Label', key: 'label', width: 36 },
+      { header: 'Count', key: 'count', width: 12 },
+      { header: 'Percentage', key: 'percentage', width: 14 },
+    ];
+    experienceLevelSheet.addRows(experienceLevelBreakdown);
+
+    const relationshipToAreaSheet = workbook.addWorksheet(
+      'Relationship To Area Breakdown',
+    );
+    relationshipToAreaSheet.columns = [
+      { header: 'Label', key: 'label', width: 36 },
+      { header: 'Count', key: 'count', width: 12 },
+      { header: 'Percentage', key: 'percentage', width: 14 },
+    ];
+    relationshipToAreaSheet.addRows(relationshipToAreaBreakdown);
+
     const participantsSheet = workbook.addWorksheet('Participants');
     participantsSheet.columns = [
       { header: 'Submission ID', key: 'submissionId', width: 28 },
@@ -1245,9 +1360,12 @@ export class VotesService {
       { header: 'Self Assessment Score', key: 'selfAssessmentScore', width: 22 },
       { header: 'Submitted At', key: 'submittedAt', width: 24 },
       { header: 'Assessment Completed', key: 'assessmentCompleted', width: 20 },
+      { header: 'Age Range', key: 'ageRange', width: 18 },
+      { header: 'Gender', key: 'gender', width: 18 },
       { header: 'Stakeholder Role', key: 'stakeholderRole', width: 22 },
       { header: 'Background Category', key: 'backgroundCategory', width: 22 },
       { header: 'Experience Level', key: 'experienceLevel', width: 20 },
+      { header: 'Relationship To Area', key: 'relationshipToArea', width: 22 },
       { header: 'City', key: 'city', width: 18 },
       { header: 'Region', key: 'region', width: 18 },
       { header: 'Country', key: 'country', width: 18 },
@@ -1263,10 +1381,14 @@ export class VotesService {
         submittedAt: submission.submittedAt.toISOString(),
         assessmentCompleted:
           submission.user.assessment?.assessmentCompleted ? 'Yes' : 'No',
+        ageRange: submission.user.assessment?.ageRange ?? '',
+        gender: submission.user.assessment?.gender ?? '',
         stakeholderRole: submission.user.assessment?.stakeholderRole ?? '',
         backgroundCategory:
           submission.user.assessment?.backgroundCategory ?? '',
         experienceLevel: submission.user.assessment?.experienceLevel ?? '',
+        relationshipToArea:
+          submission.user.assessment?.relationshipToArea ?? '',
         city: submission.user.assessment?.city ?? '',
         region: submission.user.assessment?.region ?? '',
         country: submission.user.assessment?.country ?? '',
@@ -1278,6 +1400,10 @@ export class VotesService {
     this.styleWorksheet(stakeholderSheet);
     this.styleWorksheet(backgroundSheet);
     this.styleWorksheet(locationSheet);
+    this.styleWorksheet(ageRangeSheet);
+    this.styleWorksheet(genderSheet);
+    this.styleWorksheet(experienceLevelSheet);
+    this.styleWorksheet(relationshipToAreaSheet);
     this.styleWorksheet(participantsSheet);
 
     const fileName = `${vote.slug}-analytics.xlsx`;
