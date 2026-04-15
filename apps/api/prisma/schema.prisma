@@ -206,20 +206,31 @@ model VoteOption {
 }
 
 model VoteDisplaySettings {
-  id                        String               @id @default(cuid())
-  voteId                    String               @unique
-  resultVisibilityMode      ResultVisibilityMode @default(HIDE_ALL)
-  showParticipationStats    Boolean              @default(false)
-  showStakeholderBreakdown  Boolean              @default(false)
-  showBackgroundBreakdown   Boolean              @default(false)
-  showLocationBreakdown     Boolean              @default(false)
-  showAfterVotingOnly       Boolean              @default(false)
-  showOnlyAfterVoteCloses   Boolean              @default(false)
-  createdAt                 DateTime             @default(now())
-  updatedAt                 DateTime             @updatedAt
+  id                          String               @id @default(cuid())
+  voteId                      String               @unique
+  resultVisibilityMode        ResultVisibilityMode @default(HIDE_ALL)
 
-  vote                      Vote                 @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  showParticipationStats      Boolean @default(false)
+
+  showStakeholderBreakdown    Boolean @default(false)
+  showBackgroundBreakdown     Boolean @default(false)
+  showLocationBreakdown       Boolean @default(false)
+
+  // ✅ NEW FIELDS
+  showAgeRangeBreakdown        Boolean @default(false)
+  showGenderBreakdown          Boolean @default(false)
+  showExperienceLevelBreakdown Boolean @default(false)
+  showRelationshipBreakdown    Boolean @default(false)
+
+  showAfterVotingOnly         Boolean @default(false)
+  showOnlyAfterVoteCloses     Boolean @default(false)
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  vote                        Vote     @relation(fields: [voteId], references: [id], onDelete: Cascade)
 }
+
 
 model VoteSubmission {
   id                  String          @id @default(cuid())

@@ -92,9 +92,16 @@ export default async function ConsultationsPage() {
                     <div className="p-6">
                       <div className="flex flex-wrap items-center gap-3">
                         <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                        <StatusBadge label={vote.topicCategory} tone="muted" />
                         <StatusBadge
-                          label={vote.derivedStatus ?? 'Unknown'}
+                          label={formatEnumLabel(vote.topicCategory)}
+                          tone="muted"
+                        />
+                        <StatusBadge
+                          label={
+                            vote.derivedStatus
+                              ? formatEnumLabel(vote.derivedStatus)
+                              : 'Unknown'
+                          }
                           tone={deriveStatusTone(vote.derivedStatus)}
                         />
                       </div>
@@ -118,11 +125,15 @@ export default async function ConsultationsPage() {
                         />
                         <InfoTile
                           label="Status"
-                          value={vote.derivedStatus ?? 'Unknown'}
+                          value={
+                            vote.derivedStatus
+                              ? formatEnumLabel(vote.derivedStatus)
+                              : 'Unknown'
+                          }
                         />
                         <InfoTile
                           label="Topic"
-                          value={vote.topicCategory}
+                          value={formatEnumLabel(vote.topicCategory)}
                         />
                       </div>
                     </div>

@@ -11,6 +11,7 @@ import {
 } from '@/lib/admin-votes';
 import { isAdminRole } from '@/lib/roles';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
+import { formatEnumLabel } from '@/lib/format';
 
 export default function AdminEditConsultationPage() {
   const router = useRouter();
@@ -21,7 +22,13 @@ export default function AdminEditConsultationPage() {
   const [summary, setSummary] = useState('');
   const [methodologySummary, setMethodologySummary] = useState('');
   const [status, setStatus] = useState<
-    'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED' | 'CANCELLED'
+    | 'DRAFT'
+    | 'REVIEW'
+    | 'APPROVED'
+    | 'PUBLISHED'
+    | 'CLOSED'
+    | 'ARCHIVED'
+    | 'CANCELLED'
   >('PUBLISHED');
   const [startAt, setStartAt] = useState('');
   const [endAt, setEndAt] = useState('');
@@ -31,15 +38,24 @@ export default function AdminEditConsultationPage() {
   const [coverImageAlt, setCoverImageAlt] = useState('');
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [coverUploadMessage, setCoverUploadMessage] = useState<string | null>(null);
+  const [coverUploadMessage, setCoverUploadMessage] = useState<string | null>(
+    null,
+  );
 
   const [resultVisibilityMode, setResultVisibilityMode] = useState<
     'HIDE_ALL' | 'SHOW_RAW_ONLY' | 'SHOW_WEIGHTED_ONLY' | 'SHOW_BOTH'
   >('HIDE_ALL');
   const [showParticipationStats, setShowParticipationStats] = useState(false);
-  const [showStakeholderBreakdown, setShowStakeholderBreakdown] = useState(false);
+  const [showStakeholderBreakdown, setShowStakeholderBreakdown] =
+    useState(false);
   const [showBackgroundBreakdown, setShowBackgroundBreakdown] = useState(false);
   const [showLocationBreakdown, setShowLocationBreakdown] = useState(false);
+  const [showAgeRangeBreakdown, setShowAgeRangeBreakdown] = useState(false);
+  const [showGenderBreakdown, setShowGenderBreakdown] = useState(false);
+  const [showExperienceLevelBreakdown, setShowExperienceLevelBreakdown] =
+    useState(false);
+  const [showRelationshipBreakdown, setShowRelationshipBreakdown] =
+    useState(false);
   const [showAfterVotingOnly, setShowAfterVotingOnly] = useState(false);
   const [showOnlyAfterVoteCloses, setShowOnlyAfterVoteCloses] = useState(false);
 
@@ -106,6 +122,18 @@ export default function AdminEditConsultationPage() {
         setShowLocationBreakdown(
           vote.displaySettings?.showLocationBreakdown ?? false,
         );
+        setShowAgeRangeBreakdown(
+          vote.displaySettings?.showAgeRangeBreakdown ?? false,
+        );
+        setShowGenderBreakdown(
+          vote.displaySettings?.showGenderBreakdown ?? false,
+        );
+        setShowExperienceLevelBreakdown(
+          vote.displaySettings?.showExperienceLevelBreakdown ?? false,
+        );
+        setShowRelationshipBreakdown(
+          vote.displaySettings?.showRelationshipBreakdown ?? false,
+        );
         setShowAfterVotingOnly(
           vote.displaySettings?.showAfterVotingOnly ?? false,
         );
@@ -159,7 +187,11 @@ export default function AdminEditConsultationPage() {
     setIsUploadingCover(true);
 
     try {
-      const response = await uploadAdminVoteCover(token, selectedCoverFile, params.slug);
+      const response = await uploadAdminVoteCover(
+        token,
+        selectedCoverFile,
+        params.slug,
+      );
 
       setCoverImageUrl(response.file.publicUrl);
 
@@ -177,7 +209,7 @@ export default function AdminEditConsultationPage() {
     }
   }
 
-  async function handleSave() {
+ async function handleSave() {
     if (!token) {
       setPageError('You must be signed in');
       return;
@@ -205,6 +237,10 @@ export default function AdminEditConsultationPage() {
             showStakeholderBreakdown,
             showBackgroundBreakdown,
             showLocationBreakdown,
+            showAgeRangeBreakdown,
+            showGenderBreakdown,
+            showExperienceLevelBreakdown,
+            showRelationshipBreakdown,
             showAfterVotingOnly,
             showOnlyAfterVoteCloses,
           }
@@ -223,6 +259,10 @@ export default function AdminEditConsultationPage() {
             showStakeholderBreakdown,
             showBackgroundBreakdown,
             showLocationBreakdown,
+            showAgeRangeBreakdown,
+            showGenderBreakdown,
+            showExperienceLevelBreakdown,
+            showRelationshipBreakdown,
             showAfterVotingOnly,
             showOnlyAfterVoteCloses,
           };
@@ -579,6 +619,30 @@ export default function AdminEditConsultationPage() {
                       onChange={setShowLocationBreakdown}
                     />
                     <CheckboxField
+                      label="Show age range breakdown"
+                      description="Allow public age-range analytics."
+                      checked={showAgeRangeBreakdown}
+                      onChange={setShowAgeRangeBreakdown}
+                    />
+                    <CheckboxField
+                      label="Show gender breakdown"
+                      description="Allow public gender analytics."
+                      checked={showGenderBreakdown}
+                      onChange={setShowGenderBreakdown}
+                    />
+                    <CheckboxField
+                      label="Show experience level breakdown"
+                      description="Allow public experience-level analytics."
+                      checked={showExperienceLevelBreakdown}
+                      onChange={setShowExperienceLevelBreakdown}
+                    />
+                    <CheckboxField
+                      label="Show relationship to area breakdown"
+                      description="Allow public relationship-to-area analytics."
+                      checked={showRelationshipBreakdown}
+                      onChange={setShowRelationshipBreakdown}
+                    />
+                    <CheckboxField
                       label="Show after voting only"
                       description="Hide results and analytics until the user submits a vote."
                       checked={showAfterVotingOnly}
@@ -780,7 +844,7 @@ function SelectField({
       >
         {options.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {formatEnumLabel(option)}
           </option>
         ))}
       </select>
@@ -828,8 +892,8 @@ function PolicyItem({
     tone === 'success'
       ? 'bg-emerald-100 text-emerald-700'
       : tone === 'warning'
-      ? 'bg-amber-100 text-amber-700'
-      : 'bg-slate-100 text-slate-700';
+        ? 'bg-amber-100 text-amber-700'
+        : 'bg-slate-100 text-slate-700';
 
   return (
     <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -852,12 +916,12 @@ function StatusPill({
     tone === 'success'
       ? 'bg-emerald-100 text-emerald-700'
       : tone === 'warning'
-      ? 'bg-amber-100 text-amber-700'
-      : tone === 'danger'
-      ? 'bg-red-100 text-red-700'
-      : tone === 'muted'
-      ? 'bg-slate-100 text-slate-700'
-      : 'bg-white text-slate-900 ring-1 ring-slate-200';
+        ? 'bg-amber-100 text-amber-700'
+        : tone === 'danger'
+          ? 'bg-red-100 text-red-700'
+          : tone === 'muted'
+            ? 'bg-slate-100 text-slate-700'
+            : 'bg-white text-slate-900 ring-1 ring-slate-200';
 
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-medium ${toneClass}`}>

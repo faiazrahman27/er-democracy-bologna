@@ -24,6 +24,19 @@ export class CreateVoteDisplaySettingsDto {
   @IsBoolean()
   showLocationBreakdown!: boolean;
 
+  // ✅ NEW FIELDS
+  @IsBoolean()
+  showAgeRangeBreakdown!: boolean;
+
+  @IsBoolean()
+  showGenderBreakdown!: boolean;
+
+  @IsBoolean()
+  showExperienceLevelBreakdown!: boolean;
+
+  @IsBoolean()
+  showRelationshipBreakdown!: boolean;
+
   @IsBoolean()
   showAfterVotingOnly!: boolean;
 

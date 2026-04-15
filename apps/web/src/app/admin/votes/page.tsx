@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/providers/auth-provider';
 import { isAdminRole } from '@/lib/roles';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
+import { formatEnumLabel } from '@/lib/format';
 import { createAdminVote, uploadAdminVoteCover } from '@/lib/admin-votes';
 
 type OptionInput = {
@@ -575,7 +576,7 @@ function SelectField({
       >
         {options.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {formatEnumLabel(option)}
           </option>
         ))}
       </select>

@@ -15,6 +15,7 @@ import {
   buildBreakdown,
   buildPublicSafeBreakdown,
 } from '../common/voting/analytics.util';
+import { formatStoredValueLabel } from '../assessments/assessment-value-labels';
 
 @Injectable()
 export class VotesService {
@@ -36,7 +37,9 @@ export class VotesService {
       dto.options.map((option) => option.displayOrder),
     );
     if (uniqueDisplayOrders.size !== dto.options.length) {
-      throw new BadRequestException('Option displayOrder values must be unique');
+      throw new BadRequestException(
+        'Option displayOrder values must be unique',
+      );
     }
 
     const normalizedSlug = dto.slug.trim().toLowerCase();
@@ -78,8 +81,16 @@ export class VotesService {
             showParticipationStats: dto.displaySettings.showParticipationStats,
             showStakeholderBreakdown:
               dto.displaySettings.showStakeholderBreakdown,
-            showBackgroundBreakdown: dto.displaySettings.showBackgroundBreakdown,
+            showBackgroundBreakdown:
+              dto.displaySettings.showBackgroundBreakdown,
             showLocationBreakdown: dto.displaySettings.showLocationBreakdown,
+            showAgeRangeBreakdown:
+              dto.displaySettings.showAgeRangeBreakdown,
+            showGenderBreakdown: dto.displaySettings.showGenderBreakdown,
+            showExperienceLevelBreakdown:
+              dto.displaySettings.showExperienceLevelBreakdown,
+            showRelationshipBreakdown:
+              dto.displaySettings.showRelationshipBreakdown,
             showAfterVotingOnly: dto.displaySettings.showAfterVotingOnly,
             showOnlyAfterVoteCloses:
               dto.displaySettings.showOnlyAfterVoteCloses,
@@ -171,6 +182,10 @@ export class VotesService {
             showStakeholderBreakdown: true,
             showBackgroundBreakdown: true,
             showLocationBreakdown: true,
+            showAgeRangeBreakdown: true,
+            showGenderBreakdown: true,
+            showExperienceLevelBreakdown: true,
+            showRelationshipBreakdown: true,
             showAfterVotingOnly: true,
             showOnlyAfterVoteCloses: true,
             createdAt: true,
@@ -243,6 +258,10 @@ export class VotesService {
             showStakeholderBreakdown: true,
             showBackgroundBreakdown: true,
             showLocationBreakdown: true,
+            showAgeRangeBreakdown: true,
+            showGenderBreakdown: true,
+            showExperienceLevelBreakdown: true,
+            showRelationshipBreakdown: true,
             showAfterVotingOnly: true,
             showOnlyAfterVoteCloses: true,
           },
@@ -368,9 +387,13 @@ export class VotesService {
             : undefined,
         status: dto.status,
         coverImageUrl:
-          dto.coverImageUrl !== undefined ? dto.coverImageUrl.trim() : undefined,
+          dto.coverImageUrl !== undefined
+            ? dto.coverImageUrl.trim()
+            : undefined,
         coverImageAlt:
-          dto.coverImageAlt !== undefined ? dto.coverImageAlt.trim() : undefined,
+          dto.coverImageAlt !== undefined
+            ? dto.coverImageAlt.trim()
+            : undefined,
         startAt: dto.startAt ? nextStartAt : undefined,
         endAt: dto.endAt ? nextEndAt : undefined,
         isPublished: dto.isPublished,
@@ -391,6 +414,12 @@ export class VotesService {
                 showStakeholderBreakdown: dto.showStakeholderBreakdown,
                 showBackgroundBreakdown: dto.showBackgroundBreakdown,
                 showLocationBreakdown: dto.showLocationBreakdown,
+                showAgeRangeBreakdown: dto.showAgeRangeBreakdown,
+                showGenderBreakdown: dto.showGenderBreakdown,
+                showExperienceLevelBreakdown:
+                  dto.showExperienceLevelBreakdown,
+                showRelationshipBreakdown:
+                  dto.showRelationshipBreakdown,
                 showAfterVotingOnly: dto.showAfterVotingOnly,
                 showOnlyAfterVoteCloses: dto.showOnlyAfterVoteCloses,
               },
@@ -470,17 +499,16 @@ export class VotesService {
       );
     }
 
-    let assessment:
-      | {
-          stakeholderRole: string | null;
-          backgroundCategory: string | null;
-          experienceLevel: string | null;
-          city: string | null;
-          region: string | null;
-          country: string | null;
-          assessmentCompleted: boolean;
-        }
-      | null = null;
+    let assessment: {
+      stakeholderRole: string | null;
+      backgroundCategory: string | null;
+      experienceLevel: string | null;
+      relationshipToArea: string | null;
+      city: string | null;
+      region: string | null;
+      country: string | null;
+      assessmentCompleted: boolean;
+    } | null = null;
 
     if (vote.voteType === 'SPECIALIZED') {
       assessment = await this.prisma.assessment.findUnique({
@@ -489,6 +517,7 @@ export class VotesService {
           stakeholderRole: true,
           backgroundCategory: true,
           experienceLevel: true,
+          relationshipToArea: true,
           city: true,
           region: true,
           country: true,
@@ -540,7 +569,7 @@ export class VotesService {
         selectedOptionId: dto.selectedOptionId,
         selfAssessmentScore:
           vote.voteType === 'SELF_ASSESSMENT'
-            ? dto.selfAssessmentScore ?? null
+            ? (dto.selfAssessmentScore ?? null)
             : null,
         weightUsed: weightResult.weightUsed,
         calculationType: weightResult.calculationType,
@@ -811,6 +840,10 @@ export class VotesService {
             showStakeholderBreakdown: true,
             showBackgroundBreakdown: true,
             showLocationBreakdown: true,
+            showAgeRangeBreakdown: true,
+            showGenderBreakdown: true,
+            showExperienceLevelBreakdown: true,
+            showRelationshipBreakdown: true,
           },
         },
         submissions: {
@@ -905,29 +938,37 @@ export class VotesService {
       );
     }
 
-    analytics.ageRangeBreakdown = buildPublicSafeBreakdown(
-      vote.submissions.map(
-        (submission) => submission.user.assessment?.ageRange,
-      ),
-    );
+    if (vote.displaySettings.showAgeRangeBreakdown) {
+      analytics.ageRangeBreakdown = buildPublicSafeBreakdown(
+        vote.submissions.map(
+          (submission) => submission.user.assessment?.ageRange,
+        ),
+      );
+    }
 
-    analytics.genderBreakdown = buildPublicSafeBreakdown(
-      vote.submissions.map(
-        (submission) => submission.user.assessment?.gender,
-      ),
-    );
+    if (vote.displaySettings.showGenderBreakdown) {
+      analytics.genderBreakdown = buildPublicSafeBreakdown(
+        vote.submissions.map(
+          (submission) => submission.user.assessment?.gender,
+        ),
+      );
+    }
 
-    analytics.experienceLevelBreakdown = buildPublicSafeBreakdown(
-      vote.submissions.map(
-        (submission) => submission.user.assessment?.experienceLevel,
-      ),
-    );
+    if (vote.displaySettings.showExperienceLevelBreakdown) {
+      analytics.experienceLevelBreakdown = buildPublicSafeBreakdown(
+        vote.submissions.map(
+          (submission) => submission.user.assessment?.experienceLevel,
+        ),
+      );
+    }
 
-    analytics.relationshipToAreaBreakdown = buildPublicSafeBreakdown(
-      vote.submissions.map(
-        (submission) => submission.user.assessment?.relationshipToArea,
-      ),
-    );
+    if (vote.displaySettings.showRelationshipBreakdown) {
+      analytics.relationshipToAreaBreakdown = buildPublicSafeBreakdown(
+        vote.submissions.map(
+          (submission) => submission.user.assessment?.relationshipToArea,
+        ),
+      );
+    }
 
     return {
       slug: vote.slug,
@@ -1235,9 +1276,7 @@ export class VotesService {
     );
 
     const genderBreakdown = buildBreakdown(
-      vote.submissions.map(
-        (submission) => submission.user.assessment?.gender,
-      ),
+      vote.submissions.map((submission) => submission.user.assessment?.gender),
     );
 
     const experienceLevelBreakdown = buildBreakdown(
@@ -1251,6 +1290,21 @@ export class VotesService {
         (submission) => submission.user.assessment?.relationshipToArea,
       ),
     );
+    const formattedStakeholderBreakdown =
+      this.formatBreakdownRowsForExport(stakeholderBreakdown);
+    const formattedBackgroundBreakdown =
+      this.formatBreakdownRowsForExport(backgroundBreakdown);
+    const formattedLocationBreakdown =
+      this.formatBreakdownRowsForExport(locationBreakdown);
+    const formattedAgeRangeBreakdown =
+      this.formatBreakdownRowsForExport(ageRangeBreakdown);
+    const formattedGenderBreakdown =
+      this.formatBreakdownRowsForExport(genderBreakdown);
+    const formattedExperienceLevelBreakdown = this.formatBreakdownRowsForExport(
+      experienceLevelBreakdown,
+    );
+    const formattedRelationshipToAreaBreakdown =
+      this.formatBreakdownRowsForExport(relationshipToAreaBreakdown);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'OpenAI';
@@ -1265,9 +1319,9 @@ export class VotesService {
     summarySheet.addRows([
       { field: 'Title', value: vote.title },
       { field: 'Slug', value: vote.slug },
-      { field: 'Vote Type', value: vote.voteType },
+      { field: 'Vote Type', value: formatStoredValueLabel(vote.voteType) },
       { field: 'Topic Category', value: vote.topicCategory },
-      { field: 'Status', value: vote.status },
+      { field: 'Status', value: formatStoredValueLabel(vote.status) },
       { field: 'Is Published', value: vote.isPublished ? 'Yes' : 'No' },
       {
         field: 'Published At',
@@ -1296,7 +1350,7 @@ export class VotesService {
       { header: 'Count', key: 'count', width: 12 },
       { header: 'Percentage', key: 'percentage', width: 14 },
     ];
-    stakeholderSheet.addRows(stakeholderBreakdown);
+    stakeholderSheet.addRows(formattedStakeholderBreakdown);
 
     const backgroundSheet = workbook.addWorksheet('Background Breakdown');
     backgroundSheet.columns = [
@@ -1304,7 +1358,7 @@ export class VotesService {
       { header: 'Count', key: 'count', width: 12 },
       { header: 'Percentage', key: 'percentage', width: 14 },
     ];
-    backgroundSheet.addRows(backgroundBreakdown);
+    backgroundSheet.addRows(formattedBackgroundBreakdown);
 
     const locationSheet = workbook.addWorksheet('Location Breakdown');
     locationSheet.columns = [
@@ -1312,7 +1366,7 @@ export class VotesService {
       { header: 'Count', key: 'count', width: 12 },
       { header: 'Percentage', key: 'percentage', width: 14 },
     ];
-    locationSheet.addRows(locationBreakdown);
+    locationSheet.addRows(formattedLocationBreakdown);
 
     const ageRangeSheet = workbook.addWorksheet('Age Range Breakdown');
     ageRangeSheet.columns = [
@@ -1320,7 +1374,7 @@ export class VotesService {
       { header: 'Count', key: 'count', width: 12 },
       { header: 'Percentage', key: 'percentage', width: 14 },
     ];
-    ageRangeSheet.addRows(ageRangeBreakdown);
+    ageRangeSheet.addRows(formattedAgeRangeBreakdown);
 
     const genderSheet = workbook.addWorksheet('Gender Breakdown');
     genderSheet.columns = [
@@ -1328,7 +1382,7 @@ export class VotesService {
       { header: 'Count', key: 'count', width: 12 },
       { header: 'Percentage', key: 'percentage', width: 14 },
     ];
-    genderSheet.addRows(genderBreakdown);
+    genderSheet.addRows(formattedGenderBreakdown);
 
     const experienceLevelSheet = workbook.addWorksheet(
       'Experience Level Breakdown',
@@ -1338,7 +1392,7 @@ export class VotesService {
       { header: 'Count', key: 'count', width: 12 },
       { header: 'Percentage', key: 'percentage', width: 14 },
     ];
-    experienceLevelSheet.addRows(experienceLevelBreakdown);
+    experienceLevelSheet.addRows(formattedExperienceLevelBreakdown);
 
     const relationshipToAreaSheet = workbook.addWorksheet(
       'Relationship To Area Breakdown',
@@ -1348,7 +1402,7 @@ export class VotesService {
       { header: 'Count', key: 'count', width: 12 },
       { header: 'Percentage', key: 'percentage', width: 14 },
     ];
-    relationshipToAreaSheet.addRows(relationshipToAreaBreakdown);
+    relationshipToAreaSheet.addRows(formattedRelationshipToAreaBreakdown);
 
     const participantsSheet = workbook.addWorksheet('Participants');
     participantsSheet.columns = [
@@ -1357,7 +1411,11 @@ export class VotesService {
       { header: 'Selected Option', key: 'selectedOptionText', width: 36 },
       { header: 'Weight Used', key: 'weightUsed', width: 14 },
       { header: 'Calculation Type', key: 'calculationType', width: 18 },
-      { header: 'Self Assessment Score', key: 'selfAssessmentScore', width: 22 },
+      {
+        header: 'Self Assessment Score',
+        key: 'selfAssessmentScore',
+        width: 22,
+      },
       { header: 'Submitted At', key: 'submittedAt', width: 24 },
       { header: 'Assessment Completed', key: 'assessmentCompleted', width: 20 },
       { header: 'Age Range', key: 'ageRange', width: 18 },
@@ -1376,22 +1434,29 @@ export class VotesService {
         secretUserId: submission.user.assessment?.secretUserId ?? '',
         selectedOptionText: submission.selectedOption.optionText,
         weightUsed: Number(submission.weightUsed),
-        calculationType: submission.calculationType,
+        calculationType: formatStoredValueLabel(submission.calculationType),
         selfAssessmentScore: submission.selfAssessmentScore ?? '',
         submittedAt: submission.submittedAt.toISOString(),
-        assessmentCompleted:
-          submission.user.assessment?.assessmentCompleted ? 'Yes' : 'No',
-        ageRange: submission.user.assessment?.ageRange ?? '',
-        gender: submission.user.assessment?.gender ?? '',
-        stakeholderRole: submission.user.assessment?.stakeholderRole ?? '',
-        backgroundCategory:
-          submission.user.assessment?.backgroundCategory ?? '',
-        experienceLevel: submission.user.assessment?.experienceLevel ?? '',
-        relationshipToArea:
-          submission.user.assessment?.relationshipToArea ?? '',
-        city: submission.user.assessment?.city ?? '',
-        region: submission.user.assessment?.region ?? '',
-        country: submission.user.assessment?.country ?? '',
+        assessmentCompleted: submission.user.assessment?.assessmentCompleted
+          ? 'Yes'
+          : 'No',
+        ageRange: formatStoredValueLabel(submission.user.assessment?.ageRange),
+        gender: formatStoredValueLabel(submission.user.assessment?.gender),
+        stakeholderRole: formatStoredValueLabel(
+          submission.user.assessment?.stakeholderRole,
+        ),
+        backgroundCategory: formatStoredValueLabel(
+          submission.user.assessment?.backgroundCategory,
+        ),
+        experienceLevel: formatStoredValueLabel(
+          submission.user.assessment?.experienceLevel,
+        ),
+        relationshipToArea: formatStoredValueLabel(
+          submission.user.assessment?.relationshipToArea,
+        ),
+        city: formatStoredValueLabel(submission.user.assessment?.city),
+        region: formatStoredValueLabel(submission.user.assessment?.region),
+        country: formatStoredValueLabel(submission.user.assessment?.country),
       })),
     );
 
@@ -1413,6 +1478,15 @@ export class VotesService {
       fileName,
       buffer: Buffer.from(fileBuffer),
     };
+  }
+
+  private formatBreakdownRowsForExport(
+    items: Array<{ label: string; count: number; percentage: number }>,
+  ) {
+    return items.map((item) => ({
+      ...item,
+      label: formatStoredValueLabel(item.label),
+    }));
   }
 
   private styleWorksheet(worksheet: ExcelJS.Worksheet) {
@@ -1466,6 +1540,10 @@ export class VotesService {
           showStakeholderBreakdown: true,
           showBackgroundBreakdown: true,
           showLocationBreakdown: true,
+          showAgeRangeBreakdown: true,
+          showGenderBreakdown: true,
+          showExperienceLevelBreakdown: true,
+          showRelationshipBreakdown: true,
           showAfterVotingOnly: true,
           showOnlyAfterVoteCloses: true,
           createdAt: true,

@@ -6,10 +6,51 @@ type BreakdownItem = {
 
 const MIN_PUBLIC_GROUP_SIZE = 3;
 const MIN_PUBLIC_GROUP_PERCENTAGE = 10;
+const BREAKDOWN_LABEL_ORDER: Record<string, number> = {
+  AGE_18_24: 1,
+  AGE_25_34: 2,
+  AGE_35_44: 3,
+  AGE_45_54: 4,
+  AGE_55_64: 5,
+  AGE_65_PLUS: 6,
+  MALE: 10,
+  FEMALE: 11,
+  NON_BINARY: 12,
+  BEGINNER: 20,
+  INTERMEDIATE: 21,
+  ADVANCED: 22,
+  EXPERT: 23,
+  RESIDENT: 30,
+  NON_RESIDENT: 31,
+  VISITOR: 32,
+  PREFER_NOT_TO_SAY: 90,
+  OTHER: 91,
+  Other: 91,
+  Unknown: 92,
+};
 
 function normalizeLabel(value?: string | null): string {
   const trimmed = (value ?? '').trim();
   return trimmed.length > 0 ? trimmed : 'Unknown';
+}
+
+function sortBreakdownItems(a: BreakdownItem, b: BreakdownItem): number {
+  const aOrder = BREAKDOWN_LABEL_ORDER[a.label];
+  const bOrder = BREAKDOWN_LABEL_ORDER[b.label];
+
+  if (aOrder !== undefined && bOrder !== undefined) {
+    return aOrder - bOrder;
+  }
+
+  if (aOrder !== undefined) {
+    return -1;
+  }
+
+  if (bOrder !== undefined) {
+    return 1;
+  }
+
+  return b.count - a.count || a.label.localeCompare(b.label);
 }
 
 export function buildBreakdown(
@@ -34,7 +75,7 @@ export function buildBreakdown(
       count,
       percentage: Number(((count / total) * 100).toFixed(2)),
     }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    .sort(sortBreakdownItems);
 }
 
 export function buildPublicSafeBreakdown(
@@ -78,5 +119,5 @@ export function buildPublicSafeBreakdown(
       count: item.count,
       percentage: Number(((item.count / total) * 100).toFixed(2)),
     }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    .sort(sortBreakdownItems);
 }

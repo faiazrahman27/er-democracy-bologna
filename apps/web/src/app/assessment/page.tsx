@@ -6,130 +6,20 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { fetchMyAssessment, saveMyAssessment } from '@/lib/assessments';
 import { isAdminRole } from '@/lib/roles';
-import type { SaveAssessmentPayload } from '@/types/assessment';
-
-const AGE_RANGE_OPTIONS = [
-  { value: 'AGE_18_24', label: '18-24' },
-  { value: 'AGE_25_34', label: '25-34' },
-  { value: 'AGE_35_44', label: '35-44' },
-  { value: 'AGE_45_54', label: '45-54' },
-  { value: 'AGE_55_64', label: '55-64' },
-  { value: 'AGE_65_PLUS', label: '65+' },
-  { value: 'PREFER_NOT_TO_SAY', label: 'Prefer not to say' },
-] as const;
-
-const GENDER_OPTIONS = [
-  { value: 'MALE', label: 'Male' },
-  { value: 'FEMALE', label: 'Female' },
-  { value: 'NON_BINARY', label: 'Non-binary' },
-  { value: 'OTHER', label: 'Other' },
-  { value: 'PREFER_NOT_TO_SAY', label: 'Prefer not to say' },
-] as const;
-
-const CITY_OPTIONS = [
-  { value: 'BOLOGNA', label: 'Bologna' },
-  { value: 'MODENA', label: 'Modena' },
-  { value: 'PARMA', label: 'Parma' },
-  { value: 'REGGIO_EMILIA', label: 'Reggio Emilia' },
-  { value: 'RAVENNA', label: 'Ravenna' },
-  { value: 'RIMINI', label: 'Rimini' },
-  { value: 'FERRARA', label: 'Ferrara' },
-  { value: 'FORLI', label: 'Forlì' },
-  { value: 'CESENA', label: 'Cesena' },
-  { value: 'PIACENZA', label: 'Piacenza' },
-  { value: 'IMOLA', label: 'Imola' },
-  { value: 'CARPI', label: 'Carpi' },
-  { value: 'FAENZA', label: 'Faenza' },
-  { value: 'SASSUOLO', label: 'Sassuolo' },
-  { value: 'RICCIONE', label: 'Riccione' },
-  { value: 'CENTO', label: 'Cento' },
-  { value: 'LUGO', label: 'Lugo' },
-  { value: 'FORMIGINE', label: 'Formigine' },
-  { value: 'CASTELFRANCO_EMILIA', label: 'Castelfranco Emilia' },
-  { value: 'SAN_LAZZARO_DI_SAVENA', label: 'San Lazzaro di Savena' },
-  { value: 'OTHER', label: 'Other' },
-] as const;
-
-const STAKEHOLDER_ROLE_OPTIONS = [
-  { value: 'UNIVERSITY_STUDENT', label: 'University student' },
-  { value: 'SCHOOL_STUDENT', label: 'School student' },
-  { value: 'BUSINESS_OWNER', label: 'Business owner' },
-  { value: 'ENTREPRENEUR', label: 'Entrepreneur' },
-  { value: 'PRIVATE_SECTOR_EMPLOYEE', label: 'Private sector employee' },
-  { value: 'PUBLIC_SECTOR_EMPLOYEE', label: 'Public sector employee' },
-  { value: 'FREELANCER', label: 'Freelancer' },
-  { value: 'SELF_EMPLOYED', label: 'Self-employed' },
-  { value: 'RESEARCHER', label: 'Researcher' },
-  { value: 'ACADEMIC', label: 'Academic' },
-  { value: 'TEACHER', label: 'Teacher' },
-  { value: 'NGO_MEMBER', label: 'NGO member' },
-  { value: 'VOLUNTEER', label: 'Volunteer' },
-  { value: 'CIVIL_SERVANT', label: 'Civil servant' },
-  { value: 'POLICY_MAKER', label: 'Policy maker' },
-  { value: 'HEALTHCARE_WORKER', label: 'Healthcare worker' },
-  { value: 'LEGAL_PROFESSIONAL', label: 'Legal professional' },
-  { value: 'CREATIVE_PROFESSIONAL', label: 'Creative professional' },
-  { value: 'UNEMPLOYED', label: 'Unemployed' },
-  { value: 'RETIRED', label: 'Retired' },
-  { value: 'OTHER', label: 'Other' },
-] as const;
-
-const BACKGROUND_CATEGORY_OPTIONS = [
-  { value: 'BUSINESS_AND_MANAGEMENT', label: 'Business and management' },
-  { value: 'ECONOMICS_AND_FINANCE', label: 'Economics and finance' },
-  { value: 'ACCOUNTING_AND_AUDITING', label: 'Accounting and auditing' },
-  { value: 'MARKETING_AND_COMMUNICATION', label: 'Marketing and communication' },
-  { value: 'ENTREPRENEURSHIP_AND_INNOVATION', label: 'Entrepreneurship and innovation' },
-  { value: 'COMPUTER_SCIENCE', label: 'Computer science' },
-  { value: 'SOFTWARE_ENGINEERING', label: 'Software engineering' },
-  { value: 'DATA_SCIENCE', label: 'Data science' },
-  { value: 'ARTIFICIAL_INTELLIGENCE', label: 'Artificial intelligence' },
-  { value: 'CYBERSECURITY', label: 'Cybersecurity' },
-  { value: 'INFORMATION_SYSTEMS', label: 'Information systems' },
-  { value: 'ENGINEERING', label: 'Engineering' },
-  { value: 'INDUSTRIAL_ENGINEERING', label: 'Industrial engineering' },
-  { value: 'CIVIL_ENGINEERING', label: 'Civil engineering' },
-  { value: 'ELECTRICAL_ENGINEERING', label: 'Electrical engineering' },
-  { value: 'MECHANICAL_ENGINEERING', label: 'Mechanical engineering' },
-  { value: 'ARCHITECTURE_AND_URBAN_PLANNING', label: 'Architecture and urban planning' },
-  { value: 'EDUCATION', label: 'Education' },
-  { value: 'TEACHING_AND_TRAINING', label: 'Teaching and training' },
-  { value: 'SOCIAL_SCIENCES', label: 'Social sciences' },
-  { value: 'POLITICAL_SCIENCE', label: 'Political science' },
-  { value: 'PUBLIC_ADMINISTRATION', label: 'Public administration' },
-  { value: 'INTERNATIONAL_RELATIONS', label: 'International relations' },
-  { value: 'LAW', label: 'Law' },
-  { value: 'CRIMINOLOGY_AND_PUBLIC_SAFETY', label: 'Criminology and public safety' },
-  { value: 'HEALTHCARE', label: 'Healthcare' },
-  { value: 'MEDICINE', label: 'Medicine' },
-  { value: 'NURSING', label: 'Nursing' },
-  { value: 'PUBLIC_HEALTH', label: 'Public health' },
-  { value: 'PSYCHOLOGY', label: 'Psychology' },
-  { value: 'HUMANITIES', label: 'Humanities' },
-  { value: 'HISTORY', label: 'History' },
-  { value: 'PHILOSOPHY', label: 'Philosophy' },
-  { value: 'LANGUAGES_AND_LITERATURE', label: 'Languages and literature' },
-  { value: 'ARTS_AND_DESIGN', label: 'Arts and design' },
-  { value: 'MEDIA_AND_JOURNALISM', label: 'Media and journalism' },
-  { value: 'ENVIRONMENT_AND_SUSTAINABILITY', label: 'Environment and sustainability' },
-  { value: 'AGRICULTURE_AND_FOOD', label: 'Agriculture and food' },
-  { value: 'TOURISM_AND_HOSPITALITY', label: 'Tourism and hospitality' },
-  { value: 'TRANSPORT_AND_MOBILITY', label: 'Transport and mobility' },
-  { value: 'OTHER', label: 'Other' },
-] as const;
-
-const EXPERIENCE_LEVEL_OPTIONS = [
-  { value: 'BEGINNER', label: 'Beginner' },
-  { value: 'INTERMEDIATE', label: 'Intermediate' },
-  { value: 'ADVANCED', label: 'Advanced' },
-  { value: 'EXPERT', label: 'Expert' },
-] as const;
-
-const RELATIONSHIP_TO_AREA_OPTIONS = [
-  { value: 'RESIDENT', label: 'Resident' },
-  { value: 'NON_RESIDENT', label: 'Non-resident' },
-  { value: 'VISITOR', label: 'Visitor' },
-] as const;
+import {
+  AGE_RANGE_OPTIONS,
+  ASSESSMENT_COUNTRY,
+  ASSESSMENT_COUNTRY_LABEL,
+  ASSESSMENT_REGION,
+  ASSESSMENT_REGION_LABEL,
+  BACKGROUND_CATEGORY_OPTIONS,
+  CITY_OPTIONS,
+  EXPERIENCE_LEVEL_OPTIONS,
+  GENDER_OPTIONS,
+  RELATIONSHIP_TO_AREA_OPTIONS,
+  STAKEHOLDER_ROLE_OPTIONS,
+  type SaveAssessmentPayload,
+} from '@/types/assessment';
 
 type AssessmentFormState = {
   ageRange: SaveAssessmentPayload['ageRange'] | '';
@@ -166,8 +56,8 @@ export default function AssessmentPage() {
     ageRange: '',
     gender: '',
     city: '',
-    region: 'EMILIA_ROMAGNA',
-    country: 'ITALY',
+    region: ASSESSMENT_REGION,
+    country: ASSESSMENT_COUNTRY,
     stakeholderRole: '',
     backgroundCategory: '',
     experienceLevel: '',
@@ -202,8 +92,8 @@ export default function AssessmentPage() {
             ageRange: response.assessment.ageRange ?? '',
             gender: response.assessment.gender ?? '',
             city: response.assessment.city ?? '',
-            region: response.assessment.region ?? 'EMILIA_ROMAGNA',
-            country: response.assessment.country ?? 'ITALY',
+            region: response.assessment.region ?? ASSESSMENT_REGION,
+            country: response.assessment.country ?? ASSESSMENT_COUNTRY,
             stakeholderRole: response.assessment.stakeholderRole ?? '',
             backgroundCategory: response.assessment.backgroundCategory ?? '',
             experienceLevel: response.assessment.experienceLevel ?? '',
@@ -253,8 +143,8 @@ export default function AssessmentPage() {
     try {
       const response = await saveMyAssessment(token, {
         ...form,
-        region: 'EMILIA_ROMAGNA',
-        country: 'ITALY',
+        region: ASSESSMENT_REGION,
+        country: ASSESSMENT_COUNTRY,
       });
       setSecretUserId(response.assessment.secretUserId);
       setSuccessMessage('Assessment saved successfully');
@@ -371,11 +261,11 @@ export default function AssessmentPage() {
               />
               <ReadOnlyField
                 label="Region"
-                value="Emilia-Romagna"
+                value={ASSESSMENT_REGION_LABEL}
               />
               <ReadOnlyField
                 label="Country"
-                value="Italy"
+                value={ASSESSMENT_COUNTRY_LABEL}
               />
               <SelectField
                 label="Stakeholder role"
@@ -540,36 +430,6 @@ function StatCard({
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const inputId = label.toLowerCase().replace(/\s+/g, '-');
-
-  return (
-    <div>
-      <label
-        htmlFor={inputId}
-        className="mb-2 block text-sm font-medium text-slate-700"
-      >
-        {label}
-      </label>
-      <input
-        id={inputId}
-        type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-green-600"
-      />
-    </div>
-  );
-}
-
 function SelectField({
   label,
   value,
@@ -635,3 +495,4 @@ function ReadOnlyField({
     </div>
   );
 }
+

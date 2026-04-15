@@ -1,24 +1,9 @@
 import { apiRequest } from '@/lib/api';
+import type { Assessment } from '@/types/assessment';
 
 export type AdminAssessmentBySecretResponse = {
   message: string;
-  assessment: {
-    id: string;
-    secretUserId: string;
-    ageRange: string | null;
-    gender: string | null;
-    city: string | null;
-    region: string | null;
-    country: string | null;
-    stakeholderRole: string | null;
-    backgroundCategory: string | null;
-    experienceLevel: string | null;
-    relationshipToArea: string | null;
-    assessmentCompleted: boolean;
-    completedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
-  } | null;
+  assessment: Omit<Assessment, 'userId'> | null;
 };
 
 export async function fetchAssessmentBySecretUserId(

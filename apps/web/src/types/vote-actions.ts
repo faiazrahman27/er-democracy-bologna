@@ -1,3 +1,8 @@
+import type {
+  AnalyticsParticipation,
+  PublicAnalyticsBreakdowns,
+} from '@/types/analytics';
+
 export type SubmitVotePayload = {
   selectedOptionId: string;
   selfAssessmentScore?: number;
@@ -57,25 +62,8 @@ export type PublicAnalyticsResponse = {
     visibility: {
       canShowAnalytics: boolean;
     };
-    analytics: null | {
-      participation?: {
-        totalParticipants: number;
-      };
-      stakeholderBreakdown?: Array<{
-        label: string;
-        count: number;
-        percentage: number;
-      }>;
-      backgroundBreakdown?: Array<{
-        label: string;
-        count: number;
-        percentage: number;
-      }>;
-      locationBreakdown?: Array<{
-        label: string;
-        count: number;
-        percentage: number;
-      }>;
-    };
+    analytics: null | ({
+      participation?: AnalyticsParticipation;
+    } & PublicAnalyticsBreakdowns);
   };
 };

@@ -34,6 +34,7 @@ import type {
   AdminResultsResponse,
   AdminVoteListItem,
 } from '@/lib/admin-votes';
+import type { AnalyticsBreakdownItem } from '@/types/analytics';
 
 const PIE_CHART_COLORS = [
   '#16a34a',
@@ -204,15 +205,33 @@ export default function AdminConsultationDetailPage() {
   }, [results]);
 
   const stakeholderChartData = useMemo(() => {
-    return analytics?.breakdowns.stakeholderBreakdown ?? [];
+    return formatBreakdownItems(analytics?.breakdowns.stakeholderBreakdown);
   }, [analytics]);
 
   const backgroundChartData = useMemo(() => {
-    return analytics?.breakdowns.backgroundBreakdown ?? [];
+    return formatBreakdownItems(analytics?.breakdowns.backgroundBreakdown);
   }, [analytics]);
 
   const locationChartData = useMemo(() => {
-    return analytics?.breakdowns.locationBreakdown ?? [];
+    return formatBreakdownItems(analytics?.breakdowns.locationBreakdown);
+  }, [analytics]);
+
+  const ageRangeChartData = useMemo(() => {
+    return formatBreakdownItems(analytics?.breakdowns.ageRangeBreakdown);
+  }, [analytics]);
+
+  const genderChartData = useMemo(() => {
+    return formatBreakdownItems(analytics?.breakdowns.genderBreakdown);
+  }, [analytics]);
+
+  const experienceLevelChartData = useMemo(() => {
+    return formatBreakdownItems(analytics?.breakdowns.experienceLevelBreakdown);
+  }, [analytics]);
+
+  const relationshipToAreaChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analytics?.breakdowns.relationshipToAreaBreakdown,
+    );
   }, [analytics]);
 
   if (isLoading || pageLoading) {
@@ -332,11 +351,17 @@ export default function AdminConsultationDetailPage() {
 
               <div className="mt-4 flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                <StatusBadge label={vote.topicCategory} tone="muted" />
-                <StatusBadge label={vote.status} tone={deriveWorkflowTone(vote.status)} />
+                <StatusBadge
+                  label={formatEnumLabel(vote.topicCategory)}
+                  tone="muted"
+                />
+                <StatusBadge
+                  label={formatEnumLabel(vote.status)}
+                  tone={deriveWorkflowTone(vote.status)}
+                />
                 {vote.derivedStatus ? (
                   <StatusBadge
-                    label={vote.derivedStatus}
+                    label={formatEnumLabel(vote.derivedStatus)}
                     tone={deriveStatusTone(vote.derivedStatus)}
                   />
                 ) : null}
@@ -393,7 +418,7 @@ export default function AdminConsultationDetailPage() {
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2 min-w-0">
             {vote.coverImageUrl ? (
               <div className="mb-6 overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
                 <img
@@ -407,7 +432,7 @@ export default function AdminConsultationDetailPage() {
             <p className="text-sm leading-7 text-slate-600">{vote.summary}</p>
 
             {vote.methodologySummary ? (
-              <div className="mt-6 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+              <div className="mt-6 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200 min-w-0">
                 <h2 className="text-lg font-semibold">Methodology</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {vote.methodologySummary}
@@ -442,18 +467,18 @@ export default function AdminConsultationDetailPage() {
               />
             </div>
 
-            <div className="mt-6 rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+            <div className="mt-6 rounded-2xl bg-white p-5 ring-1 ring-slate-200 min-w-0">
               <h2 className="text-lg font-semibold">Options</h2>
               <div className="mt-4 space-y-3">
                 {vote.options?.map((option) => (
                   <div
                     key={option.id}
-                    className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200"
+                    className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200 min-w-0"
                   >
                     <span className="font-medium text-slate-900">
                       Option {option.displayOrder}:
                     </span>{' '}
-                    {option.optionText}
+                    <span className="break-words">{option.optionText}</span>
                   </div>
                 )) ?? (
                   <p className="text-sm text-slate-600">No options loaded.</p>
@@ -462,14 +487,14 @@ export default function AdminConsultationDetailPage() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="space-y-6 min-w-0">
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
               <h2 className="text-lg font-semibold">Visibility controls</h2>
               {vote.displaySettings ? (
-                <div className="mt-4 grid gap-3">
+                <div className="mt-4 grid min-w-0 gap-3">
                   <VisibilityRow
                     label="Result visibility"
-                    value={vote.displaySettings.resultVisibilityMode}
+                    value={formatEnumLabel(vote.displaySettings.resultVisibilityMode)}
                   />
                   <VisibilityRow
                     label="Participation stats"
@@ -518,9 +543,9 @@ export default function AdminConsultationDetailPage() {
             </div>
 
             {(vote.coverImageUrl || vote.coverImageAlt) && (
-              <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
                 <h2 className="text-lg font-semibold">Cover image metadata</h2>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-4 grid min-w-0 gap-3">
                   <VisibilityRow
                     label="Image URL"
                     value={vote.coverImageUrl ?? 'Not provided'}
@@ -537,7 +562,7 @@ export default function AdminConsultationDetailPage() {
 
         <div className="mt-6 grid gap-6">
           {canViewResults ? (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
               <h2 className="text-lg font-semibold">Results</h2>
 
               {results ? (
@@ -555,7 +580,7 @@ export default function AdminConsultationDetailPage() {
                   </div>
 
                   {resultsChartData.length > 0 ? (
-                    <div className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                    <div className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-slate-200 min-w-0">
                       <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                         Raw vs weighted results
                       </h3>
@@ -579,8 +604,8 @@ export default function AdminConsultationDetailPage() {
                                   name === 'rawVotes'
                                     ? 'Raw votes'
                                     : name === 'weightedVotes'
-                                    ? 'Weighted votes'
-                                    : String(name);
+                                      ? 'Weighted votes'
+                                      : String(name);
 
                                 return [
                                   String(value),
@@ -599,8 +624,8 @@ export default function AdminConsultationDetailPage() {
                                 value === 'rawVotes'
                                   ? 'Raw votes'
                                   : value === 'weightedVotes'
-                                  ? 'Weighted votes'
-                                  : value
+                                    ? 'Weighted votes'
+                                    : value
                               }
                             />
                             <Bar
@@ -669,7 +694,7 @@ export default function AdminConsultationDetailPage() {
                             }}
                             aria-hidden="true"
                           />
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-slate-900 break-words">
                             {option.optionText}
                           </p>
                         </div>
@@ -696,7 +721,7 @@ export default function AdminConsultationDetailPage() {
           ) : null}
 
           {canViewAnalytics ? (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
               <h2 className="text-lg font-semibold">Analytics</h2>
 
               {analytics ? (
@@ -726,20 +751,52 @@ export default function AdminConsultationDetailPage() {
                       title="Location breakdown"
                       items={locationChartData}
                     />
+                    <BreakdownChartCard
+                      title="Age range breakdown"
+                      items={ageRangeChartData}
+                    />
+                    <BreakdownChartCard
+                      title="Gender breakdown"
+                      items={genderChartData}
+                    />
+                    <BreakdownChartCard
+                      title="Experience level breakdown"
+                      items={experienceLevelChartData}
+                    />
+                    <BreakdownChartCard
+                      title="Relationship to area breakdown"
+                      items={relationshipToAreaChartData}
+                    />
                   </div>
 
                   <div className="mt-6 grid gap-6 lg:grid-cols-3">
                     <MiniBreakdown
                       title="Stakeholder"
-                      items={analytics.breakdowns.stakeholderBreakdown}
+                      items={stakeholderChartData}
                     />
                     <MiniBreakdown
                       title="Background"
-                      items={analytics.breakdowns.backgroundBreakdown}
+                      items={backgroundChartData}
                     />
                     <MiniBreakdown
                       title="Location"
-                      items={analytics.breakdowns.locationBreakdown}
+                      items={locationChartData}
+                    />
+                    <MiniBreakdown
+                      title="Age range"
+                      items={ageRangeChartData}
+                    />
+                    <MiniBreakdown
+                      title="Gender"
+                      items={genderChartData}
+                    />
+                    <MiniBreakdown
+                      title="Experience level"
+                      items={experienceLevelChartData}
+                    />
+                    <MiniBreakdown
+                      title="Relationship to area"
+                      items={relationshipToAreaChartData}
                     />
                   </div>
                 </>
@@ -752,7 +809,7 @@ export default function AdminConsultationDetailPage() {
           ) : null}
 
           {canViewParticipants ? (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
               <h2 className="text-lg font-semibold">Participants</h2>
               {participants ? (
                 <div className="mt-4 space-y-3">
@@ -762,9 +819,9 @@ export default function AdminConsultationDetailPage() {
                     participants.participants.map((participant) => (
                       <div
                         key={participant.submissionId}
-                        className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200"
+                        className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200 min-w-0"
                       >
-                        <p>
+                        <p className="break-words">
                           <span className="font-medium text-slate-900">
                             Secret ID:
                           </span>{' '}
@@ -772,12 +829,12 @@ export default function AdminConsultationDetailPage() {
                             canLookupAssessment ? (
                               <Link
                                 href={`/admin/assessments/${participant.secretUserId}`}
-                                className="font-mono text-blue-600 underline hover:text-blue-800"
+                                className="font-mono text-blue-600 underline hover:text-blue-800 break-all"
                               >
                                 {participant.secretUserId}
                               </Link>
                             ) : (
-                              <span className="font-mono">
+                              <span className="font-mono break-all">
                                 {participant.secretUserId}
                               </span>
                             )
@@ -785,7 +842,7 @@ export default function AdminConsultationDetailPage() {
                             'Not available'
                           )}
                         </p>
-                        <p className="mt-1">
+                        <p className="mt-1 break-words">
                           <span className="font-medium text-slate-900">Option:</span>{' '}
                           {participant.selectedOptionText}
                         </p>
@@ -797,7 +854,7 @@ export default function AdminConsultationDetailPage() {
                           <span className="font-medium text-slate-900">
                             Calculation:
                           </span>{' '}
-                          {participant.calculationType}
+                          {formatEnumLabel(participant.calculationType)}
                         </p>
                         {participant.selfAssessmentScore !== null ? (
                           <p className="mt-1">
@@ -830,6 +887,15 @@ export default function AdminConsultationDetailPage() {
   );
 }
 
+function formatBreakdownItems(
+  items?: AnalyticsBreakdownItem[],
+): AnalyticsBreakdownItem[] {
+  return (items ?? []).map((item) => ({
+    ...item,
+    label: formatEnumLabel(item.label),
+  }));
+}
+
 function InfoCard({
   title,
   rows,
@@ -838,7 +904,7 @@ function InfoCard({
   rows: Array<[string, string]>;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 min-w-0">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </h2>
@@ -846,12 +912,14 @@ function InfoCard({
         {rows.map(([label, value]) => (
           <div
             key={label}
-            className="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
+            className="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0 min-w-0"
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {label}
             </p>
-            <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
+            <p className="mt-1 text-sm font-medium text-slate-900 break-words">
+              {value}
+            </p>
           </div>
         ))}
       </div>
@@ -867,11 +935,11 @@ function VisibilityRow({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+    <div className="min-w-0 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-1 break-words text-sm font-medium text-slate-900">
+      <p className="mt-1 min-w-0 break-all whitespace-normal text-sm font-medium text-slate-900">
         {value}
       </p>
     </div>
@@ -918,12 +986,12 @@ function StatusBadge({
     tone === 'success'
       ? 'bg-emerald-100 text-emerald-700'
       : tone === 'warning'
-      ? 'bg-amber-100 text-amber-700'
-      : tone === 'danger'
-      ? 'bg-red-100 text-red-700'
-      : tone === 'muted'
-      ? 'bg-slate-200 text-slate-600'
-      : 'bg-slate-100 text-slate-700';
+        ? 'bg-amber-100 text-amber-700'
+        : tone === 'danger'
+          ? 'bg-red-100 text-red-700'
+          : tone === 'muted'
+            ? 'bg-slate-200 text-slate-600'
+            : 'bg-slate-100 text-slate-700';
 
   return <span className={`rounded-full px-3 py-1 ${toneClass}`}>{label}</span>;
 }
@@ -990,7 +1058,7 @@ function OptionResultPieCard({
                   '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
               }}
             />
-            <Legend />
+            {items.length > 1 ? <Legend /> : null}
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -1047,7 +1115,7 @@ function BreakdownChartCard({
             </Pie>
             <Tooltip
               formatter={(value, _name, entry) => [
-                `${value}`,
+                `${value} (${entry.payload.percentage}%)`,
                 entry.payload.label,
               ]}
               contentStyle={{
@@ -1057,7 +1125,7 @@ function BreakdownChartCard({
                   '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
               }}
             />
-            <Legend />
+            {items.length > 1 ? <Legend /> : null}
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -1081,7 +1149,7 @@ function MiniBreakdown({
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </h3>
@@ -1089,9 +1157,11 @@ function MiniBreakdown({
         {items.map((item) => (
           <div
             key={item.label}
-            className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200"
+            className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 min-w-0"
           >
-            {item.label} — {item.count} ({item.percentage}%)
+            <span className="break-words">
+              {item.label} — {item.count} ({item.percentage}%)
+            </span>
           </div>
         ))}
       </div>

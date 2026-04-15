@@ -225,13 +225,20 @@ export default function AdminConsultationsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
                         <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                        <StatusBadge label={vote.topicCategory} tone="muted" />
                         <StatusBadge
-                          label={vote.status}
+                          label={formatEnumLabel(vote.topicCategory)}
+                          tone="muted"
+                        />
+                        <StatusBadge
+                          label={formatEnumLabel(vote.status)}
                           tone={deriveWorkflowTone(vote.status)}
                         />
                         <StatusBadge
-                          label={vote.derivedStatus ?? 'Unknown'}
+                          label={
+                            vote.derivedStatus
+                              ? formatEnumLabel(vote.derivedStatus)
+                              : 'Unknown'
+                          }
                           tone={deriveStatusTone(vote.derivedStatus)}
                         />
                         <StatusBadge
@@ -259,11 +266,15 @@ export default function AdminConsultationsPage() {
                         />
                         <InfoTile
                           label="Derived status"
-                          value={vote.derivedStatus ?? 'Unknown'}
+                          value={
+                            vote.derivedStatus
+                              ? formatEnumLabel(vote.derivedStatus)
+                              : 'Unknown'
+                          }
                         />
                         <InfoTile
                           label="Workflow status"
-                          value={vote.status}
+                          value={formatEnumLabel(vote.status)}
                         />
                         <InfoTile
                           label="Submissions"

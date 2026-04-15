@@ -41,9 +41,16 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
             <div>
               <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                <StatusBadge label={vote.topicCategory} tone="muted" />
                 <StatusBadge
-                  label={vote.derivedStatus ?? 'Unknown'}
+                  label={formatEnumLabel(vote.topicCategory)}
+                  tone="muted"
+                />
+                <StatusBadge
+                  label={
+                    vote.derivedStatus
+                      ? formatEnumLabel(vote.derivedStatus)
+                      : 'Unknown'
+                  }
                   tone={deriveStatusTone(vote.derivedStatus)}
                 />
               </div>
@@ -80,11 +87,15 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
                 />
                 <OverviewRow
                   label="Topic category"
-                  value={vote.topicCategory}
+                  value={formatEnumLabel(vote.topicCategory)}
                 />
                 <OverviewRow
                   label="Status"
-                  value={vote.derivedStatus ?? 'Unknown'}
+                  value={
+                    vote.derivedStatus
+                      ? formatEnumLabel(vote.derivedStatus)
+                      : 'Unknown'
+                  }
                 />
                 <OverviewRow
                   label="Starts"
@@ -134,10 +145,17 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
                   title="Type"
                   value={formatEnumLabel(vote.voteType)}
                 />
-                <InfoCard title="Topic" value={vote.topicCategory} />
+                <InfoCard
+                  title="Topic"
+                  value={formatEnumLabel(vote.topicCategory)}
+                />
                 <InfoCard
                   title="Status"
-                  value={vote.derivedStatus ?? 'Unknown'}
+                  value={
+                    vote.derivedStatus
+                      ? formatEnumLabel(vote.derivedStatus)
+                      : 'Unknown'
+                  }
                 />
                 <InfoCard title="Starts" value={formatDateTime(vote.startAt)} />
                 <InfoCard title="Ends" value={formatDateTime(vote.endAt)} />

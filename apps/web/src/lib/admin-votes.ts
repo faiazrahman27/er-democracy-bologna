@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/api';
+import type { AnalyticsBreakdowns } from '@/types/analytics';
 
 export type AdminCreateVotePayload = {
   slug: string;
@@ -34,6 +35,10 @@ export type AdminCreateVotePayload = {
     showStakeholderBreakdown: boolean;
     showBackgroundBreakdown: boolean;
     showLocationBreakdown: boolean;
+    showAgeRangeBreakdown: boolean;
+    showGenderBreakdown: boolean;
+    showExperienceLevelBreakdown: boolean;
+    showRelationshipBreakdown: boolean;
     showAfterVotingOnly: boolean;
     showOnlyAfterVoteCloses: boolean;
   };
@@ -65,6 +70,10 @@ export type AdminUpdateVotePayload = {
   showStakeholderBreakdown?: boolean;
   showBackgroundBreakdown?: boolean;
   showLocationBreakdown?: boolean;
+  showAgeRangeBreakdown?: boolean;
+  showGenderBreakdown?: boolean;
+  showExperienceLevelBreakdown?: boolean;
+  showRelationshipBreakdown?: boolean;
   showAfterVotingOnly?: boolean;
   showOnlyAfterVoteCloses?: boolean;
 };
@@ -119,6 +128,10 @@ export type AdminVoteListItem = {
     showStakeholderBreakdown: boolean;
     showBackgroundBreakdown: boolean;
     showLocationBreakdown: boolean;
+    showAgeRangeBreakdown: boolean;
+    showGenderBreakdown: boolean;
+    showExperienceLevelBreakdown: boolean;
+    showRelationshipBreakdown: boolean;
     showAfterVotingOnly: boolean;
     showOnlyAfterVoteCloses: boolean;
     createdAt?: string;
@@ -168,23 +181,7 @@ export type AdminAnalyticsResponse = {
       totalParticipants: number;
       totalWeightedVotes: number;
     };
-    breakdowns: {
-      stakeholderBreakdown: Array<{
-        label: string;
-        count: number;
-        percentage: number;
-      }>;
-      backgroundBreakdown: Array<{
-        label: string;
-        count: number;
-        percentage: number;
-      }>;
-      locationBreakdown: Array<{
-        label: string;
-        count: number;
-        percentage: number;
-      }>;
-    };
+    breakdowns: AnalyticsBreakdowns;
   };
 };
 

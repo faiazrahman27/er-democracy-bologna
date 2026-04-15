@@ -7,32 +7,19 @@ import { useAuth } from '@/providers/auth-provider';
 import { fetchAssessmentBySecretUserId } from '@/lib/assessments-admin';
 import { isAdminRole } from '@/lib/roles';
 import { hasPermission, PERMISSIONS } from '@/lib/permissions';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatEnumLabel } from '@/lib/format';
+import type { Assessment } from '@/types/assessment';
 
-type AssessmentRecord = {
-  id: string;
-  secretUserId: string;
-  ageRange: string | null;
-  gender: string | null;
-  city: string | null;
-  region: string | null;
-  country: string | null;
-  stakeholderRole: string | null;
-  backgroundCategory: string | null;
-  experienceLevel: string | null;
-  relationshipToArea: string | null;
-  assessmentCompleted: boolean;
-  completedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+type AdminAssessmentRecord = Omit<Assessment, 'userId'>;
 
 export default function AdminAssessmentDetailPage() {
   const router = useRouter();
   const params = useParams<{ secretUserId: string }>();
   const { user, token, isLoading } = useAuth();
 
-  const [assessment, setAssessment] = useState<AssessmentRecord | null>(null);
+  const [assessment, setAssessment] = useState<AdminAssessmentRecord | null>(
+    null,
+  );
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
 
@@ -235,9 +222,9 @@ export default function AdminAssessmentDetailPage() {
             <InfoCard
               title="Location profile"
               rows={[
-                ['Country', assessment.country ?? 'Not provided'],
-                ['Region', assessment.region ?? 'Not provided'],
-                ['City', assessment.city ?? 'Not provided'],
+                ['Country', formatAssessmentEnumValue(assessment.country)],
+                ['Region', formatAssessmentEnumValue(assessment.region)],
+                ['City', formatAssessmentEnumValue(assessment.city)],
               ]}
             />
           </div>
@@ -248,15 +235,15 @@ export default function AdminAssessmentDetailPage() {
             <InfoCard
               title="Participant profile"
               rows={[
-                ['Age range', assessment.ageRange ?? 'Not provided'],
-                ['Gender', assessment.gender ?? 'Not provided'],
+                ['Age range', formatAssessmentEnumValue(assessment.ageRange)],
+                ['Gender', formatAssessmentEnumValue(assessment.gender)],
                 [
                   'Stakeholder role',
-                  assessment.stakeholderRole ?? 'Not provided',
+                  formatAssessmentEnumValue(assessment.stakeholderRole),
                 ],
                 [
                   'Background category',
-                  assessment.backgroundCategory ?? 'Not provided',
+                  formatAssessmentEnumValue(assessment.backgroundCategory),
                 ],
               ]}
             />
@@ -266,11 +253,11 @@ export default function AdminAssessmentDetailPage() {
               rows={[
                 [
                   'Experience level',
-                  assessment.experienceLevel ?? 'Not provided',
+                  formatAssessmentEnumValue(assessment.experienceLevel),
                 ],
                 [
                   'Relationship to area',
-                  assessment.relationshipToArea ?? 'Not provided',
+                  formatAssessmentEnumValue(assessment.relationshipToArea),
                 ],
               ]}
             />
@@ -331,6 +318,14 @@ export default function AdminAssessmentDetailPage() {
       </div>
     </main>
   );
+}
+
+function formatAssessmentEnumValue(value: string | null) {
+  if (!value) {
+    return 'Not provided';
+  }
+
+  return formatEnumLabel(value);
 }
 
 function StatCard({

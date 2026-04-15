@@ -22,7 +22,9 @@ import {
   fetchVisibleResults,
   submitVote,
 } from '@/lib/votes';
+import { formatEnumLabel } from '@/lib/format';
 import type { PublicVoteDetail } from '@/types/vote';
+import type { AnalyticsBreakdownItem } from '@/types/analytics';
 
 type Props = {
   vote: PublicVoteDetail;
@@ -60,6 +62,11 @@ const WEIGHTED_OPTION_COLORS = [
   '#d97706',
   '#ea580c',
 ];
+
+const SINGLE_SERIES_RESULT_COLORS = {
+  rawVotes: '#2563eb',
+  weightedVotes: '#16a34a',
+} as const;
 
 export function ConsultationInteractions({ vote }: Props) {
   const router = useRouter();
@@ -141,15 +148,45 @@ export function ConsultationInteractions({ vote }: Props) {
   }, [resultOptions]);
 
   const stakeholderChartData = useMemo(() => {
-    return analyticsState.data?.analytics?.analytics?.stakeholderBreakdown ?? [];
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.stakeholderBreakdown,
+    );
   }, [analyticsState.data]);
 
   const backgroundChartData = useMemo(() => {
-    return analyticsState.data?.analytics?.analytics?.backgroundBreakdown ?? [];
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.backgroundBreakdown,
+    );
   }, [analyticsState.data]);
 
   const locationChartData = useMemo(() => {
-    return analyticsState.data?.analytics?.analytics?.locationBreakdown ?? [];
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.locationBreakdown,
+    );
+  }, [analyticsState.data]);
+
+  const ageRangeChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.ageRangeBreakdown,
+    );
+  }, [analyticsState.data]);
+
+  const genderChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.genderBreakdown,
+    );
+  }, [analyticsState.data]);
+
+  const experienceLevelChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.experienceLevelBreakdown,
+    );
+  }, [analyticsState.data]);
+
+  const relationshipToAreaChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.relationshipToAreaBreakdown,
+    );
   }, [analyticsState.data]);
 
   useEffect(() => {
@@ -254,6 +291,42 @@ export function ConsultationInteractions({ vote }: Props) {
     !!analyticsState.data?.analytics?.visibility.canShowAnalytics &&
     !!analyticsState.data?.analytics?.analytics;
 
+  const visibleResultSeries = useMemo(() => {
+    const series: Array<{ key: 'rawVotes' | 'weightedVotes'; label: string }> =
+      [];
+
+    if (showRawResults) {
+      series.push({ key: 'rawVotes', label: 'Raw votes' });
+    }
+
+    if (showWeightedResults) {
+      series.push({ key: 'weightedVotes', label: 'Weighted votes' });
+    }
+
+    return series;
+  }, [showRawResults, showWeightedResults]);
+
+  const visibleTotalsCount =
+    Number(
+      showRawResults &&
+        typeof resultsState.data?.results?.results?.totals.totalRawVotes !==
+          'undefined',
+    ) +
+    Number(
+      showWeightedResults &&
+        typeof resultsState.data?.results?.results?.totals.totalWeightedVotes !==
+          'undefined',
+    );
+
+  const visiblePieChartCount =
+    Number(showRawResults && rawPieData.length > 0) +
+    Number(showWeightedResults && weightedPieData.length > 0);
+
+  const resultsComparisonTitle =
+    visibleResultSeries.length === 1
+      ? visibleResultSeries[0].label
+      : 'Raw vs weighted results';
+
   return (
     <div className="mt-10 grid gap-10">
       <section className="rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-green-100">
@@ -274,11 +347,11 @@ export function ConsultationInteractions({ vote }: Props) {
             <div className="mt-5 space-y-3 text-sm leading-7 text-slate-600">
               <p>
                 <span className="font-medium text-slate-900">Status:</span>{' '}
-                {vote.derivedStatus}
+                {vote.derivedStatus ? formatEnumLabel(vote.derivedStatus) : 'Unknown'}
               </p>
               <p>
                 <span className="font-medium text-slate-900">Vote type:</span>{' '}
-                {vote.voteType}
+                {formatEnumLabel(vote.voteType)}
               </p>
 
               {requiresAssessment ? (
@@ -291,7 +364,7 @@ export function ConsultationInteractions({ vote }: Props) {
               {requiresSelfAssessmentScore ? (
                 <p>
                   This consultation uses a self-assessment score from 1 to 10 to
-                  influence vote weight within a limited range.
+                  influence vote weight within a limited normalized range.
                 </p>
               ) : null}
             </div>
@@ -434,7 +507,11 @@ export function ConsultationInteractions({ vote }: Props) {
           </NoticeBox>
         ) : (
           <div className="mt-6 grid gap-8">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div
+              className={`grid gap-3 ${
+                visibleTotalsCount > 1 ? 'md:grid-cols-2' : ''
+              }`}
+            >
               {showRawResults &&
               typeof resultsState.data?.results?.results?.totals.totalRawVotes !==
                 'undefined' ? (
@@ -463,7 +540,7 @@ export function ConsultationInteractions({ vote }: Props) {
               <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
                 <div className="mb-4">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                    Results comparison
+                    {resultsComparisonTitle}
                   </h3>
                 </div>
 
@@ -499,15 +576,17 @@ export function ConsultationInteractions({ vote }: Props) {
                             '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
                         }}
                       />
-                      <Legend
-                        formatter={(value) =>
-                          value === 'rawVotes'
-                            ? 'Raw votes'
-                            : value === 'weightedVotes'
-                            ? 'Weighted votes'
-                            : value
-                        }
-                      />
+                      {visibleResultSeries.length > 1 ? (
+                        <Legend
+                          formatter={(value) =>
+                            value === 'rawVotes'
+                              ? 'Raw votes'
+                              : value === 'weightedVotes'
+                              ? 'Weighted votes'
+                              : value
+                          }
+                        />
+                      ) : null}
 
                       {showRawResults ? (
                         <Bar
@@ -518,7 +597,11 @@ export function ConsultationInteractions({ vote }: Props) {
                           {resultsChartData.map((entry, index) => (
                             <Cell
                               key={`raw-cell-${entry.name}-${index}`}
-                              fill={entry.rawColor}
+                              fill={
+                                visibleResultSeries.length === 1
+                                  ? SINGLE_SERIES_RESULT_COLORS.rawVotes
+                                  : entry.rawColor
+                              }
                             />
                           ))}
                         </Bar>
@@ -533,7 +616,11 @@ export function ConsultationInteractions({ vote }: Props) {
                           {resultsChartData.map((entry, index) => (
                             <Cell
                               key={`weighted-cell-${entry.name}-${index}`}
-                              fill={entry.weightedColor}
+                              fill={
+                                visibleResultSeries.length === 1
+                                  ? SINGLE_SERIES_RESULT_COLORS.weightedVotes
+                                  : entry.weightedColor
+                              }
                             />
                           ))}
                         </Bar>
@@ -544,7 +631,11 @@ export function ConsultationInteractions({ vote }: Props) {
               </div>
             ) : null}
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div
+              className={`grid gap-6 ${
+                visiblePieChartCount > 1 ? 'lg:grid-cols-2' : ''
+              }`}
+            >
               {showRawResults && rawPieData.length > 0 ? (
                 <OptionResultPieCard
                   title="Raw vote distribution"
@@ -663,35 +754,72 @@ export function ConsultationInteractions({ vote }: Props) {
                 title="Location breakdown"
                 items={locationChartData}
               />
+              <BreakdownChartCard
+                title="Age range breakdown"
+                items={ageRangeChartData}
+              />
+              <BreakdownChartCard
+                title="Gender breakdown"
+                items={genderChartData}
+              />
+              <BreakdownChartCard
+                title="Experience level breakdown"
+                items={experienceLevelChartData}
+              />
+              <BreakdownChartCard
+                title="Relationship to area breakdown"
+                items={relationshipToAreaChartData}
+              />
             </div>
 
             <BreakdownBlock
               title="Stakeholder breakdown"
-              items={
-                analyticsState.data?.analytics?.analytics?.stakeholderBreakdown ??
-                []
-              }
+              items={stakeholderChartData}
             />
 
             <BreakdownBlock
               title="Background breakdown"
-              items={
-                analyticsState.data?.analytics?.analytics?.backgroundBreakdown ??
-                []
-              }
+              items={backgroundChartData}
             />
 
             <BreakdownBlock
               title="Location breakdown"
-              items={
-                analyticsState.data?.analytics?.analytics?.locationBreakdown ?? []
-              }
+              items={locationChartData}
+            />
+
+            <BreakdownBlock
+              title="Age range breakdown"
+              items={ageRangeChartData}
+            />
+
+            <BreakdownBlock
+              title="Gender breakdown"
+              items={genderChartData}
+            />
+
+            <BreakdownBlock
+              title="Experience level breakdown"
+              items={experienceLevelChartData}
+            />
+
+            <BreakdownBlock
+              title="Relationship to area breakdown"
+              items={relationshipToAreaChartData}
             />
           </div>
         )}
       </section>
     </div>
   );
+}
+
+function formatBreakdownItems(
+  items?: AnalyticsBreakdownItem[],
+): AnalyticsBreakdownItem[] {
+  return (items ?? []).map((item) => ({
+    ...item,
+    label: formatEnumLabel(item.label),
+  }));
 }
 
 function NoticeBox({
@@ -797,7 +925,7 @@ function OptionResultPieCard({
                   '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
               }}
             />
-            <Legend />
+            {items.length > 1 ? <Legend /> : null}
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -886,7 +1014,7 @@ function BreakdownChartCard({
             </Pie>
             <Tooltip
               formatter={(value, _name, entry) => [
-                `${value}`,
+                `${value} (${entry.payload.percentage}%)`,
                 entry.payload.label,
               ]}
               contentStyle={{
@@ -896,7 +1024,7 @@ function BreakdownChartCard({
                   '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
               }}
             />
-            <Legend />
+            {items.length > 1 ? <Legend /> : null}
           </PieChart>
         </ResponsiveContainer>
       </div>
