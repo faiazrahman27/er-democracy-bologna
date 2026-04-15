@@ -1,56 +1,176 @@
 import {
   IsBoolean,
+  IsEnum,
   IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
 } from 'class-validator';
 
+export enum AssessmentAgeRangeDto {
+  AGE_18_24 = 'AGE_18_24',
+  AGE_25_34 = 'AGE_25_34',
+  AGE_35_44 = 'AGE_35_44',
+  AGE_45_54 = 'AGE_45_54',
+  AGE_55_64 = 'AGE_55_64',
+  AGE_65_PLUS = 'AGE_65_PLUS',
+  PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY',
+}
+
+export enum AssessmentGenderDto {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  NON_BINARY = 'NON_BINARY',
+  OTHER = 'OTHER',
+  PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY',
+}
+
+export enum AssessmentCountryDto {
+  ITALY = 'ITALY',
+}
+
+export enum AssessmentRegionDto {
+  EMILIA_ROMAGNA = 'EMILIA_ROMAGNA',
+}
+
+export enum AssessmentCityDto {
+  BOLOGNA = 'BOLOGNA',
+  MODENA = 'MODENA',
+  PARMA = 'PARMA',
+  REGGIO_EMILIA = 'REGGIO_EMILIA',
+  RAVENNA = 'RAVENNA',
+  RIMINI = 'RIMINI',
+  FERRARA = 'FERRARA',
+  FORLI = 'FORLI',
+  CESENA = 'CESENA',
+  PIACENZA = 'PIACENZA',
+  IMOLA = 'IMOLA',
+  CARPI = 'CARPI',
+  FAENZA = 'FAENZA',
+  SASSUOLO = 'SASSUOLO',
+  RICCIONE = 'RICCIONE',
+  CENTO = 'CENTO',
+  LUGO = 'LUGO',
+  FORMIGINE = 'FORMIGINE',
+  CASTELFRANCO_EMILIA = 'CASTELFRANCO_EMILIA',
+  SAN_LAZZARO_DI_SAVENA = 'SAN_LAZZARO_DI_SAVENA',
+  OTHER = 'OTHER',
+}
+
+export enum AssessmentStakeholderRoleDto {
+  UNIVERSITY_STUDENT = 'UNIVERSITY_STUDENT',
+  SCHOOL_STUDENT = 'SCHOOL_STUDENT',
+  BUSINESS_OWNER = 'BUSINESS_OWNER',
+  ENTREPRENEUR = 'ENTREPRENEUR',
+  PRIVATE_SECTOR_EMPLOYEE = 'PRIVATE_SECTOR_EMPLOYEE',
+  PUBLIC_SECTOR_EMPLOYEE = 'PUBLIC_SECTOR_EMPLOYEE',
+  FREELANCER = 'FREELANCER',
+  SELF_EMPLOYED = 'SELF_EMPLOYED',
+  RESEARCHER = 'RESEARCHER',
+  ACADEMIC = 'ACADEMIC',
+  TEACHER = 'TEACHER',
+  NGO_MEMBER = 'NGO_MEMBER',
+  VOLUNTEER = 'VOLUNTEER',
+  CIVIL_SERVANT = 'CIVIL_SERVANT',
+  POLICY_MAKER = 'POLICY_MAKER',
+  HEALTHCARE_WORKER = 'HEALTHCARE_WORKER',
+  LEGAL_PROFESSIONAL = 'LEGAL_PROFESSIONAL',
+  CREATIVE_PROFESSIONAL = 'CREATIVE_PROFESSIONAL',
+  UNEMPLOYED = 'UNEMPLOYED',
+  RETIRED = 'RETIRED',
+  OTHER = 'OTHER',
+}
+
+export enum AssessmentBackgroundCategoryDto {
+  BUSINESS_AND_MANAGEMENT = 'BUSINESS_AND_MANAGEMENT',
+  ECONOMICS_AND_FINANCE = 'ECONOMICS_AND_FINANCE',
+  ACCOUNTING_AND_AUDITING = 'ACCOUNTING_AND_AUDITING',
+  MARKETING_AND_COMMUNICATION = 'MARKETING_AND_COMMUNICATION',
+  ENTREPRENEURSHIP_AND_INNOVATION = 'ENTREPRENEURSHIP_AND_INNOVATION',
+
+  COMPUTER_SCIENCE = 'COMPUTER_SCIENCE',
+  SOFTWARE_ENGINEERING = 'SOFTWARE_ENGINEERING',
+  DATA_SCIENCE = 'DATA_SCIENCE',
+  ARTIFICIAL_INTELLIGENCE = 'ARTIFICIAL_INTELLIGENCE',
+  CYBERSECURITY = 'CYBERSECURITY',
+  INFORMATION_SYSTEMS = 'INFORMATION_SYSTEMS',
+
+  ENGINEERING = 'ENGINEERING',
+  INDUSTRIAL_ENGINEERING = 'INDUSTRIAL_ENGINEERING',
+  CIVIL_ENGINEERING = 'CIVIL_ENGINEERING',
+  ELECTRICAL_ENGINEERING = 'ELECTRICAL_ENGINEERING',
+  MECHANICAL_ENGINEERING = 'MECHANICAL_ENGINEERING',
+  ARCHITECTURE_AND_URBAN_PLANNING = 'ARCHITECTURE_AND_URBAN_PLANNING',
+
+  EDUCATION = 'EDUCATION',
+  TEACHING_AND_TRAINING = 'TEACHING_AND_TRAINING',
+  SOCIAL_SCIENCES = 'SOCIAL_SCIENCES',
+  POLITICAL_SCIENCE = 'POLITICAL_SCIENCE',
+  PUBLIC_ADMINISTRATION = 'PUBLIC_ADMINISTRATION',
+  INTERNATIONAL_RELATIONS = 'INTERNATIONAL_RELATIONS',
+
+  LAW = 'LAW',
+  CRIMINOLOGY_AND_PUBLIC_SAFETY = 'CRIMINOLOGY_AND_PUBLIC_SAFETY',
+
+  HEALTHCARE = 'HEALTHCARE',
+  MEDICINE = 'MEDICINE',
+  NURSING = 'NURSING',
+  PUBLIC_HEALTH = 'PUBLIC_HEALTH',
+  PSYCHOLOGY = 'PSYCHOLOGY',
+
+  HUMANITIES = 'HUMANITIES',
+  HISTORY = 'HISTORY',
+  PHILOSOPHY = 'PHILOSOPHY',
+  LANGUAGES_AND_LITERATURE = 'LANGUAGES_AND_LITERATURE',
+
+  ARTS_AND_DESIGN = 'ARTS_AND_DESIGN',
+  MEDIA_AND_JOURNALISM = 'MEDIA_AND_JOURNALISM',
+
+  ENVIRONMENT_AND_SUSTAINABILITY = 'ENVIRONMENT_AND_SUSTAINABILITY',
+  AGRICULTURE_AND_FOOD = 'AGRICULTURE_AND_FOOD',
+  TOURISM_AND_HOSPITALITY = 'TOURISM_AND_HOSPITALITY',
+  TRANSPORT_AND_MOBILITY = 'TRANSPORT_AND_MOBILITY',
+
+  OTHER = 'OTHER',
+}
+
+export enum AssessmentExperienceLevelDto {
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  ADVANCED = 'ADVANCED',
+  EXPERT = 'EXPERT',
+}
+
+export enum AssessmentRelationshipToAreaDto {
+  RESIDENT = 'RESIDENT',
+  NON_RESIDENT = 'NON_RESIDENT',
+  VISITOR = 'VISITOR',
+}
+
 export class UpsertAssessmentDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  ageRange?: string;
+  @IsEnum(AssessmentAgeRangeDto)
+  ageRange!: AssessmentAgeRangeDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  gender?: string;
+  @IsEnum(AssessmentGenderDto)
+  gender!: AssessmentGenderDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  city?: string;
+  @IsEnum(AssessmentCityDto)
+  city!: AssessmentCityDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  region?: string;
+  @IsEnum(AssessmentRegionDto)
+  region!: AssessmentRegionDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  country?: string;
+  @IsEnum(AssessmentCountryDto)
+  country!: AssessmentCountryDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  stakeholderRole?: string;
+  @IsEnum(AssessmentStakeholderRoleDto)
+  stakeholderRole!: AssessmentStakeholderRoleDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  backgroundCategory?: string;
+  @IsEnum(AssessmentBackgroundCategoryDto)
+  backgroundCategory!: AssessmentBackgroundCategoryDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  experienceLevel?: string;
+  @IsEnum(AssessmentExperienceLevelDto)
+  experienceLevel!: AssessmentExperienceLevelDto;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  relationshipToArea?: string;
+  @IsEnum(AssessmentRelationshipToAreaDto)
+  relationshipToArea!: AssessmentRelationshipToAreaDto;
 
   @IsBoolean()
   @IsNotEmpty()

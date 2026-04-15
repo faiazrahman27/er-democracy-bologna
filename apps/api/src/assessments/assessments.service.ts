@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpsertAssessmentDto } from './dto/upsert-assessment.dto';
+import {
+  AssessmentCountryDto,
+  AssessmentRegionDto,
+  UpsertAssessmentDto,
+} from './dto/upsert-assessment.dto';
 import { generateSecretUserId } from '../common/utils/secret-user-id.util';
 import { AuditService } from '../audit/audit.service';
 
@@ -64,22 +68,26 @@ export class AssessmentsService {
       },
     });
 
-    const completedAt = dto.assessmentCompleted ? new Date() : null;
+    const normalizedAssessment = this.normalizeAssessmentDto(dto);
+
+    const completedAt = normalizedAssessment.assessmentCompleted
+      ? new Date()
+      : null;
 
     if (existing) {
       return this.prisma.assessment.update({
         where: { userId },
         data: {
-          ageRange: dto.ageRange?.trim(),
-          gender: dto.gender?.trim(),
-          city: dto.city?.trim(),
-          region: dto.region?.trim(),
-          country: dto.country?.trim(),
-          stakeholderRole: dto.stakeholderRole?.trim(),
-          backgroundCategory: dto.backgroundCategory?.trim(),
-          experienceLevel: dto.experienceLevel?.trim(),
-          relationshipToArea: dto.relationshipToArea?.trim(),
-          assessmentCompleted: dto.assessmentCompleted,
+          ageRange: normalizedAssessment.ageRange,
+          gender: normalizedAssessment.gender,
+          city: normalizedAssessment.city,
+          region: normalizedAssessment.region,
+          country: normalizedAssessment.country,
+          stakeholderRole: normalizedAssessment.stakeholderRole,
+          backgroundCategory: normalizedAssessment.backgroundCategory,
+          experienceLevel: normalizedAssessment.experienceLevel,
+          relationshipToArea: normalizedAssessment.relationshipToArea,
+          assessmentCompleted: normalizedAssessment.assessmentCompleted,
           completedAt,
         },
         select: MY_ASSESSMENT_SELECT,
@@ -90,16 +98,16 @@ export class AssessmentsService {
       data: {
         userId,
         secretUserId: generateSecretUserId(),
-        ageRange: dto.ageRange?.trim(),
-        gender: dto.gender?.trim(),
-        city: dto.city?.trim(),
-        region: dto.region?.trim(),
-        country: dto.country?.trim(),
-        stakeholderRole: dto.stakeholderRole?.trim(),
-        backgroundCategory: dto.backgroundCategory?.trim(),
-        experienceLevel: dto.experienceLevel?.trim(),
-        relationshipToArea: dto.relationshipToArea?.trim(),
-        assessmentCompleted: dto.assessmentCompleted,
+        ageRange: normalizedAssessment.ageRange,
+        gender: normalizedAssessment.gender,
+        city: normalizedAssessment.city,
+        region: normalizedAssessment.region,
+        country: normalizedAssessment.country,
+        stakeholderRole: normalizedAssessment.stakeholderRole,
+        backgroundCategory: normalizedAssessment.backgroundCategory,
+        experienceLevel: normalizedAssessment.experienceLevel,
+        relationshipToArea: normalizedAssessment.relationshipToArea,
+        assessmentCompleted: normalizedAssessment.assessmentCompleted,
         completedAt,
       },
       select: MY_ASSESSMENT_SELECT,
@@ -133,5 +141,13 @@ export class AssessmentsService {
     }
 
     return assessment;
+  }
+
+  private normalizeAssessmentDto(dto: UpsertAssessmentDto): UpsertAssessmentDto {
+    return {
+      ...dto,
+      country: AssessmentCountryDto.ITALY,
+      region: AssessmentRegionDto.EMILIA_ROMAGNA,
+    };
   }
 }

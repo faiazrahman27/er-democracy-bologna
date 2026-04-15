@@ -8,16 +8,166 @@ import { fetchMyAssessment, saveMyAssessment } from '@/lib/assessments';
 import { isAdminRole } from '@/lib/roles';
 import type { SaveAssessmentPayload } from '@/types/assessment';
 
+const AGE_RANGE_OPTIONS = [
+  { value: 'AGE_18_24', label: '18-24' },
+  { value: 'AGE_25_34', label: '25-34' },
+  { value: 'AGE_35_44', label: '35-44' },
+  { value: 'AGE_45_54', label: '45-54' },
+  { value: 'AGE_55_64', label: '55-64' },
+  { value: 'AGE_65_PLUS', label: '65+' },
+  { value: 'PREFER_NOT_TO_SAY', label: 'Prefer not to say' },
+] as const;
+
+const GENDER_OPTIONS = [
+  { value: 'MALE', label: 'Male' },
+  { value: 'FEMALE', label: 'Female' },
+  { value: 'NON_BINARY', label: 'Non-binary' },
+  { value: 'OTHER', label: 'Other' },
+  { value: 'PREFER_NOT_TO_SAY', label: 'Prefer not to say' },
+] as const;
+
+const CITY_OPTIONS = [
+  { value: 'BOLOGNA', label: 'Bologna' },
+  { value: 'MODENA', label: 'Modena' },
+  { value: 'PARMA', label: 'Parma' },
+  { value: 'REGGIO_EMILIA', label: 'Reggio Emilia' },
+  { value: 'RAVENNA', label: 'Ravenna' },
+  { value: 'RIMINI', label: 'Rimini' },
+  { value: 'FERRARA', label: 'Ferrara' },
+  { value: 'FORLI', label: 'Forlì' },
+  { value: 'CESENA', label: 'Cesena' },
+  { value: 'PIACENZA', label: 'Piacenza' },
+  { value: 'IMOLA', label: 'Imola' },
+  { value: 'CARPI', label: 'Carpi' },
+  { value: 'FAENZA', label: 'Faenza' },
+  { value: 'SASSUOLO', label: 'Sassuolo' },
+  { value: 'RICCIONE', label: 'Riccione' },
+  { value: 'CENTO', label: 'Cento' },
+  { value: 'LUGO', label: 'Lugo' },
+  { value: 'FORMIGINE', label: 'Formigine' },
+  { value: 'CASTELFRANCO_EMILIA', label: 'Castelfranco Emilia' },
+  { value: 'SAN_LAZZARO_DI_SAVENA', label: 'San Lazzaro di Savena' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
+
+const STAKEHOLDER_ROLE_OPTIONS = [
+  { value: 'UNIVERSITY_STUDENT', label: 'University student' },
+  { value: 'SCHOOL_STUDENT', label: 'School student' },
+  { value: 'BUSINESS_OWNER', label: 'Business owner' },
+  { value: 'ENTREPRENEUR', label: 'Entrepreneur' },
+  { value: 'PRIVATE_SECTOR_EMPLOYEE', label: 'Private sector employee' },
+  { value: 'PUBLIC_SECTOR_EMPLOYEE', label: 'Public sector employee' },
+  { value: 'FREELANCER', label: 'Freelancer' },
+  { value: 'SELF_EMPLOYED', label: 'Self-employed' },
+  { value: 'RESEARCHER', label: 'Researcher' },
+  { value: 'ACADEMIC', label: 'Academic' },
+  { value: 'TEACHER', label: 'Teacher' },
+  { value: 'NGO_MEMBER', label: 'NGO member' },
+  { value: 'VOLUNTEER', label: 'Volunteer' },
+  { value: 'CIVIL_SERVANT', label: 'Civil servant' },
+  { value: 'POLICY_MAKER', label: 'Policy maker' },
+  { value: 'HEALTHCARE_WORKER', label: 'Healthcare worker' },
+  { value: 'LEGAL_PROFESSIONAL', label: 'Legal professional' },
+  { value: 'CREATIVE_PROFESSIONAL', label: 'Creative professional' },
+  { value: 'UNEMPLOYED', label: 'Unemployed' },
+  { value: 'RETIRED', label: 'Retired' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
+
+const BACKGROUND_CATEGORY_OPTIONS = [
+  { value: 'BUSINESS_AND_MANAGEMENT', label: 'Business and management' },
+  { value: 'ECONOMICS_AND_FINANCE', label: 'Economics and finance' },
+  { value: 'ACCOUNTING_AND_AUDITING', label: 'Accounting and auditing' },
+  { value: 'MARKETING_AND_COMMUNICATION', label: 'Marketing and communication' },
+  { value: 'ENTREPRENEURSHIP_AND_INNOVATION', label: 'Entrepreneurship and innovation' },
+  { value: 'COMPUTER_SCIENCE', label: 'Computer science' },
+  { value: 'SOFTWARE_ENGINEERING', label: 'Software engineering' },
+  { value: 'DATA_SCIENCE', label: 'Data science' },
+  { value: 'ARTIFICIAL_INTELLIGENCE', label: 'Artificial intelligence' },
+  { value: 'CYBERSECURITY', label: 'Cybersecurity' },
+  { value: 'INFORMATION_SYSTEMS', label: 'Information systems' },
+  { value: 'ENGINEERING', label: 'Engineering' },
+  { value: 'INDUSTRIAL_ENGINEERING', label: 'Industrial engineering' },
+  { value: 'CIVIL_ENGINEERING', label: 'Civil engineering' },
+  { value: 'ELECTRICAL_ENGINEERING', label: 'Electrical engineering' },
+  { value: 'MECHANICAL_ENGINEERING', label: 'Mechanical engineering' },
+  { value: 'ARCHITECTURE_AND_URBAN_PLANNING', label: 'Architecture and urban planning' },
+  { value: 'EDUCATION', label: 'Education' },
+  { value: 'TEACHING_AND_TRAINING', label: 'Teaching and training' },
+  { value: 'SOCIAL_SCIENCES', label: 'Social sciences' },
+  { value: 'POLITICAL_SCIENCE', label: 'Political science' },
+  { value: 'PUBLIC_ADMINISTRATION', label: 'Public administration' },
+  { value: 'INTERNATIONAL_RELATIONS', label: 'International relations' },
+  { value: 'LAW', label: 'Law' },
+  { value: 'CRIMINOLOGY_AND_PUBLIC_SAFETY', label: 'Criminology and public safety' },
+  { value: 'HEALTHCARE', label: 'Healthcare' },
+  { value: 'MEDICINE', label: 'Medicine' },
+  { value: 'NURSING', label: 'Nursing' },
+  { value: 'PUBLIC_HEALTH', label: 'Public health' },
+  { value: 'PSYCHOLOGY', label: 'Psychology' },
+  { value: 'HUMANITIES', label: 'Humanities' },
+  { value: 'HISTORY', label: 'History' },
+  { value: 'PHILOSOPHY', label: 'Philosophy' },
+  { value: 'LANGUAGES_AND_LITERATURE', label: 'Languages and literature' },
+  { value: 'ARTS_AND_DESIGN', label: 'Arts and design' },
+  { value: 'MEDIA_AND_JOURNALISM', label: 'Media and journalism' },
+  { value: 'ENVIRONMENT_AND_SUSTAINABILITY', label: 'Environment and sustainability' },
+  { value: 'AGRICULTURE_AND_FOOD', label: 'Agriculture and food' },
+  { value: 'TOURISM_AND_HOSPITALITY', label: 'Tourism and hospitality' },
+  { value: 'TRANSPORT_AND_MOBILITY', label: 'Transport and mobility' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
+
+const EXPERIENCE_LEVEL_OPTIONS = [
+  { value: 'BEGINNER', label: 'Beginner' },
+  { value: 'INTERMEDIATE', label: 'Intermediate' },
+  { value: 'ADVANCED', label: 'Advanced' },
+  { value: 'EXPERT', label: 'Expert' },
+] as const;
+
+const RELATIONSHIP_TO_AREA_OPTIONS = [
+  { value: 'RESIDENT', label: 'Resident' },
+  { value: 'NON_RESIDENT', label: 'Non-resident' },
+  { value: 'VISITOR', label: 'Visitor' },
+] as const;
+
+type AssessmentFormState = {
+  ageRange: SaveAssessmentPayload['ageRange'] | '';
+  gender: SaveAssessmentPayload['gender'] | '';
+  city: SaveAssessmentPayload['city'] | '';
+  region: SaveAssessmentPayload['region'];
+  country: SaveAssessmentPayload['country'];
+  stakeholderRole: SaveAssessmentPayload['stakeholderRole'] | '';
+  backgroundCategory: SaveAssessmentPayload['backgroundCategory'] | '';
+  experienceLevel: SaveAssessmentPayload['experienceLevel'] | '';
+  relationshipToArea: SaveAssessmentPayload['relationshipToArea'] | '';
+  assessmentCompleted: boolean;
+};
+
+function isCompleteAssessmentForm(
+  form: AssessmentFormState,
+): form is SaveAssessmentPayload {
+  return (
+    form.ageRange !== '' &&
+    form.gender !== '' &&
+    form.city !== '' &&
+    form.stakeholderRole !== '' &&
+    form.backgroundCategory !== '' &&
+    form.experienceLevel !== '' &&
+    form.relationshipToArea !== ''
+  );
+}
+
 export default function AssessmentPage() {
   const router = useRouter();
   const { user, token, isLoading } = useAuth();
 
-  const [form, setForm] = useState<SaveAssessmentPayload>({
+  const [form, setForm] = useState<AssessmentFormState>({
     ageRange: '',
     gender: '',
     city: '',
-    region: '',
-    country: '',
+    region: 'EMILIA_ROMAGNA',
+    country: 'ITALY',
     stakeholderRole: '',
     backgroundCategory: '',
     experienceLevel: '',
@@ -52,8 +202,8 @@ export default function AssessmentPage() {
             ageRange: response.assessment.ageRange ?? '',
             gender: response.assessment.gender ?? '',
             city: response.assessment.city ?? '',
-            region: response.assessment.region ?? '',
-            country: response.assessment.country ?? '',
+            region: response.assessment.region ?? 'EMILIA_ROMAGNA',
+            country: response.assessment.country ?? 'ITALY',
             stakeholderRole: response.assessment.stakeholderRole ?? '',
             backgroundCategory: response.assessment.backgroundCategory ?? '',
             experienceLevel: response.assessment.experienceLevel ?? '',
@@ -75,9 +225,9 @@ export default function AssessmentPage() {
     }
   }, [user, token]);
 
-  function updateField<K extends keyof SaveAssessmentPayload>(
+  function updateField<K extends keyof AssessmentFormState>(
     key: K,
-    value: SaveAssessmentPayload[K],
+    value: AssessmentFormState[K],
   ) {
     setForm((current) => ({
       ...current,
@@ -91,12 +241,21 @@ export default function AssessmentPage() {
       return;
     }
 
+    if (!isCompleteAssessmentForm(form)) {
+      setError('Please complete all required assessment fields.');
+      return;
+    }
+
     setError(null);
     setSuccessMessage(null);
     setIsSaving(true);
 
     try {
-      const response = await saveMyAssessment(token, form);
+      const response = await saveMyAssessment(token, {
+        ...form,
+        region: 'EMILIA_ROMAGNA',
+        country: 'ITALY',
+      });
       setSecretUserId(response.assessment.secretUserId);
       setSuccessMessage('Assessment saved successfully');
     } catch (err) {
@@ -192,51 +351,56 @@ export default function AssessmentPage() {
             ) : null}
 
             <div className="mt-8 grid gap-5 md:grid-cols-2">
-              <Field
+              <SelectField
                 label="Age range"
-                value={form.ageRange ?? ''}
-                onChange={(value) => updateField('ageRange', value)}
+                value={form.ageRange}
+                options={AGE_RANGE_OPTIONS}
+                onChange={(value) => updateField('ageRange', value as AssessmentFormState['ageRange'])}
               />
-              <Field
+              <SelectField
                 label="Gender"
-                value={form.gender ?? ''}
-                onChange={(value) => updateField('gender', value)}
+                value={form.gender}
+                options={GENDER_OPTIONS}
+                onChange={(value) => updateField('gender', value as AssessmentFormState['gender'])}
               />
-              <Field
+              <SelectField
                 label="City"
-                value={form.city ?? ''}
-                onChange={(value) => updateField('city', value)}
+                value={form.city}
+                options={CITY_OPTIONS}
+                onChange={(value) => updateField('city', value as AssessmentFormState['city'])}
               />
-              <Field
+              <ReadOnlyField
                 label="Region"
-                value={form.region ?? ''}
-                onChange={(value) => updateField('region', value)}
+                value="Emilia-Romagna"
               />
-              <Field
+              <ReadOnlyField
                 label="Country"
-                value={form.country ?? ''}
-                onChange={(value) => updateField('country', value)}
+                value="Italy"
               />
-              <Field
+              <SelectField
                 label="Stakeholder role"
-                value={form.stakeholderRole ?? ''}
-                onChange={(value) => updateField('stakeholderRole', value)}
+                value={form.stakeholderRole}
+                options={STAKEHOLDER_ROLE_OPTIONS}
+                onChange={(value) => updateField('stakeholderRole', value as AssessmentFormState['stakeholderRole'])}
               />
-              <Field
+              <SelectField
                 label="Background category"
-                value={form.backgroundCategory ?? ''}
-                onChange={(value) => updateField('backgroundCategory', value)}
+                value={form.backgroundCategory}
+                options={BACKGROUND_CATEGORY_OPTIONS}
+                onChange={(value) => updateField('backgroundCategory', value as AssessmentFormState['backgroundCategory'])}
               />
-              <Field
+              <SelectField
                 label="Experience level"
-                value={form.experienceLevel ?? ''}
-                onChange={(value) => updateField('experienceLevel', value)}
+                value={form.experienceLevel}
+                options={EXPERIENCE_LEVEL_OPTIONS}
+                onChange={(value) => updateField('experienceLevel', value as AssessmentFormState['experienceLevel'])}
               />
               <div className="md:col-span-2">
-                <Field
+                <SelectField
                   label="Relationship to area"
-                  value={form.relationshipToArea ?? ''}
-                  onChange={(value) => updateField('relationshipToArea', value)}
+                  value={form.relationshipToArea}
+                  options={RELATIONSHIP_TO_AREA_OPTIONS}
+                  onChange={(value) => updateField('relationshipToArea', value as AssessmentFormState['relationshipToArea'])}
                 />
               </div>
             </div>
@@ -401,6 +565,72 @@ function Field({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-green-600"
+      />
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const inputId = label.toLowerCase().replace(/\s+/g, '-');
+
+  return (
+    <div>
+      <label
+        htmlFor={inputId}
+        className="mb-2 block text-sm font-medium text-slate-700"
+      >
+        {label}
+      </label>
+      <select
+        id={inputId}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-green-600"
+      >
+        <option value="">Select an option</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function ReadOnlyField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  const inputId = label.toLowerCase().replace(/\s+/g, '-');
+
+  return (
+    <div>
+      <label
+        htmlFor={inputId}
+        className="mb-2 block text-sm font-medium text-slate-700"
+      >
+        {label}
+      </label>
+      <input
+        id={inputId}
+        type="text"
+        value={value}
+        readOnly
+        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-700 outline-none"
       />
     </div>
   );
