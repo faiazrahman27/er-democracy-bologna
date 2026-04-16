@@ -45,6 +45,10 @@ const PIE_CHART_COLORS = [
   '#0ea5e9',
   '#14b8a6',
   '#f97316',
+  '#84cc16',
+  '#ec4899',
+  '#06b6d4',
+  '#a855f7',
 ];
 
 const RAW_OPTION_COLORS = [
@@ -56,6 +60,10 @@ const RAW_OPTION_COLORS = [
   '#0891b2',
   '#6366f1',
   '#4f46e5',
+  '#3b82f6',
+  '#0284c7',
+  '#4338ca',
+  '#6d28d9',
 ];
 
 const WEIGHTED_OPTION_COLORS = [
@@ -67,6 +75,10 @@ const WEIGHTED_OPTION_COLORS = [
   '#65a30d',
   '#d97706',
   '#ea580c',
+  '#15803d',
+  '#4d7c0f',
+  '#ca8a04',
+  '#c2410c',
 ];
 
 export default function AdminConsultationDetailPage() {
@@ -418,7 +430,7 @@ export default function AdminConsultationDetailPage() {
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2 min-w-0">
+          <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
             {vote.coverImageUrl ? (
               <div className="mb-6 overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
                 <img
@@ -429,10 +441,10 @@ export default function AdminConsultationDetailPage() {
               </div>
             ) : null}
 
-            <p className="text-sm leading-7 text-slate-600">{vote.summary}</p>
+            <p className="text-sm leading-7 font-semibold text-slate-600">{vote.summary}</p>
 
             {vote.methodologySummary ? (
-              <div className="mt-6 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200 min-w-0">
+              <div className="mt-6 min-w-0 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
                 <h2 className="text-lg font-semibold">Methodology</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {vote.methodologySummary}
@@ -467,13 +479,13 @@ export default function AdminConsultationDetailPage() {
               />
             </div>
 
-            <div className="mt-6 rounded-2xl bg-white p-5 ring-1 ring-slate-200 min-w-0">
+            <div className="mt-6 min-w-0 rounded-2xl bg-white p-5 ring-1 ring-slate-200">
               <h2 className="text-lg font-semibold">Options</h2>
               <div className="mt-4 space-y-3">
                 {vote.options?.map((option) => (
                   <div
                     key={option.id}
-                    className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200 min-w-0"
+                    className="min-w-0 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200"
                   >
                     <span className="font-medium text-slate-900">
                       Option {option.displayOrder}:
@@ -487,8 +499,8 @@ export default function AdminConsultationDetailPage() {
             </div>
           </div>
 
-          <div className="space-y-6 min-w-0">
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
+          <div className="min-w-0 space-y-6">
+            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <h2 className="text-lg font-semibold">Visibility controls</h2>
               {vote.displaySettings ? (
                 <div className="mt-4 grid min-w-0 gap-3">
@@ -543,7 +555,7 @@ export default function AdminConsultationDetailPage() {
             </div>
 
             {(vote.coverImageUrl || vote.coverImageAlt) && (
-              <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
+              <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
                 <h2 className="text-lg font-semibold">Cover image metadata</h2>
                 <div className="mt-4 grid min-w-0 gap-3">
                   <VisibilityRow
@@ -562,7 +574,7 @@ export default function AdminConsultationDetailPage() {
 
         <div className="mt-6 grid gap-6">
           {canViewResults ? (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
+            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <h2 className="text-lg font-semibold">Results</h2>
 
               {results ? (
@@ -580,7 +592,7 @@ export default function AdminConsultationDetailPage() {
                   </div>
 
                   {resultsChartData.length > 0 ? (
-                    <div className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-slate-200 min-w-0">
+                    <div className="mt-6 min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                       <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                         Raw vs weighted results
                       </h3>
@@ -676,38 +688,46 @@ export default function AdminConsultationDetailPage() {
                         className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200"
                       >
                         <div className="flex flex-wrap items-center gap-3">
-                          <span
-                            className="h-3 w-3 rounded-full"
-                            style={{
-                              backgroundColor:
-                                RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
-                            }}
-                            aria-hidden="true"
-                          />
-                          <span
-                            className="h-3 w-3 rounded-full"
-                            style={{
-                              backgroundColor:
-                                WEIGHTED_OPTION_COLORS[
-                                  index % WEIGHTED_OPTION_COLORS.length
-                                ],
-                            }}
-                            aria-hidden="true"
-                          />
-                          <p className="text-sm font-semibold text-slate-900 break-words">
+                          <p className="break-words text-sm font-semibold text-slate-900">
                             {option.optionText}
                           </p>
                         </div>
-                        <p className="mt-3 text-sm text-slate-700">
-                          <span className="font-medium text-slate-900">Raw:</span>{' '}
-                          {option.rawCount} ({option.rawPercentage}%)
-                        </p>
-                        <p className="mt-1 text-sm text-slate-700">
-                          <span className="font-medium text-slate-900">
-                            Weighted:
-                          </span>{' '}
-                          {option.weightedCount} ({option.weightedPercentage}%)
-                        </p>
+
+                        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-700">
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className="h-3 w-3 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+                              }}
+                              aria-hidden="true"
+                            />
+                            <span>
+                              <span className="font-medium text-slate-900">Raw:</span>{' '}
+                              {option.rawCount} ({option.rawPercentage}%)
+                            </span>
+                          </span>
+
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className="h-3 w-3 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  WEIGHTED_OPTION_COLORS[
+                                    index % WEIGHTED_OPTION_COLORS.length
+                                  ],
+                              }}
+                              aria-hidden="true"
+                            />
+                            <span>
+                              <span className="font-medium text-slate-900">
+                                Weighted:
+                              </span>{' '}
+                              {option.weightedCount} ({option.weightedPercentage}%)
+                            </span>
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -721,7 +741,7 @@ export default function AdminConsultationDetailPage() {
           ) : null}
 
           {canViewAnalytics ? (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
+            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <h2 className="text-lg font-semibold">Analytics</h2>
 
               {analytics ? (
@@ -809,7 +829,7 @@ export default function AdminConsultationDetailPage() {
           ) : null}
 
           {canViewParticipants ? (
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 min-w-0">
+            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <h2 className="text-lg font-semibold">Participants</h2>
               {participants ? (
                 <div className="mt-4 space-y-3">
@@ -819,7 +839,7 @@ export default function AdminConsultationDetailPage() {
                     participants.participants.map((participant) => (
                       <div
                         key={participant.submissionId}
-                        className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200 min-w-0"
+                        className="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200"
                       >
                         <p className="break-words">
                           <span className="font-medium text-slate-900">
@@ -829,12 +849,12 @@ export default function AdminConsultationDetailPage() {
                             canLookupAssessment ? (
                               <Link
                                 href={`/admin/assessments/${participant.secretUserId}`}
-                                className="font-mono text-blue-600 underline hover:text-blue-800 break-all"
+                                className="break-all font-mono text-blue-600 underline hover:text-blue-800"
                               >
                                 {participant.secretUserId}
                               </Link>
                             ) : (
-                              <span className="font-mono break-all">
+                              <span className="break-all font-mono">
                                 {participant.secretUserId}
                               </span>
                             )
@@ -904,7 +924,7 @@ function InfoCard({
   rows: Array<[string, string]>;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 min-w-0">
+    <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </h2>
@@ -912,12 +932,12 @@ function InfoCard({
         {rows.map(([label, value]) => (
           <div
             key={label}
-            className="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0 min-w-0"
+            className="min-w-0 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {label}
             </p>
-            <p className="mt-1 text-sm font-medium text-slate-900 break-words">
+            <p className="mt-1 break-words text-sm font-medium text-slate-900">
               {value}
             </p>
           </div>
@@ -1157,7 +1177,7 @@ function MiniBreakdown({
         {items.map((item) => (
           <div
             key={item.label}
-            className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 min-w-0"
+            className="min-w-0 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200"
           >
             <span className="break-words">
               {item.label} — {item.count} ({item.percentage}%)

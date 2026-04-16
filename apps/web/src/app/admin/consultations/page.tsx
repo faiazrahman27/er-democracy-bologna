@@ -251,7 +251,7 @@ export default function AdminConsultationsPage() {
                         {vote.title}
                       </h2>
 
-                      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                      <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-slate-600">
                         {vote.summary}
                       </p>
 

@@ -303,7 +303,7 @@ export default function AdminPage() {
                 <StatusRow label="Vote creation and submission" status="Active" />
                 <StatusRow label="Results and analytics routes" status="Active" />
                 <StatusRow label="Audit logging" status="Active" />
-                <StatusRow label="Article module" status="In progress" muted />
+                <StatusRow label="Article module" status="Active" />
               </div>
             </div>
           </div>

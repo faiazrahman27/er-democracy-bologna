@@ -39,6 +39,10 @@ const PIE_CHART_COLORS = [
   '#0ea5e9',
   '#14b8a6',
   '#f97316',
+  '#84cc16',
+  '#ec4899',
+  '#06b6d4',
+  '#a855f7',
 ];
 
 const RAW_OPTION_COLORS = [
@@ -50,6 +54,10 @@ const RAW_OPTION_COLORS = [
   '#0891b2',
   '#6366f1',
   '#4f46e5',
+  '#3b82f6',
+  '#0284c7',
+  '#4338ca',
+  '#6d28d9',
 ];
 
 const WEIGHTED_OPTION_COLORS = [
@@ -61,12 +69,11 @@ const WEIGHTED_OPTION_COLORS = [
   '#65a30d',
   '#d97706',
   '#ea580c',
+  '#15803d',
+  '#4d7c0f',
+  '#ca8a04',
+  '#c2410c',
 ];
-
-const SINGLE_SERIES_RESULT_COLORS = {
-  rawVotes: '#2563eb',
-  weightedVotes: '#16a34a',
-} as const;
 
 export function ConsultationInteractions({ vote }: Props) {
   const router = useRouter();
@@ -117,6 +124,8 @@ export function ConsultationInteractions({ vote }: Props) {
       fullName: option.optionText,
       rawVotes: option.rawCount ?? 0,
       weightedVotes: option.weightedCount ?? 0,
+      rawPercentage: option.rawPercentage ?? 0,
+      weightedPercentage: option.weightedPercentage ?? 0,
       rawColor: RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
       weightedColor:
         WEIGHTED_OPTION_COLORS[index % WEIGHTED_OPTION_COLORS.length],
@@ -597,11 +606,7 @@ export function ConsultationInteractions({ vote }: Props) {
                           {resultsChartData.map((entry, index) => (
                             <Cell
                               key={`raw-cell-${entry.name}-${index}`}
-                              fill={
-                                visibleResultSeries.length === 1
-                                  ? SINGLE_SERIES_RESULT_COLORS.rawVotes
-                                  : entry.rawColor
-                              }
+                              fill={entry.rawColor}
                             />
                           ))}
                         </Bar>
@@ -616,11 +621,7 @@ export function ConsultationInteractions({ vote }: Props) {
                           {resultsChartData.map((entry, index) => (
                             <Cell
                               key={`weighted-cell-${entry.name}-${index}`}
-                              fill={
-                                visibleResultSeries.length === 1
-                                  ? SINGLE_SERIES_RESULT_COLORS.weightedVotes
-                                  : entry.weightedColor
-                              }
+                              fill={entry.weightedColor}
                             />
                           ))}
                         </Bar>
@@ -658,30 +659,6 @@ export function ConsultationInteractions({ vote }: Props) {
                   className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200"
                 >
                   <div className="flex flex-wrap items-center gap-3">
-                    {showRawResults ? (
-                      <span
-                        className="h-3 w-3 rounded-full"
-                        style={{
-                          backgroundColor:
-                            RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
-                        }}
-                        aria-hidden="true"
-                      />
-                    ) : null}
-
-                    {showWeightedResults ? (
-                      <span
-                        className="h-3 w-3 rounded-full"
-                        style={{
-                          backgroundColor:
-                            WEIGHTED_OPTION_COLORS[
-                              index % WEIGHTED_OPTION_COLORS.length
-                            ],
-                        }}
-                        aria-hidden="true"
-                      />
-                    ) : null}
-
                     <p className="text-sm font-semibold text-slate-900">
                       Option {option.displayOrder}: {option.optionText}
                     </p>
@@ -689,19 +666,41 @@ export function ConsultationInteractions({ vote }: Props) {
 
                   <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
                     {showRawResults && typeof option.rawCount !== 'undefined' ? (
-                      <span>
-                        <span className="font-medium text-slate-900">Raw:</span>{' '}
-                        {option.rawCount} ({option.rawPercentage}%)
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{
+                            backgroundColor:
+                              RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+                          }}
+                          aria-hidden="true"
+                        />
+                        <span>
+                          <span className="font-medium text-slate-900">Raw:</span>{' '}
+                          {option.rawCount} ({option.rawPercentage}%)
+                        </span>
                       </span>
                     ) : null}
 
                     {showWeightedResults &&
                     typeof option.weightedCount !== 'undefined' ? (
-                      <span>
-                        <span className="font-medium text-slate-900">
-                          Weighted:
-                        </span>{' '}
-                        {option.weightedCount} ({option.weightedPercentage}%)
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{
+                            backgroundColor:
+                              WEIGHTED_OPTION_COLORS[
+                                index % WEIGHTED_OPTION_COLORS.length
+                              ],
+                          }}
+                          aria-hidden="true"
+                        />
+                        <span>
+                          <span className="font-medium text-slate-900">
+                            Weighted:
+                          </span>{' '}
+                          {option.weightedCount} ({option.weightedPercentage}%)
+                        </span>
                       </span>
                     ) : null}
                   </div>

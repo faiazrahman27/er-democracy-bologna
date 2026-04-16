@@ -36,6 +36,7 @@ export class VotesService {
     const uniqueDisplayOrders = new Set(
       dto.options.map((option) => option.displayOrder),
     );
+
     if (uniqueDisplayOrders.size !== dto.options.length) {
       throw new BadRequestException(
         'Option displayOrder values must be unique',
@@ -1290,6 +1291,7 @@ export class VotesService {
         (submission) => submission.user.assessment?.relationshipToArea,
       ),
     );
+
     const formattedStakeholderBreakdown =
       this.formatBreakdownRowsForExport(stakeholderBreakdown);
     const formattedBackgroundBreakdown =
@@ -1300,9 +1302,8 @@ export class VotesService {
       this.formatBreakdownRowsForExport(ageRangeBreakdown);
     const formattedGenderBreakdown =
       this.formatBreakdownRowsForExport(genderBreakdown);
-    const formattedExperienceLevelBreakdown = this.formatBreakdownRowsForExport(
-      experienceLevelBreakdown,
-    );
+    const formattedExperienceLevelBreakdown =
+      this.formatBreakdownRowsForExport(experienceLevelBreakdown);
     const formattedRelationshipToAreaBreakdown =
       this.formatBreakdownRowsForExport(relationshipToAreaBreakdown);
 

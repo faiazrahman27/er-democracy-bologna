@@ -110,7 +110,7 @@ export default async function ConsultationsPage() {
                         {vote.title}
                       </h3>
 
-                      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                      <p className="mt-3 max-w-3xl text-sm leading-6 font-semibold text-slate-600">
                         {vote.summary}
                       </p>
 

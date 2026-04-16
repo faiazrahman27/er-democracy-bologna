@@ -175,60 +175,80 @@ export default function AdminArticlesPage() {
                 key={article.id}
                 className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
               >
-                <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <span>{article.status}</span>
-                  <span>•</span>
-                  <span>
-                    {article.publishedAt
-                      ? `Published ${formatDateTime(article.publishedAt)}`
-                      : 'Not published'}
-                  </span>
-                </div>
+                <div className="flex gap-5">
+                  <div className="h-24 w-32 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                    {article.coverImageUrl ? (
+                      <img
+                        src={article.coverImageUrl}
+                        alt={article.coverImageAlt || article.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs font-medium text-slate-400">
+                        No image
+                      </div>
+                    )}
+                  </div>
 
-                <h2 className="mt-4 text-2xl font-semibold">{article.title}</h2>
-                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                  {article.summary}
-                </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <span>{article.status}</span>
+                      <span>•</span>
+                      <span>
+                        {article.publishedAt
+                          ? `Published ${formatDateTime(article.publishedAt)}`
+                          : 'Not published'}
+                      </span>
+                    </div>
 
-                <div className="mt-5 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
-                  <p>
-                    <span className="font-medium">Slug:</span> {article.slug}
-                  </p>
-                  <p>
-                    <span className="font-medium">Updated:</span>{' '}
-                    {formatDateTime(article.updatedAt)}
-                  </p>
-                </div>
+                    <h2 className="mt-4 text-2xl font-semibold break-words">
+                      {article.title}
+                    </h2>
+                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 break-words">
+                      {article.summary}
+                    </p>
 
-                <div className="mt-6 flex flex-wrap gap-3">
-                  {article.status === 'PUBLISHED' ? (
-                    <Link
-                      href={`/articles/${article.slug}`}
-                      className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
-                    >
-                      Public view
-                    </Link>
-                  ) : null}
+                    <div className="mt-5 grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+                      <p className="break-all">
+                        <span className="font-medium">Slug:</span> {article.slug}
+                      </p>
+                      <p>
+                        <span className="font-medium">Updated:</span>{' '}
+                        {formatDateTime(article.updatedAt)}
+                      </p>
+                    </div>
 
-                  {canEdit ? (
-                    <Link
-                      href={`/admin/articles/${article.id}/edit`}
-                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
-                    >
-                      Edit
-                    </Link>
-                  ) : null}
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      {article.status === 'PUBLISHED' ? (
+                        <Link
+                          href={`/articles/${article.slug}`}
+                          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+                        >
+                          Public view
+                        </Link>
+                      ) : null}
 
-                  {canDelete ? (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(article.id)}
-                      disabled={deletingId === article.id}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 disabled:opacity-60"
-                    >
-                      {deletingId === article.id ? 'Deleting...' : 'Delete'}
-                    </button>
-                  ) : null}
+                      {canEdit ? (
+                        <Link
+                          href={`/admin/articles/${article.id}/edit`}
+                          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+                        >
+                          Edit
+                        </Link>
+                      ) : null}
+
+                      {canDelete ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(article.id)}
+                          disabled={deletingId === article.id}
+                          className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 disabled:opacity-60"
+                        >
+                          {deletingId === article.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
