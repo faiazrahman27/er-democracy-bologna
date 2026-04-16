@@ -79,9 +79,45 @@ export class SupabaseService {
     this.validateImageFile(file);
 
     const extension = this.getSafeExtension(file.originalname, file.mimetype);
-    const safeSlug = this.slugifySegment(slug ?? 'vote');
+    const safeSlug = this.slugifySegment(slug ?? 'vote', 'vote');
     const fileName = `${Date.now()}-${randomUUID()}.${extension}`;
     const objectPath = `votes/${safeSlug}/${fileName}`;
+
+    const { error } = await this.client.storage
+      .from(this.bucketName)
+      .upload(objectPath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+        cacheControl: '3600',
+      });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Failed to upload image: ${error.message}`,
+      );
+    }
+
+    const { data } = this.client.storage
+      .from(this.bucketName)
+      .getPublicUrl(objectPath);
+
+    return {
+      bucket: this.bucketName,
+      path: objectPath,
+      publicUrl: data.publicUrl,
+      mimeType: file.mimetype,
+      size: file.size,
+      originalName: file.originalname,
+    };
+  }
+
+  async uploadArticleCoverImage(file: Express.Multer.File, slug?: string) {
+    this.validateImageFile(file);
+
+    const extension = this.getSafeExtension(file.originalname, file.mimetype);
+    const safeSlug = this.slugifySegment(slug ?? 'article', 'article');
+    const fileName = `${Date.now()}-${randomUUID()}.${extension}`;
+    const objectPath = `articles/${safeSlug}/${fileName}`;
 
     const { error } = await this.client.storage
       .from(this.bucketName)
@@ -142,14 +178,14 @@ export class SupabaseService {
     throw new BadRequestException('Could not determine a safe file extension');
   }
 
-  private slugifySegment(value: string) {
+  private slugifySegment(value: string, fallback: string) {
     return (
       value
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9-_]+/g, '-')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '') || 'vote'
+        .replace(/^-|-$/g, '') || fallback
     );
   }
 }

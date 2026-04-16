@@ -60,6 +60,12 @@ export default function AdminVotesPage() {
   const [showStakeholderBreakdown, setShowStakeholderBreakdown] = useState(false);
   const [showBackgroundBreakdown, setShowBackgroundBreakdown] = useState(false);
   const [showLocationBreakdown, setShowLocationBreakdown] = useState(false);
+  const [showAgeRangeBreakdown, setShowAgeRangeBreakdown] = useState(false);
+  const [showGenderBreakdown, setShowGenderBreakdown] = useState(false);
+  const [showExperienceLevelBreakdown, setShowExperienceLevelBreakdown] =
+    useState(false);
+  const [showRelationshipBreakdown, setShowRelationshipBreakdown] =
+    useState(false);
   const [showAfterVotingOnly, setShowAfterVotingOnly] = useState(false);
   const [showOnlyAfterVoteCloses, setShowOnlyAfterVoteCloses] = useState(false);
 
@@ -216,6 +222,10 @@ export default function AdminVotesPage() {
           showStakeholderBreakdown,
           showBackgroundBreakdown,
           showLocationBreakdown,
+          showAgeRangeBreakdown,
+          showGenderBreakdown,
+          showExperienceLevelBreakdown,
+          showRelationshipBreakdown,
           showAfterVotingOnly,
           showOnlyAfterVoteCloses,
         },
@@ -488,6 +498,26 @@ export default function AdminVotesPage() {
                 label="Show location breakdown"
                 checked={showLocationBreakdown}
                 onChange={setShowLocationBreakdown}
+              />
+              <CheckboxField
+                label="Show age range breakdown"
+                checked={showAgeRangeBreakdown}
+                onChange={setShowAgeRangeBreakdown}
+              />
+              <CheckboxField
+                label="Show gender breakdown"
+                checked={showGenderBreakdown}
+                onChange={setShowGenderBreakdown}
+              />
+              <CheckboxField
+                label="Show experience level breakdown"
+                checked={showExperienceLevelBreakdown}
+                onChange={setShowExperienceLevelBreakdown}
+              />
+              <CheckboxField
+                label="Show relationship to area breakdown"
+                checked={showRelationshipBreakdown}
+                onChange={setShowRelationshipBreakdown}
               />
               <CheckboxField
                 label="Show after voting only"
