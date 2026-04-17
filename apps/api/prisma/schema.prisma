@@ -146,7 +146,7 @@ model Assessment {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User      @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([secretUserId])
   @@index([assessmentCompleted])
@@ -246,7 +246,7 @@ model VoteSubmission {
   createdAt           DateTime        @default(now())
 
   vote                Vote            @relation(fields: [voteId], references: [id], onDelete: Cascade)
-  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User            @relation(fields: [userId], references: [id], onDelete: Restrict)
   selectedOption      VoteOption      @relation(fields: [selectedOptionId], references: [id], onDelete: Restrict)
 
   @@unique([voteId, userId])

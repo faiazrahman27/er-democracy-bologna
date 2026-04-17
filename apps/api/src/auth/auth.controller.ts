@@ -14,6 +14,9 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import {
@@ -21,15 +24,6 @@ import {
   REFRESH_TOKEN_COOKIE_NAME,
   setRefreshTokenCookie,
 } from './utils/auth-cookie.util';
-
-type AuthenticatedUser = {
-  id: string;
-  fullName: string;
-  email: string;
-  role: string;
-  emailVerified: boolean;
-  isActive: boolean;
-};
 
 @Controller('auth')
 export class AuthController {
@@ -43,14 +37,14 @@ export class AuthController {
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('verify-email')
-  async verifyEmail(@Body('token') token: string) {
-    return this.authService.verifyEmail(token);
+  async verifyEmail(@Body() body: VerifyEmailDto) {
+    return this.authService.verifyEmail(body.token);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Get('verify-email')
-  async verifyEmailFromQuery(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+  async verifyEmailFromQuery(@Query() query: VerifyEmailDto) {
+    return this.authService.verifyEmail(query.token);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -61,17 +55,14 @@ export class AuthController {
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
-  async forgotPassword(@Body('email') email: string) {
-    return this.authService.requestPasswordReset(email);
+  async forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.requestPasswordReset(body.email);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('reset-password')
-  async resetPassword(
-    @Body('token') token: string,
-    @Body('password') password: string,
-  ) {
-    return this.authService.resetPassword(token, password);
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    return this.authService.resetPassword(body.token, body.password);
   }
 
   @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
@@ -123,23 +114,20 @@ export class AuthController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(
-    @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
     const refreshToken = request.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
 
-    await this.authService.logoutWithRefreshToken(refreshToken);
     clearRefreshTokenCookie(
       response,
       process.env.COOKIE_SECURE === 'true',
       process.env.COOKIE_DOMAIN ?? '',
     );
 
-    return this.authService.logout(user.id);
+    return this.authService.logoutWithRefreshToken(refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)

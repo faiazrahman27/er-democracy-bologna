@@ -5,11 +5,30 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { isAdminRole } from '@/lib/roles';
+import { apiRequest } from '@/lib/api';
+
+type ExportMyDataResponse = {
+  message: string;
+  data: unknown;
+};
+
+type DeleteMyAccountResponse = {
+  message: string;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, token, isLoading, logout } = useAuth();
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [accountActionError, setAccountActionError] = useState<string | null>(
+    null,
+  );
+  const [accountActionMessage, setAccountActionMessage] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -23,6 +42,8 @@ export default function DashboardPage() {
   }, [isLoading, user, router]);
 
   async function handleLogout() {
+    setAccountActionError(null);
+    setAccountActionMessage(null);
     setIsLoggingOut(true);
 
     try {
@@ -30,6 +51,133 @@ export default function DashboardPage() {
       router.replace('/login');
     } finally {
       setIsLoggingOut(false);
+    }
+  }
+
+  function isAuthenticationError(message: string) {
+    const normalizedMessage = message.toLowerCase();
+
+    return (
+      normalizedMessage.includes('unauthorized') ||
+      normalizedMessage.includes('token') ||
+      normalizedMessage.includes('inactive') ||
+      normalizedMessage.includes('no longer exists')
+    );
+  }
+
+  async function redirectToLoginAfterAuthFailure(
+    message = 'Your session has expired. Please sign in again.',
+  ) {
+    setAccountActionError(message);
+    setAccountActionMessage(null);
+    await logout();
+    router.replace('/login');
+  }
+
+  async function handleExportMyData() {
+    setAccountActionError(null);
+    setAccountActionMessage(null);
+    setIsExportingData(true);
+
+    try {
+      if (!token) {
+        await redirectToLoginAfterAuthFailure();
+        return;
+      }
+
+      const response = await apiRequest<ExportMyDataResponse>(
+        '/users/me/export-data',
+        {
+          method: 'GET',
+          token,
+        },
+      );
+
+      const fileContent = JSON.stringify(response.data, null, 2);
+      const blob = new Blob([fileContent], { type: 'application/json' });
+      const downloadUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `er-democracy-bologna-my-data-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      setAccountActionMessage(
+        response.message || 'Your personal data export is ready.',
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to export your data';
+
+      if (isAuthenticationError(message)) {
+        await redirectToLoginAfterAuthFailure();
+        return;
+      }
+
+      setAccountActionError(message);
+    } finally {
+      setIsExportingData(false);
+    }
+  }
+
+  async function handleDeleteMyAccount() {
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete your account? This action cannot be undone.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const secondConfirmation = window.prompt(
+      'To confirm permanent deletion, type DELETE below.',
+    );
+
+    if (secondConfirmation !== 'DELETE') {
+      setAccountActionError(
+        'Account deletion was cancelled because confirmation did not match.',
+      );
+      return;
+    }
+
+    setAccountActionError(null);
+    setAccountActionMessage(null);
+    setIsDeletingAccount(true);
+
+    try {
+      if (!token) {
+        await redirectToLoginAfterAuthFailure();
+        return;
+      }
+
+      const response = await apiRequest<DeleteMyAccountResponse>('/users/me', {
+        method: 'DELETE',
+        token,
+      });
+
+      setAccountActionMessage(
+        response.message || 'Your account has been permanently deleted.',
+      );
+
+      await logout();
+      router.replace('/register');
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to delete your account';
+
+      if (isAuthenticationError(message)) {
+        await redirectToLoginAfterAuthFailure();
+        return;
+      }
+
+      setAccountActionError(message);
+    } finally {
+      setIsDeletingAccount(false);
     }
   }
 
@@ -59,7 +207,7 @@ export default function DashboardPage() {
                 User Dashboard
               </p>
 
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight break-all md:text-5xl">
                 Welcome back, {user.fullName}.
               </h1>
 
@@ -85,7 +233,7 @@ export default function DashboardPage() {
 
                 <button
                   onClick={handleLogout}
-                  disabled={isLoggingOut}
+                  disabled={isLoggingOut || isDeletingAccount}
                   className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md disabled:opacity-60"
                 >
                   {isLoggingOut ? 'Logging out...' : 'Logout'}
@@ -221,6 +369,83 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        <section className="border-t border-slate-200 pt-10">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Privacy and account rights
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+              Manage your personal data
+            </h2>
+
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
+              You can export a copy of your personal data or permanently delete
+              your account. Deleting your account will remove your access and
+              cannot be undone.
+            </p>
+
+            {accountActionMessage ? (
+              <p className="mt-4 text-sm text-green-700">
+                {accountActionMessage}
+              </p>
+            ) : null}
+
+            {accountActionError ? (
+              <p className="mt-4 text-sm text-red-600">{accountActionError}</p>
+            ) : null}
+
+            <div className="mt-6 flex flex-wrap gap-4">
+              <button
+                onClick={handleExportMyData}
+                disabled={isExportingData || isDeletingAccount}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md disabled:opacity-60"
+              >
+                {isExportingData ? 'Preparing export...' : 'Export my data'}
+              </button>
+
+              <button
+                onClick={handleDeleteMyAccount}
+                disabled={isDeletingAccount || isExportingData || isLoggingOut}
+                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:opacity-60"
+              >
+                {isDeletingAccount
+                  ? 'Deleting account...'
+                  : 'Delete my account'}
+              </button>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Legal information
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Learn more in our{' '}
+                <Link
+                  href="/privacy"
+                  className="font-medium text-slate-900 underline underline-offset-2 hover:text-green-700"
+                >
+                  Privacy Policy
+                </Link>
+                ,{' '}
+                <Link
+                  href="/terms"
+                  className="font-medium text-slate-900 underline underline-offset-2 hover:text-red-600"
+                >
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link
+                  href="/cookies"
+                  className="font-medium text-slate-900 underline underline-offset-2 hover:text-slate-700"
+                >
+                  Cookie Policy
+                </Link>
+                .
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );
@@ -251,7 +476,7 @@ function StatCard({
         {label}
       </p>
       <p
-        className={`mt-2 text-xl font-semibold ${
+        className={`mt-2 text-xl font-semibold break-all ${
           highlight ? 'text-green-700' : 'text-slate-900'
         }`}
       >
@@ -273,7 +498,7 @@ function InfoCard({
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </p>
-      <p className="mt-2 text-sm font-medium leading-6 text-slate-900">
+      <p className="mt-2 text-sm font-medium leading-6 text-slate-900 break-all">
         {value}
       </p>
     </div>

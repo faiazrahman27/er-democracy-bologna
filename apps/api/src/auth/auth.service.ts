@@ -212,12 +212,9 @@ export class AuthService {
   async refreshAccessTokenFromRefreshToken(refreshToken: string) {
     this.refreshTokenService.assertRefreshTokenPresent(refreshToken);
 
-    const decoded = await this.jwtService.decode(refreshToken);
-    if (!decoded || typeof decoded !== 'object' || !('sub' in decoded)) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const userId = String(decoded.sub);
+    const verifiedToken =
+      await this.refreshTokenService.verifyRefreshToken(refreshToken);
+    const userId = verifiedToken.sub;
     const tokenRecord = await this.refreshTokenService.findValidTokenRecord(
       userId,
       refreshToken,
@@ -503,15 +500,22 @@ export class AuthService {
       };
     }
 
-    const decoded = await this.jwtService.decode(refreshToken);
-    if (!decoded || typeof decoded !== 'object' || !('sub' in decoded)) {
+    try {
+      const verifiedToken = await this.refreshTokenService.verifyRefreshToken(
+        refreshToken,
+        {
+          ignoreExpiration: true,
+        },
+      );
+
+      await this.refreshTokenService.revokeAllUserRefreshTokens(
+        verifiedToken.sub,
+      );
+    } catch {
       return {
         message: 'Logout successful',
       };
     }
-
-    const userId = String(decoded.sub);
-    await this.refreshTokenService.revokeAllUserRefreshTokens(userId);
 
     return {
       message: 'Logout successful',

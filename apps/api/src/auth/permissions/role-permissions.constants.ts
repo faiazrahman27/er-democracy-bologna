@@ -11,7 +11,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.ASSESSMENT_SECRET_LOOKUP,
     PERMISSIONS.ARTICLE_CREATE,
     PERMISSIONS.ARTICLE_EDIT,
-    PERMISSIONS.ARTICLE_VIEW_ADMIN, // ✅ NEW
+    PERMISSIONS.ARTICLE_DELETE,
+    PERMISSIONS.ARTICLE_PUBLISH,
+    PERMISSIONS.ARTICLE_VIEW_ADMIN,
     PERMISSIONS.MEDIA_UPLOAD,
   ],
 
@@ -27,7 +29,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   CONTENT_ADMIN: [
     PERMISSIONS.ARTICLE_CREATE,
     PERMISSIONS.ARTICLE_EDIT,
-    PERMISSIONS.ARTICLE_VIEW_ADMIN, // ✅ NEW
+    PERMISSIONS.ARTICLE_DELETE,
+    PERMISSIONS.ARTICLE_PUBLISH,
+    PERMISSIONS.ARTICLE_VIEW_ADMIN,
     PERMISSIONS.MEDIA_UPLOAD,
   ],
 
@@ -47,3 +51,10 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 
   USER: [],
 };
+
+export function roleHasPermission(
+  role: string,
+  permission: Permission,
+): boolean {
+  return (ROLE_PERMISSIONS[role] ?? []).includes(permission);
+}

@@ -101,12 +101,10 @@ export function AuthProvider({
 
   const logout = useCallback(async () => {
     try {
-      if (token) {
-        await apiRequest<LogoutResponse>('/auth/logout', {
-          method: 'POST',
-          token,
-        });
-      }
+      await apiRequest<LogoutResponse>('/auth/logout', {
+        method: 'POST',
+        token,
+      });
     } catch {
       // ignore logout response errors and still clear local session state
     } finally {

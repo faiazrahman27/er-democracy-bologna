@@ -172,6 +172,13 @@ export default function Footer() {
               </Link>
 
               <Link
+                href="/cookies"
+                className="block transition-colors duration-200 hover:text-slate-900"
+              >
+                Cookies
+              </Link>
+
+              <Link
                 href={ROUTES.public.contact}
                 className="block transition-colors duration-200 hover:text-slate-900"
               >

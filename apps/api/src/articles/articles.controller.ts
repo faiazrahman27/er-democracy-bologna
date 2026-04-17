@@ -68,7 +68,7 @@ export class ArticlesController {
   @RequirePermissions(PERMISSIONS.ARTICLE_CREATE)
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateArticleDto) {
-    return this.articlesService.create(user.id, dto);
+    return this.articlesService.create(user, dto);
   }
 
   // 🔐 UPDATE
@@ -80,7 +80,7 @@ export class ArticlesController {
     @CurrentUser() user: AuthUser,
     @Body() dto: UpdateArticleDto,
   ) {
-    return this.articlesService.update(id, user.id, dto);
+    return this.articlesService.update(id, user, dto);
   }
 
   // 🔐 DELETE

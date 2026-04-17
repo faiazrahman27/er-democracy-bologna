@@ -4,6 +4,13 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 
+type RefreshTokenPayload = {
+  sub: string;
+  type: string;
+  iat?: number;
+  exp?: number;
+};
+
 @Injectable()
 export class RefreshTokenService {
   constructor(
@@ -45,6 +52,37 @@ export class RefreshTokenService {
         expiresIn: `${this.getRefreshTokenExpiryDays()}d` as unknown as number,
       },
     );
+  }
+
+  async verifyRefreshToken(
+    refreshToken: string,
+    options?: {
+      ignoreExpiration?: boolean;
+    },
+  ): Promise<RefreshTokenPayload> {
+    const refreshSecret = this.configService.get<string>('REFRESH_TOKEN_SECRET');
+
+    if (!refreshSecret) {
+      throw new Error('REFRESH_TOKEN_SECRET is not set');
+    }
+
+    try {
+      const payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(
+        refreshToken,
+        {
+          secret: refreshSecret,
+          ignoreExpiration: options?.ignoreExpiration ?? false,
+        },
+      );
+
+      if (!payload?.sub || payload.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      return payload;
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async hashToken(token: string): Promise<string> {

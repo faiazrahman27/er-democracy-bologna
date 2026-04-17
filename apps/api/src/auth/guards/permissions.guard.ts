@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRE_PERMISSIONS_KEY } from '../permissions/require-permissions.decorator';
-import { ROLE_PERMISSIONS } from '../permissions/role-permissions.constants';
+import { roleHasPermission } from '../permissions/role-permissions.constants';
 import type { Permission } from '../permissions/permissions.constants';
 
 type RequestUser = {
@@ -25,10 +25,10 @@ export class PermissionsGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const requiredPermissions =
-      this.reflector.getAllAndOverride<Permission[]>(
-        REQUIRE_PERMISSIONS_KEY,
-        [context.getHandler(), context.getClass()],
-      ) ?? [];
+      this.reflector.getAllAndOverride<Permission[]>(REQUIRE_PERMISSIONS_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) ?? [];
 
     if (requiredPermissions.length === 0) {
       return true;
@@ -41,10 +41,8 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Authenticated user not found');
     }
 
-    const rolePermissions = ROLE_PERMISSIONS[user.role] ?? [];
-
     const hasAllPermissions = requiredPermissions.every((permission) =>
-      rolePermissions.includes(permission),
+      roleHasPermission(user.role, permission),
     );
 
     if (!hasAllPermissions) {

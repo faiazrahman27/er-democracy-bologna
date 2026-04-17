@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import type { CookieOptions } from 'express';
 
 export const REFRESH_TOKEN_COOKIE_NAME = 'er_refresh_token';
 
@@ -10,15 +11,31 @@ type SetRefreshTokenCookieInput = {
   maxAgeMs: number;
 };
 
-export function setRefreshTokenCookie(input: SetRefreshTokenCookieInput) {
-  input.response.cookie(REFRESH_TOKEN_COOKIE_NAME, input.refreshToken, {
+function getRefreshTokenCookieOptions(input: {
+  cookieSecure: boolean;
+  cookieDomain?: string;
+  maxAgeMs?: number;
+}): CookieOptions {
+  return {
     httpOnly: true,
     secure: input.cookieSecure,
-    sameSite: 'lax',
+    sameSite: input.cookieSecure ? 'none' : 'lax',
     domain: input.cookieDomain || undefined,
     path: '/',
-    maxAge: input.maxAgeMs,
-  });
+    ...(input.maxAgeMs !== undefined ? { maxAge: input.maxAgeMs } : {}),
+  };
+}
+
+export function setRefreshTokenCookie(input: SetRefreshTokenCookieInput) {
+  input.response.cookie(
+    REFRESH_TOKEN_COOKIE_NAME,
+    input.refreshToken,
+    getRefreshTokenCookieOptions({
+      cookieSecure: input.cookieSecure,
+      cookieDomain: input.cookieDomain,
+      maxAgeMs: input.maxAgeMs,
+    }),
+  );
 }
 
 export function clearRefreshTokenCookie(
@@ -26,11 +43,11 @@ export function clearRefreshTokenCookie(
   cookieSecure: boolean,
   cookieDomain?: string,
 ) {
-  response.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-    httpOnly: true,
-    secure: cookieSecure,
-    sameSite: 'lax',
-    domain: cookieDomain || undefined,
-    path: '/',
-  });
+  response.clearCookie(
+    REFRESH_TOKEN_COOKIE_NAME,
+    getRefreshTokenCookieOptions({
+      cookieSecure,
+      cookieDomain,
+    }),
+  );
 }

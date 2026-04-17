@@ -1,8 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ArticleStatus } from '@prisma/client';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
+import { PERMISSIONS } from '../auth/permissions/permissions.constants';
+import { roleHasPermission } from '../auth/permissions/role-permissions.constants';
+
+type ArticleActor = {
+  id: string;
+  role: string;
+};
 
 @Injectable()
 export class ArticlesService {
@@ -11,7 +23,9 @@ export class ArticlesService {
     private readonly auditService: AuditService,
   ) {}
 
-  async create(adminUserId: string, dto: CreateArticleDto) {
+  async create(actor: ArticleActor, dto: CreateArticleDto) {
+    this.assertCanChangePublicationStatus(actor.role, null, dto.status);
+
     const article = await this.prisma.article.create({
       data: {
         title: dto.title.trim(),
@@ -21,13 +35,13 @@ export class ArticlesService {
         coverImageUrl: dto.coverImageUrl?.trim(),
         coverImageAlt: dto.coverImageAlt?.trim(),
         status: dto.status ?? 'DRAFT',
-        createdById: adminUserId,
+        createdById: actor.id,
         publishedAt: dto.status === 'PUBLISHED' ? new Date() : null,
       },
     });
 
     await this.auditService.logAdminAction({
-      adminUserId,
+      adminUserId: actor.id,
       actionType: 'ARTICLE_CREATE',
       targetType: 'Article',
       targetId: article.id,
@@ -37,7 +51,7 @@ export class ArticlesService {
     return article;
   }
 
-  async update(id: string, adminUserId: string, dto: UpdateArticleDto) {
+  async update(id: string, actor: ArticleActor, dto: UpdateArticleDto) {
     const existing = await this.prisma.article.findUnique({
       where: { id },
     });
@@ -45,6 +59,12 @@ export class ArticlesService {
     if (!existing) {
       throw new NotFoundException('Article not found');
     }
+
+    this.assertCanChangePublicationStatus(
+      actor.role,
+      existing.status,
+      dto.status,
+    );
 
     const updated = await this.prisma.article.update({
       where: { id },
@@ -63,7 +83,7 @@ export class ArticlesService {
     });
 
     await this.auditService.logAdminAction({
-      adminUserId,
+      adminUserId: actor.id,
       actionType: 'ARTICLE_UPDATE',
       targetType: 'Article',
       targetId: id,
@@ -120,5 +140,33 @@ export class ArticlesService {
     }
 
     return article;
+  }
+
+  private assertCanChangePublicationStatus(
+    role: string,
+    currentStatus: ArticleStatus | null,
+    requestedStatus?: ArticleStatus,
+  ) {
+    const nextStatus =
+      currentStatus === null ? (requestedStatus ?? 'DRAFT') : requestedStatus;
+
+    if (!nextStatus) {
+      return;
+    }
+
+    const isStatusChange =
+      currentStatus === null
+        ? nextStatus !== 'DRAFT'
+        : nextStatus !== currentStatus;
+
+    if (!isStatusChange) {
+      return;
+    }
+
+    if (!roleHasPermission(role, PERMISSIONS.ARTICLE_PUBLISH)) {
+      throw new ForbiddenException(
+        'You do not have permission to change article publication status',
+      );
+    }
   }
 }

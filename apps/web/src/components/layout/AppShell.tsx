@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import CookieConsentBanner from '@/components/legal/CookieConsentBanner';
 import { useAuth } from '@/providers/auth-provider';
 import { isAdminRole } from '@/lib/roles';
 import { ROUTES } from '@/lib/routes';
@@ -31,6 +32,8 @@ export default function AppShell({
       <main className="min-h-screen">{children}</main>
 
       {!isAuthRoute ? <Footer /> : null}
+
+      <CookieConsentBanner />
     </>
   );
 }

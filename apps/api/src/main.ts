@@ -4,16 +4,16 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 function getAllowedOrigins(): string[] {
-  const configuredOrigins = process.env.CORS_ORIGIN
-    ?.split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const configuredOrigins =
+    process.env.CORS_ORIGIN?.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? [];
 
-  if (configuredOrigins && configuredOrigins.length > 0) {
+  if (configuredOrigins.length > 0) {
     return configuredOrigins;
   }
 
-  return ['http://localhost:3000'];
+  throw new Error('CORS_ORIGIN must include at least one allowed origin');
 }
 
 async function bootstrap() {
@@ -24,7 +24,10 @@ async function bootstrap() {
   const allowedOrigins = getAllowedOrigins();
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin) {
         callback(null, true);
         return;
