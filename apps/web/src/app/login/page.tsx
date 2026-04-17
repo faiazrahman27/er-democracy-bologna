@@ -97,6 +97,31 @@ export default function LoginPage() {
                   Sign up
                 </Link>
               </p>
+
+              <p className="mt-4 text-xs leading-6 text-slate-500">
+                By signing in, you continue under our{' '}
+                <Link
+                  href="/terms"
+                  className="font-medium text-slate-700 underline underline-offset-2 hover:text-red-600"
+                >
+                  Terms of Service
+                </Link>
+                ,{' '}
+                <Link
+                  href="/privacy"
+                  className="font-medium text-slate-700 underline underline-offset-2 hover:text-red-600"
+                >
+                  Privacy Policy
+                </Link>{' '}
+                and{' '}
+                <Link
+                  href="/cookies"
+                  className="font-medium text-slate-700 underline underline-offset-2 hover:text-red-600"
+                >
+                  Cookie Policy
+                </Link>
+                .
+              </p>
             </section>
           </div>
         </main>
@@ -318,6 +343,31 @@ function LoginPageContent() {
             >
               Sign up
             </Link>
+          </p>
+
+          <p className="mt-4 text-xs leading-6 text-slate-500">
+            By signing in, you continue under our{' '}
+            <Link
+              href="/terms"
+              className="font-medium text-slate-700 underline underline-offset-2 hover:text-red-600"
+            >
+              Terms of Service
+            </Link>
+            ,{' '}
+            <Link
+              href="/privacy"
+              className="font-medium text-slate-700 underline underline-offset-2 hover:text-red-600"
+            >
+              Privacy Policy
+            </Link>{' '}
+            and{' '}
+            <Link
+              href="/cookies"
+              className="font-medium text-slate-700 underline underline-offset-2 hover:text-red-600"
+            >
+              Cookie Policy
+            </Link>
+            .
           </p>
         </section>
       </div>

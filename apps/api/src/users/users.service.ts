@@ -5,6 +5,7 @@ export type CreateUserInput = {
   fullName: string;
   email: string;
   passwordHash: string;
+  termsAcceptedAt: Date;
 };
 
 @Injectable()
@@ -28,6 +29,7 @@ export class UsersService {
         fullName: input.fullName.trim(),
         email: normalizedEmail,
         passwordHash: input.passwordHash,
+        termsAcceptedAt: input.termsAcceptedAt,
       },
       select: {
         id: true,
@@ -37,6 +39,7 @@ export class UsersService {
         emailVerified: true,
         isActive: true,
         createdAt: true,
+        termsAcceptedAt: true,
       },
     });
 

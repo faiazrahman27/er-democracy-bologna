@@ -19,6 +19,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -64,6 +65,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!termsAccepted) {
+      setError('You must accept the terms and privacy policy.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -73,6 +79,7 @@ export default function RegisterPage() {
           fullName: trimmedFullName,
           email: trimmedEmail,
           password,
+          termsAccepted: true,
         },
       });
 
@@ -84,6 +91,7 @@ export default function RegisterPage() {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+      setTermsAccepted(false);
 
       setTimeout(() => {
         router.push('/login');
@@ -183,6 +191,42 @@ export default function RegisterPage() {
               />
             </div>
 
+            <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(event) => setTermsAccepted(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                  required
+                />
+                <span className="text-sm leading-6 text-slate-600">
+                  I agree to the{' '}
+                  <Link
+                    href="/terms"
+                    className="font-medium text-slate-900 underline underline-offset-2 hover:text-red-600"
+                  >
+                    Terms of Service
+                  </Link>
+                  ,{' '}
+                  <Link
+                    href="/privacy"
+                    className="font-medium text-slate-900 underline underline-offset-2 hover:text-red-600"
+                  >
+                    Privacy Policy
+                  </Link>{' '}
+                  and{' '}
+                  <Link
+                    href="/cookies"
+                    className="font-medium text-slate-900 underline underline-offset-2 hover:text-red-600"
+                  >
+                    Cookie Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+            </div>
+
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
             {successMessage ? (
               <p className="text-sm text-green-700">{successMessage}</p>
@@ -190,7 +234,7 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !termsAccepted}
               className="mt-4 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
               {isSubmitting ? 'Creating account...' : 'Create account'}

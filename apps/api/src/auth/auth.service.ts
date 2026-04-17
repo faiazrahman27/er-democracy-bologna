@@ -38,6 +38,7 @@ export class AuthService {
       fullName: registerDto.fullName,
       email: registerDto.email,
       passwordHash,
+      termsAcceptedAt: new Date(),
     });
 
     const verificationToken = await this.createEmailVerificationToken(user.id);
