@@ -88,6 +88,19 @@ export class AuthService {
     );
 
     if (!passwordMatches) {
+      const nextFailedLoginCount = user.failedLoginCount + 1;
+      const shouldLockAccount = nextFailedLoginCount >= 5;
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginCount: nextFailedLoginCount,
+          lockedUntil: shouldLockAccount
+            ? new Date(Date.now() + 15 * 60 * 1000)
+            : null,
+        },
+      });
+
       throw new UnauthorizedException('Invalid email or password');
     }
 

@@ -57,6 +57,7 @@ export class UsersService {
         emailVerified: true,
         isActive: true,
         lockedUntil: true,
+        failedLoginCount: true,
       },
     });
   }

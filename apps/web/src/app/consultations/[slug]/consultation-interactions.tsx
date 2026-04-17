@@ -354,7 +354,19 @@ export function ConsultationInteractions({ vote }: Props) {
               Choose your option and vote
             </h2>
 
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
+            <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Consultation
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                {vote.title}
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
+                {vote.summary}
+              </p>
+            </div>
+
+            <p className="mt-6 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
               Select one option below to participate in this consultation. The
               option text is the most important part of your submission. Review
               the choices carefully before you continue.
@@ -415,7 +427,8 @@ export function ConsultationInteractions({ vote }: Props) {
                         className="mt-1"
                       />
 
-                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white shadow-sm"
+                      <div
+                        className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white shadow-sm"
                         style={{ backgroundColor: accentColor }}
                       >
                         {option.displayOrder}
