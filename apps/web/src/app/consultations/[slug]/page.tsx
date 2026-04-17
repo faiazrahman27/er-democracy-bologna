@@ -88,10 +88,10 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
           </Link>
         </div>
 
-        <section className="pb-10">
+        <section className="pb-12">
           <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
                 <StatusBadge label={formatEnumLabel(vote.voteType)} />
@@ -113,12 +113,17 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
                 {vote.title}
               </h1>
 
-              <p className="mt-5 max-w-3xl break-words text-base leading-7 text-slate-600">
-                {vote.summary}
-              </p>
+              <div className="mt-6 max-w-4xl rounded-3xl bg-white px-6 py-6 shadow-sm ring-1 ring-slate-200">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  What this consultation is about
+                </p>
+                <p className="mt-4 break-words text-base leading-8 text-slate-700 md:text-lg">
+                  {vote.summary}
+                </p>
+              </div>
 
               {vote.methodologySummary ? (
-                <div className="mt-8 max-w-4xl rounded-2xl bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200 min-w-0">
+                <div className="mt-6 max-w-4xl rounded-2xl bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200 min-w-0">
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                     Methodology
                   </p>
@@ -129,7 +134,7 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
               ) : null}
             </div>
 
-            <aside className="min-w-0 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <aside className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Consultation overview
               </p>
@@ -155,10 +160,7 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
                   label="Starts"
                   value={formatDateTime(vote.startAt)}
                 />
-                <OverviewRow
-                  label="Ends"
-                  value={formatDateTime(vote.endAt)}
-                />
+                <OverviewRow label="Ends" value={formatDateTime(vote.endAt)} />
                 <OverviewRow
                   label="Published"
                   value={
@@ -185,16 +187,95 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
         ) : null}
 
         <section className="border-t border-slate-200 pt-10">
-          <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr]">
             <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Consultation details
+                Your choices
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Key information
+                What you are voting for
               </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+                Review each option carefully. The same option colors are used
+                consistently in the visible results sections below.
+              </p>
 
-              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <div className="mt-6 grid gap-4">
+                {vote.options.map((option, index) => (
+                  <div
+                    key={option.id}
+                    className="rounded-3xl bg-white px-5 py-5 shadow-sm ring-1 ring-slate-200"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="mt-1 flex shrink-0 items-center gap-2">
+                        {showNeutralDots ? (
+                          <span
+                            className="h-3 w-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                NEUTRAL_OPTION_COLORS[
+                                  index % NEUTRAL_OPTION_COLORS.length
+                                ],
+                            }}
+                            aria-label={`Option color for option ${option.displayOrder}`}
+                          />
+                        ) : (
+                          <>
+                            {showRawDots ? (
+                              <span
+                                className="h-3 w-3 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    RAW_OPTION_COLORS[
+                                      index % RAW_OPTION_COLORS.length
+                                    ],
+                                }}
+                                aria-label={`Option color for option ${option.displayOrder}`}
+                              />
+                            ) : null}
+
+                            {showWeightedDots ? (
+                              <span
+                                className="h-3 w-3 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    WEIGHTED_OPTION_COLORS[
+                                      index % WEIGHTED_OPTION_COLORS.length
+                                    ],
+                                }}
+                                aria-label={`Option color for option ${option.displayOrder}`}
+                              />
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Option {option.displayOrder}
+                        </p>
+                        <p className="mt-2 break-words text-base font-medium leading-7 text-slate-900">
+                          {option.optionText}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Key information
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                Before you vote
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                These details summarize the consultation context and timing.
+              </p>
+
+              <div className="mt-6 grid gap-5 sm:grid-cols-2">
                 <InfoCard
                   title="Type"
                   value={formatEnumLabel(vote.voteType)}
@@ -221,82 +302,6 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
                       : 'Not published'
                   }
                 />
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Available options
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Review the choices
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Read through the available consultation options before you move
-                to the participation section below.
-              </p>
-
-              <div className="mt-5 grid gap-4">
-                {vote.options.map((option, index) => (
-                  <div
-                    key={option.id}
-                    className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1 flex shrink-0 items-center gap-2">
-                        {showNeutralDots ? (
-                          <span
-                            className="h-2.5 w-2.5 rounded-full"
-                            style={{
-                              backgroundColor:
-                                NEUTRAL_OPTION_COLORS[
-                                  index % NEUTRAL_OPTION_COLORS.length
-                                ],
-                            }}
-                            aria-label={`Option color for option ${option.displayOrder}`}
-                          />
-                        ) : (
-                          <>
-                            {showRawDots ? (
-                              <span
-                                className="h-2.5 w-2.5 rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    RAW_OPTION_COLORS[
-                                      index % RAW_OPTION_COLORS.length
-                                    ],
-                                }}
-                                aria-label={`Option color for option ${option.displayOrder}`}
-                              />
-                            ) : null}
-
-                            {showWeightedDots ? (
-                              <span
-                                className="h-2.5 w-2.5 rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    WEIGHTED_OPTION_COLORS[
-                                      index % WEIGHTED_OPTION_COLORS.length
-                                    ],
-                                }}
-                                aria-label={`Option color for option ${option.displayOrder}`}
-                              />
-                            ) : null}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Option {option.displayOrder}
-                        </p>
-                        <p className="mt-2 break-words text-sm leading-6 text-slate-900">
-                          {option.optionText}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

@@ -383,12 +383,12 @@ export default function AdminConsultationDetailPage() {
                 />
               </div>
 
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
                 {vote.title}
               </h1>
 
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                Admin control and review surface for this consultation.
+              <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600">
+                {vote.summary}
               </p>
             </div>
 
@@ -432,7 +432,7 @@ export default function AdminConsultationDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
             {vote.coverImageUrl ? (
-              <div className="mb-6 overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
+              <div className="mb-8 overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
                 <img
                   src={vote.coverImageUrl}
                   alt={vote.coverImageAlt ?? vote.title}
@@ -441,11 +441,82 @@ export default function AdminConsultationDetailPage() {
               </div>
             ) : null}
 
-            <p className="text-sm leading-7 font-semibold text-slate-600">{vote.summary}</p>
+            <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Consultation summary
+              </p>
+              <p className="mt-3 text-base leading-8 text-slate-700">
+                {vote.summary}
+              </p>
+            </div>
+
+            <div className="mt-6 min-w-0 rounded-2xl bg-white p-6 ring-1 ring-slate-200">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Voting options
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                    What participants are voting on
+                  </h2>
+                </div>
+                {typeof vote.submissionCount === 'number' ? (
+                  <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
+                    {vote.submissionCount}{' '}
+                    {vote.submissionCount === 1 ? 'submission' : 'submissions'}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-6 grid gap-4">
+                {vote.options?.map((option, index) => (
+                  <div
+                    key={option.id}
+                    className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 flex shrink-0 items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{
+                            backgroundColor:
+                              RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+                          }}
+                          aria-hidden="true"
+                        />
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{
+                            backgroundColor:
+                              WEIGHTED_OPTION_COLORS[
+                                index % WEIGHTED_OPTION_COLORS.length
+                              ],
+                          }}
+                          aria-hidden="true"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Option {option.displayOrder}
+                        </p>
+                        <p className="mt-2 break-words text-base font-medium leading-7 text-slate-900">
+                          {option.optionText}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )) ?? (
+                  <p className="text-sm text-slate-600">No options loaded.</p>
+                )}
+              </div>
+            </div>
 
             {vote.methodologySummary ? (
-              <div className="mt-6 min-w-0 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
-                <h2 className="text-lg font-semibold">Methodology</h2>
+              <div className="mt-6 min-w-0 rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Methodology
+                </p>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {vote.methodologySummary}
                 </p>
@@ -478,25 +549,6 @@ export default function AdminConsultationDetailPage() {
                 ]}
               />
             </div>
-
-            <div className="mt-6 min-w-0 rounded-2xl bg-white p-5 ring-1 ring-slate-200">
-              <h2 className="text-lg font-semibold">Options</h2>
-              <div className="mt-4 space-y-3">
-                {vote.options?.map((option) => (
-                  <div
-                    key={option.id}
-                    className="min-w-0 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200"
-                  >
-                    <span className="font-medium text-slate-900">
-                      Option {option.displayOrder}:
-                    </span>{' '}
-                    <span className="break-words">{option.optionText}</span>
-                  </div>
-                )) ?? (
-                  <p className="text-sm text-slate-600">No options loaded.</p>
-                )}
-              </div>
-            </div>
           </div>
 
           <div className="min-w-0 space-y-6">
@@ -511,7 +563,9 @@ export default function AdminConsultationDetailPage() {
                   <VisibilityRow
                     label="Participation stats"
                     value={
-                      vote.displaySettings.showParticipationStats ? 'Shown' : 'Hidden'
+                      vote.displaySettings.showParticipationStats
+                        ? 'Shown'
+                        : 'Hidden'
                     }
                   />
                   <VisibilityRow
@@ -533,7 +587,41 @@ export default function AdminConsultationDetailPage() {
                   <VisibilityRow
                     label="Location breakdown"
                     value={
-                      vote.displaySettings.showLocationBreakdown ? 'Shown' : 'Hidden'
+                      vote.displaySettings.showLocationBreakdown
+                        ? 'Shown'
+                        : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="Age range breakdown"
+                    value={
+                      vote.displaySettings.showAgeRangeBreakdown
+                        ? 'Shown'
+                        : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="Gender breakdown"
+                    value={
+                      vote.displaySettings.showGenderBreakdown
+                        ? 'Shown'
+                        : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="Experience level breakdown"
+                    value={
+                      vote.displaySettings.showExperienceLevelBreakdown
+                        ? 'Shown'
+                        : 'Hidden'
+                    }
+                  />
+                  <VisibilityRow
+                    label="Relationship to area breakdown"
+                    value={
+                      vote.displaySettings.showRelationshipBreakdown
+                        ? 'Shown'
+                        : 'Hidden'
                     }
                   />
                   <VisibilityRow
@@ -575,11 +663,20 @@ export default function AdminConsultationDetailPage() {
         <div className="mt-6 grid gap-6">
           {canViewResults ? (
             <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <h2 className="text-lg font-semibold">Results</h2>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Results
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                    Consultation outcome
+                  </h2>
+                </div>
+              </div>
 
               {results ? (
                 <>
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <StatCard
                       label="Raw votes"
                       value={String(results.totals.totalRawVotes)}
@@ -602,7 +699,10 @@ export default function AdminConsultationDetailPage() {
                             data={resultsChartData}
                             margin={{ top: 8, right: 12, left: 0, bottom: 40 }}
                           >
-                            <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
+                            <CartesianGrid
+                              stroke="#e2e8f0"
+                              strokeDasharray="3 3"
+                            />
                             <XAxis
                               dataKey="name"
                               interval={0}
@@ -685,15 +785,41 @@ export default function AdminConsultationDetailPage() {
                     {results.options.map((option, index) => (
                       <div
                         key={option.optionId}
-                        className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200"
+                        className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200"
                       >
-                        <div className="flex flex-wrap items-center gap-3">
-                          <p className="break-words text-sm font-semibold text-slate-900">
-                            {option.optionText}
-                          </p>
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1 flex shrink-0 items-center gap-2">
+                            <span
+                              className="h-3 w-3 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+                              }}
+                              aria-hidden="true"
+                            />
+                            <span
+                              className="h-3 w-3 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  WEIGHTED_OPTION_COLORS[
+                                    index % WEIGHTED_OPTION_COLORS.length
+                                  ],
+                              }}
+                              aria-hidden="true"
+                            />
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Option {option.displayOrder}
+                            </p>
+                            <p className="mt-2 break-words text-base font-medium leading-7 text-slate-900">
+                              {option.optionText}
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-700">
+                        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-700">
                           <span className="inline-flex items-center gap-2">
                             <span
                               className="h-3 w-3 rounded-full"
@@ -704,7 +830,9 @@ export default function AdminConsultationDetailPage() {
                               aria-hidden="true"
                             />
                             <span>
-                              <span className="font-medium text-slate-900">Raw:</span>{' '}
+                              <span className="font-medium text-slate-900">
+                                Raw:
+                              </span>{' '}
                               {option.rawCount} ({option.rawPercentage}%)
                             </span>
                           </span>
@@ -742,11 +870,18 @@ export default function AdminConsultationDetailPage() {
 
           {canViewAnalytics ? (
             <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <h2 className="text-lg font-semibold">Analytics</h2>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Analytics
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                  Participation insights
+                </h2>
+              </div>
 
               {analytics ? (
                 <>
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <StatCard
                       label="Participants"
                       value={String(analytics.totals.totalParticipants)}
@@ -830,7 +965,15 @@ export default function AdminConsultationDetailPage() {
 
           {canViewParticipants ? (
             <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <h2 className="text-lg font-semibold">Participants</h2>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Participants
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                  Submission records
+                </h2>
+              </div>
+
               {participants ? (
                 <div className="mt-4 space-y-3">
                   {participants.participants.length === 0 ? (

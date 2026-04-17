@@ -62,10 +62,15 @@ export default function AdminConsultationsPage() {
 
   const consultationStats = useMemo(() => {
     const total = votes.length;
-    const upcoming = votes.filter((vote) => vote.derivedStatus === 'UPCOMING').length;
-    const ongoing = votes.filter((vote) => vote.derivedStatus === 'ONGOING').length;
+    const upcoming = votes.filter(
+      (vote) => vote.derivedStatus === 'UPCOMING',
+    ).length;
+    const ongoing = votes.filter(
+      (vote) => vote.derivedStatus === 'ONGOING',
+    ).length;
     const past = votes.filter((vote) => vote.derivedStatus === 'PAST').length;
     const drafts = votes.filter((vote) => vote.status === 'DRAFT').length;
+    const published = votes.filter((vote) => vote.isPublished).length;
 
     return {
       total,
@@ -73,6 +78,7 @@ export default function AdminConsultationsPage() {
       ongoing,
       past,
       drafts,
+      published,
     };
   }, [votes]);
 
@@ -121,16 +127,18 @@ export default function AdminConsultationsPage() {
           <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
           <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
                 Consultation administration
               </p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
-                Consultation management
+              <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight md:text-5xl">
+                Manage consultations with clearer content visibility
               </h1>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                Review consultations, monitor workflow state, open public and
-                administrative views, and move into the next operational step.
+                Review consultations by title, summary, workflow, timing, and
+                publication state. This page is optimized to help admins quickly
+                understand what each consultation is about before opening the
+                detail or public view.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-4">
@@ -156,6 +164,10 @@ export default function AdminConsultationsPage() {
               <StatCard
                 label="Total listed"
                 value={String(consultationStats.total)}
+              />
+              <StatCard
+                label="Published"
+                value={String(consultationStats.published)}
               />
               <StatCard
                 label="Drafts"
@@ -204,25 +216,40 @@ export default function AdminConsultationsPage() {
             ) : null}
           </div>
         ) : (
-          <div className="grid gap-6">
-            {votes.map((vote) => (
-              <article
-                key={vote.id}
-                className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-200 hover:shadow-md"
-              >
-                {vote.coverImageUrl ? (
-                  <div className="overflow-hidden border-b border-slate-100 bg-slate-100">
-                    <img
-                      src={vote.coverImageUrl}
-                      alt={vote.coverImageAlt ?? vote.title}
-                      className="h-56 w-full object-cover"
-                    />
-                  </div>
-                ) : null}
+          <section className="border-t border-slate-200 pt-10">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Consultation list
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                  Review consultation purpose before opening details
+                </h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                  Each card puts the consultation title and summary first, then
+                  shows operational metadata so admins can scan faster without
+                  changing any existing functionality.
+                </p>
+              </div>
 
-                <div className="p-6">
-                  <div className="flex flex-wrap items-start justify-between gap-6">
-                    <div className="min-w-0 flex-1">
+              <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Visible in list
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">
+                  {votes.length}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-6">
+              {votes.map((vote) => (
+                <article
+                  key={vote.id}
+                  className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-200 hover:shadow-md"
+                >
+                  <div className="grid lg:grid-cols-[1.18fr_0.82fr]">
+                    <div className="min-w-0 p-6 md:p-7">
                       <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
                         <StatusBadge label={formatEnumLabel(vote.voteType)} />
                         <StatusBadge
@@ -247,13 +274,18 @@ export default function AdminConsultationsPage() {
                         />
                       </div>
 
-                      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+                      <h2 className="mt-5 break-words text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
                         {vote.title}
                       </h2>
 
-                      <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-slate-600">
-                        {vote.summary}
-                      </p>
+                      <div className="mt-5 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Consultation summary
+                        </p>
+                        <p className="mt-3 break-words text-sm leading-7 text-slate-700 md:text-[15px]">
+                          {vote.summary}
+                        </p>
+                      </div>
 
                       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                         <InfoTile
@@ -283,28 +315,56 @@ export default function AdminConsultationsPage() {
                       </div>
                     </div>
 
-                    <div className="flex w-full flex-wrap gap-3 sm:w-auto sm:flex-col sm:items-stretch">
-                      <Link
-                        href={`/consultations/${vote.slug}`}
-                        className="inline-flex justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
-                      >
-                        Open public view
-                      </Link>
+                    <div className="flex min-w-0 flex-col border-t border-slate-100 bg-slate-50 lg:border-l lg:border-t-0">
+                      {vote.coverImageUrl ? (
+                        <div className="overflow-hidden border-b border-slate-100 bg-slate-100">
+                          <img
+                            src={vote.coverImageUrl}
+                            alt={vote.coverImageAlt ?? vote.title}
+                            className="h-56 w-full object-cover lg:h-full lg:min-h-[320px]"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex min-h-[220px] items-center justify-center border-b border-slate-100 bg-gradient-to-br from-slate-100 via-white to-slate-100 px-6 text-center">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                              Consultation preview
+                            </p>
+                            <p className="mt-3 text-sm leading-6 text-slate-600">
+                              Open the detail page to review results, analytics,
+                              participants, and publication settings.
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                      {canViewAdminDetail ? (
+                      <div className="flex flex-col gap-3 px-6 py-5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Quick actions
+                        </p>
+
                         <Link
-                          href={`/admin/consultations/${vote.slug}`}
-                          className="inline-flex justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
+                          href={`/consultations/${vote.slug}`}
+                          className="inline-flex justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
                         >
-                          Open admin detail
+                          Open public view
                         </Link>
-                      ) : null}
+
+                        {canViewAdminDetail ? (
+                          <Link
+                            href={`/admin/consultations/${vote.slug}`}
+                            className="inline-flex justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
+                          >
+                            Open admin detail
+                          </Link>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
       </div>
     </main>
@@ -354,11 +414,11 @@ function InfoTile({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
+    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-2 text-sm font-medium leading-6 text-slate-900">
+      <p className="mt-2 break-words text-sm font-medium leading-6 text-slate-900">
         {value}
       </p>
     </div>

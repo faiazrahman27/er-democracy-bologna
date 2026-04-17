@@ -337,81 +337,127 @@ export function ConsultationInteractions({ vote }: Props) {
       : 'Raw vs weighted results';
 
   return (
-    <div className="mt-10 grid gap-10">
-      <section className="rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-green-100">
-        <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr]">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Participation
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-              Cast your vote
-            </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              Select one option below to participate in this consultation. If the
-              consultation uses weighted logic, your submission may also take
-              assessment data or a self-assessment score into account.
-            </p>
-
-            <div className="mt-5 space-y-3 text-sm leading-7 text-slate-600">
-              <p>
-                <span className="font-medium text-slate-900">Status:</span>{' '}
+    <div className="mt-10 grid gap-12">
+      <section className="rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 via-white to-slate-50 p-6 shadow-sm ring-1 ring-green-100 md:p-8">
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-green-700">
+                Participation
+              </span>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 ring-1 ring-slate-200">
                 {vote.derivedStatus ? formatEnumLabel(vote.derivedStatus) : 'Unknown'}
-              </p>
-              <p>
-                <span className="font-medium text-slate-900">Vote type:</span>{' '}
-                {formatEnumLabel(vote.voteType)}
-              </p>
-
-              {requiresAssessment ? (
-                <p>
-                  This consultation requires a completed assessment profile
-                  before you can participate.
-                </p>
-              ) : null}
-
-              {requiresSelfAssessmentScore ? (
-                <p>
-                  This consultation uses a self-assessment score from 1 to 10 to
-                  influence vote weight within a limited normalized range.
-                </p>
-              ) : null}
+              </span>
             </div>
 
-            <div className="mt-8 grid gap-3">
-              {sortedOptions.map((option) => (
-                <label
-                  key={option.id}
-                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 transition-all duration-200 ${
-                    selectedOptionId === option.id
-                      ? 'border-green-300 bg-green-50 shadow-sm'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="selectedOptionId"
-                    value={option.id}
-                    checked={selectedOptionId === option.id}
-                    onChange={() => setSelectedOptionId(option.id)}
-                    disabled={!canAttemptVote}
-                    className="mt-1"
-                  />
-                  <span className="text-sm leading-6 text-slate-700">
-                    <span className="font-medium text-slate-900">
-                      Option {option.displayOrder}:
-                    </span>{' '}
-                    {option.optionText}
-                  </span>
-                </label>
-              ))}
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+              Choose your option and vote
+            </h2>
+
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
+              Select one option below to participate in this consultation. The
+              option text is the most important part of your submission. Review
+              the choices carefully before you continue.
+            </p>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <InfoPill
+                label="Vote type"
+                value={formatEnumLabel(vote.voteType)}
+              />
+              <InfoPill
+                label="Status"
+                value={
+                  vote.derivedStatus ? formatEnumLabel(vote.derivedStatus) : 'Unknown'
+                }
+              />
             </div>
+
+            <div className="mt-8">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Voting options
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Select exactly one option.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                {sortedOptions.map((option, index) => {
+                  const accentColor =
+                    vote.displaySettings?.resultVisibilityMode === 'SHOW_WEIGHTED_ONLY'
+                      ? WEIGHTED_OPTION_COLORS[
+                          index % WEIGHTED_OPTION_COLORS.length
+                        ]
+                      : RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length];
+
+                  const isSelected = selectedOptionId === option.id;
+
+                  return (
+                    <label
+                      key={option.id}
+                      className={`group flex cursor-pointer items-start gap-4 rounded-2xl border px-4 py-4 transition-all duration-200 ${
+                        isSelected
+                          ? 'border-green-300 bg-green-50 shadow-sm'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="selectedOptionId"
+                        value={option.id}
+                        checked={isSelected}
+                        onChange={() => setSelectedOptionId(option.id)}
+                        disabled={!canAttemptVote}
+                        className="mt-1"
+                      />
+
+                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white shadow-sm"
+                        style={{ backgroundColor: accentColor }}
+                      >
+                        {option.displayOrder}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          Option {option.displayOrder}
+                        </p>
+                        <p className="mt-2 break-words text-base font-medium leading-7 text-slate-900">
+                          {option.optionText}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {requiresAssessment ? (
+              <NoticeBox tone="neutral">
+                This consultation requires a completed assessment profile before
+                you can participate.
+              </NoticeBox>
+            ) : null}
 
             {requiresSelfAssessmentScore ? (
               <div className="mt-6 rounded-2xl bg-white px-5 py-5 shadow-sm ring-1 ring-slate-200">
-                <label className="mb-3 block text-sm font-medium text-slate-700">
-                  Self-assessment score: {selfAssessmentScore}
-                </label>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Self-assessment score
+                  </label>
+                  <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
+                    {selfAssessmentScore}
+                  </span>
+                </div>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Choose a value from 1 to 10. This affects weighting for this
+                  consultation type.
+                </p>
+
                 <input
                   type="range"
                   min={1}
@@ -421,7 +467,7 @@ export function ConsultationInteractions({ vote }: Props) {
                   onChange={(event) =>
                     setSelfAssessmentScore(Number(event.target.value))
                   }
-                  className="w-full"
+                  className="mt-4 w-full"
                   disabled={!canAttemptVote}
                 />
               </div>
@@ -471,22 +517,31 @@ export function ConsultationInteractions({ vote }: Props) {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
               Guidance
             </p>
-            <h3 className="mt-2 text-xl font-semibold tracking-tight">
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
               Before you submit
             </h3>
 
             <div className="mt-5 space-y-4 text-sm leading-7 text-slate-600">
               <p>
-                Review all available options carefully before submitting your
-                choice.
+                Review the option wording carefully and make sure it matches the
+                outcome you want to support.
               </p>
               <p>
-                Some consultation types may use weighted logic or assessment
-                data to calculate final results.
+                Some consultation types use weighted logic, so the final result
+                can differ from the simple raw total.
               </p>
               <p>
-                Once your vote is submitted, public results and analytics may
-                update depending on the consultation visibility rules.
+                After you submit, the public page may update results and
+                analytics depending on the consultation visibility settings.
+              </p>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Current consultation type
+              </p>
+              <p className="mt-2 text-base font-semibold text-slate-900">
+                {formatEnumLabel(vote.voteType)}
               </p>
             </div>
           </div>
@@ -494,17 +549,19 @@ export function ConsultationInteractions({ vote }: Props) {
       </section>
 
       <section className="border-t border-slate-200 pt-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Results
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-          Consultation results
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-          Review the current outcome of this consultation. Where permitted,
-          both raw and weighted results are shown to make the methodology easier
-          to understand.
-        </p>
+        <div className="max-w-3xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Results
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+            Consultation results
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
+            Review the current outcome of this consultation. Where permitted,
+            raw and weighted results are shown side by side for easier
+            comparison.
+          </p>
+        </div>
 
         {resultsState.isLoading ? (
           <p className="mt-5 text-sm text-slate-600">Loading results...</p>
@@ -659,12 +716,15 @@ export function ConsultationInteractions({ vote }: Props) {
                   className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200"
                 >
                   <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Option {option.displayOrder}: {option.optionText}
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+                      {option.displayOrder}
+                    </div>
+                    <p className="text-base font-semibold text-slate-900">
+                      {option.optionText}
                     </p>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+                  <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
                     {showRawResults && typeof option.rawCount !== 'undefined' ? (
                       <span className="inline-flex items-center gap-2">
                         <span
@@ -712,12 +772,18 @@ export function ConsultationInteractions({ vote }: Props) {
       </section>
 
       <section className="border-t border-slate-200 pt-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Analytics
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-          Participation analytics
-        </h2>
+        <div className="max-w-3xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Analytics
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+            Participation analytics
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
+            View the participant breakdowns that are available for this
+            consultation.
+          </p>
+        </div>
 
         {analyticsState.isLoading ? (
           <p className="mt-5 text-sm text-slate-600">Loading analytics...</p>
@@ -865,6 +931,23 @@ function SummaryStrip({
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+function InfoPill({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
     </div>
   );
 }
