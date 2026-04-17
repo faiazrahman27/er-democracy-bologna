@@ -11,6 +11,15 @@ type AuditLogInput = {
   reason?: string;
 };
 
+type AuthAuditLogInput = {
+  userId?: string | null;
+  attemptedEmail?: string | null;
+  eventType: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
 @Injectable()
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
@@ -34,6 +43,28 @@ export class AuditService {
         actionType: true,
         targetType: true,
         targetId: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async logAuthEvent(input: AuthAuditLogInput) {
+    return this.prisma.authAuditLog.create({
+      data: {
+        userId: input.userId ?? undefined,
+        attemptedEmail: input.attemptedEmail ?? undefined,
+        eventType: input.eventType,
+        ipAddress: input.ipAddress ?? undefined,
+        userAgent: input.userAgent ?? undefined,
+        metadataJson:
+          input.metadata !== undefined ? (input.metadata as object) : undefined,
+      },
+      select: {
+        id: true,
+        userId: true,
+        attemptedEmail: true,
+        eventType: true,
+        ipAddress: true,
         createdAt: true,
       },
     });

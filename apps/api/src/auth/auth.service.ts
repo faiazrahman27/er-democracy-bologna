@@ -13,6 +13,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UsersService } from '../users/users.service';
 import { RefreshTokenService } from './refresh-token.service';
+import { AuditService } from '../audit/audit.service';
 
 type AccessTokenPayload = {
   sub: string;
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -62,23 +64,60 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
+    const attemptedEmail = loginDto.email.trim().toLowerCase();
     const user = await this.usersService.findByEmailForAuth(loginDto.email);
 
     if (!user) {
+      await this.logAuthEventSafely({
+        attemptedEmail,
+        eventType: 'LOGIN_FAILED',
+        metadata: {
+          reason: 'USER_NOT_FOUND',
+        },
+      });
+
       throw new UnauthorizedException('Invalid email or password');
     }
 
     if (!user.isActive) {
+      await this.logAuthEventSafely({
+        userId: user.id,
+        attemptedEmail: user.email,
+        eventType: 'LOGIN_BLOCKED',
+        metadata: {
+          reason: 'ACCOUNT_INACTIVE',
+        },
+      });
+
       throw new ForbiddenException('This account is inactive');
     }
 
     if (!user.emailVerified) {
+      await this.logAuthEventSafely({
+        userId: user.id,
+        attemptedEmail: user.email,
+        eventType: 'LOGIN_BLOCKED',
+        metadata: {
+          reason: 'EMAIL_NOT_VERIFIED',
+        },
+      });
+
       throw new ForbiddenException(
         'Please verify your email address before signing in',
       );
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await this.logAuthEventSafely({
+        userId: user.id,
+        attemptedEmail: user.email,
+        eventType: 'LOGIN_BLOCKED',
+        metadata: {
+          reason: 'ACCOUNT_LOCKED',
+          lockedUntil: user.lockedUntil.toISOString(),
+        },
+      });
+
       throw new ForbiddenException('This account is temporarily locked');
     }
 
@@ -91,16 +130,41 @@ export class AuthService {
       const currentFailedCount = user.failedLoginCount ?? 0;
       const nextFailedLoginCount = currentFailedCount + 1;
       const shouldLockAccount = nextFailedLoginCount >= 5;
+      const lockedUntil = shouldLockAccount
+        ? new Date(Date.now() + 15 * 60 * 1000)
+        : null;
 
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
           failedLoginCount: nextFailedLoginCount,
-          lockedUntil: shouldLockAccount
-            ? new Date(Date.now() + 15 * 60 * 1000)
-            : null,
+          lockedUntil,
         },
       });
+
+      await this.logAuthEventSafely({
+        userId: user.id,
+        attemptedEmail: user.email,
+        eventType: 'LOGIN_FAILED',
+        metadata: {
+          reason: 'INVALID_PASSWORD',
+          failedLoginCount: nextFailedLoginCount,
+          accountLocked: shouldLockAccount,
+          lockedUntil: lockedUntil?.toISOString(),
+        },
+      });
+
+      if (shouldLockAccount) {
+        await this.logAuthEventSafely({
+          userId: user.id,
+          attemptedEmail: user.email,
+          eventType: 'ACCOUNT_LOCKED',
+          metadata: {
+            failedLoginCount: nextFailedLoginCount,
+            lockedUntil: lockedUntil?.toISOString(),
+          },
+        });
+      }
 
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -116,6 +180,15 @@ export class AuthService {
     const refreshToken =
       await this.refreshTokenService.createPlainRefreshToken(user.id);
     await this.refreshTokenService.storeRefreshToken(user.id, refreshToken);
+
+    await this.logAuthEventSafely({
+      userId: user.id,
+      attemptedEmail: user.email,
+      eventType: 'LOGIN_SUCCESS',
+      metadata: {
+        role: user.role,
+      },
+    });
 
     return {
       message: 'Login successful',
@@ -298,6 +371,14 @@ export class AuthService {
     const user = await this.usersService.findByEmailForAuth(normalizedEmail);
 
     if (!user || !user.isActive) {
+      await this.logAuthEventSafely({
+        attemptedEmail: normalizedEmail,
+        eventType: 'PASSWORD_RESET_REQUEST',
+        metadata: {
+          userFound: false,
+        },
+      });
+
       return {
         message:
           'If an account with that email exists, a password reset email has been sent.',
@@ -310,6 +391,15 @@ export class AuthService {
       email: user.email,
       fullName: user.fullName,
       token: resetToken,
+    });
+
+    await this.logAuthEventSafely({
+      userId: user.id,
+      attemptedEmail: user.email,
+      eventType: 'PASSWORD_RESET_REQUEST',
+      metadata: {
+        userFound: true,
+      },
     });
 
     return {
@@ -383,6 +473,14 @@ export class AuthService {
         },
       }),
     ]);
+
+    await this.logAuthEventSafely({
+      userId: tokenRecord.userId,
+      eventType: 'PASSWORD_RESET_SUCCESS',
+      metadata: {
+        refreshTokensRevoked: true,
+      },
+    });
 
     return {
       message: 'Password reset successfully. You can sign in now.',
@@ -615,5 +713,20 @@ export class AuthService {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
+  }
+
+  private async logAuthEventSafely(input: {
+    userId?: string | null;
+    attemptedEmail?: string | null;
+    eventType: string;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+    metadata?: Record<string, unknown>;
+  }) {
+    try {
+      await this.auditService.logAuthEvent(input);
+    } catch {
+      // Intentionally swallow audit logging failures so auth flow never breaks.
+    }
   }
 }

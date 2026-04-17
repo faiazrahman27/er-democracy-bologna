@@ -6,7 +6,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 import { UsersModule } from '../users/users.module';
-import { PrismaModule } from '../prisma/prisma.module'; // ✅ ADD THIS
+import { PrismaModule } from '../prisma/prisma.module';
+import { AuditModule } from '../audit/audit.module';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenService } from './refresh-token.service';
@@ -14,8 +15,8 @@ import { RefreshTokenService } from './refresh-token.service';
 @Module({
   imports: [
     UsersModule,
-    PrismaModule, // ✅ ADD THIS
-
+    PrismaModule,
+    AuditModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
