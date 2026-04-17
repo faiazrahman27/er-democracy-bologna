@@ -88,7 +88,8 @@ export class AuthService {
     );
 
     if (!passwordMatches) {
-      const nextFailedLoginCount = user.failedLoginCount + 1;
+      const currentFailedCount = user.failedLoginCount ?? 0;
+      const nextFailedLoginCount = currentFailedCount + 1;
       const shouldLockAccount = nextFailedLoginCount >= 5;
 
       await this.prisma.user.update({
