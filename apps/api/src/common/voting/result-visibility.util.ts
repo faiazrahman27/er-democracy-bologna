@@ -19,6 +19,19 @@ type VisibilityOutput = {
   showWeightedResults: boolean;
 };
 
+type AnalyticsVisibilityInput = {
+  hasAnyPublicAnalyticsEnabled: boolean;
+  showAfterVotingOnly: boolean;
+  showOnlyAfterVoteCloses: boolean;
+  userHasVoted: boolean;
+  now: Date;
+  endAt: Date;
+};
+
+type AnalyticsVisibilityOutput = {
+  canShowAnalytics: boolean;
+};
+
 export function evaluateResultVisibility(
   input: VisibilityInput,
 ): VisibilityOutput {
@@ -54,5 +67,31 @@ export function evaluateResultVisibility(
     showWeightedResults:
       input.resultVisibilityMode === 'SHOW_WEIGHTED_ONLY' ||
       input.resultVisibilityMode === 'SHOW_BOTH',
+  };
+}
+
+export function evaluateAnalyticsVisibility(
+  input: AnalyticsVisibilityInput,
+): AnalyticsVisibilityOutput {
+  if (!input.hasAnyPublicAnalyticsEnabled) {
+    return {
+      canShowAnalytics: false,
+    };
+  }
+
+  if (input.showOnlyAfterVoteCloses && input.now <= input.endAt) {
+    return {
+      canShowAnalytics: false,
+    };
+  }
+
+  if (input.showAfterVotingOnly && !input.userHasVoted) {
+    return {
+      canShowAnalytics: false,
+    };
+  }
+
+  return {
+    canShowAnalytics: true,
   };
 }

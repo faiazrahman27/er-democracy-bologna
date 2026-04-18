@@ -3,7 +3,7 @@ export type PublicVoteItem = {
   slug: string;
   title: string;
   summary: string;
-  voteType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
+  voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
   topicCategory: string;
   status: string;
   coverImageUrl: string | null;
@@ -12,7 +12,7 @@ export type PublicVoteItem = {
   endAt: string;
   createdAt: string;
   updatedAt: string;
-  derivedStatus: 'UPCOMING' | 'ONGOING' | 'PAST' | 'CANCELLED' | 'ARCHIVED';
+  derivedStatus: "UPCOMING" | "ONGOING" | "PAST" | "CANCELLED" | "ARCHIVED";
 };
 
 export type PublicVotesResponse = {
@@ -26,7 +26,7 @@ export type PublicVoteDetail = {
   title: string;
   summary: string;
   methodologySummary: string | null;
-  voteType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
+  voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
   topicCategory: string;
   status: string;
   coverImageUrl: string | null;
@@ -37,18 +37,26 @@ export type PublicVoteDetail = {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  derivedStatus: 'UPCOMING' | 'ONGOING' | 'PAST' | 'CANCELLED' | 'ARCHIVED';
+  derivedStatus: "UPCOMING" | "ONGOING" | "PAST" | "CANCELLED" | "ARCHIVED";
   options: Array<{
     id: string;
     optionText: string;
     displayOrder: number;
   }>;
   displaySettings: {
-    resultVisibilityMode: 'HIDE_ALL' | 'SHOW_RAW_ONLY' | 'SHOW_WEIGHTED_ONLY' | 'SHOW_BOTH';
+    resultVisibilityMode:
+      | "HIDE_ALL"
+      | "SHOW_RAW_ONLY"
+      | "SHOW_WEIGHTED_ONLY"
+      | "SHOW_BOTH";
     showParticipationStats: boolean;
     showStakeholderBreakdown: boolean;
     showBackgroundBreakdown: boolean;
     showLocationBreakdown: boolean;
+    showAgeRangeBreakdown: boolean;
+    showGenderBreakdown: boolean;
+    showExperienceLevelBreakdown: boolean;
+    showRelationshipBreakdown: boolean;
     showAfterVotingOnly: boolean;
     showOnlyAfterVoteCloses: boolean;
   } | null;

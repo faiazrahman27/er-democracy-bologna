@@ -10,7 +10,10 @@ import { CreateVoteDto } from './dto/create-vote.dto';
 import { UpdateVoteDto } from './dto/update-vote.dto';
 import { SubmitVoteDto } from './dto/submit-vote.dto';
 import { calculateVoteWeight } from '../common/voting/vote-weight.util';
-import { evaluateResultVisibility } from '../common/voting/result-visibility.util';
+import {
+  evaluateAnalyticsVisibility,
+  evaluateResultVisibility,
+} from '../common/voting/result-visibility.util';
 import {
   buildBreakdown,
   buildPublicSafeBreakdown,
@@ -85,8 +88,7 @@ export class VotesService {
             showBackgroundBreakdown:
               dto.displaySettings.showBackgroundBreakdown,
             showLocationBreakdown: dto.displaySettings.showLocationBreakdown,
-            showAgeRangeBreakdown:
-              dto.displaySettings.showAgeRangeBreakdown,
+            showAgeRangeBreakdown: dto.displaySettings.showAgeRangeBreakdown,
             showGenderBreakdown: dto.displaySettings.showGenderBreakdown,
             showExperienceLevelBreakdown:
               dto.displaySettings.showExperienceLevelBreakdown,
@@ -417,10 +419,8 @@ export class VotesService {
                 showLocationBreakdown: dto.showLocationBreakdown,
                 showAgeRangeBreakdown: dto.showAgeRangeBreakdown,
                 showGenderBreakdown: dto.showGenderBreakdown,
-                showExperienceLevelBreakdown:
-                  dto.showExperienceLevelBreakdown,
-                showRelationshipBreakdown:
-                  dto.showRelationshipBreakdown,
+                showExperienceLevelBreakdown: dto.showExperienceLevelBreakdown,
+                showRelationshipBreakdown: dto.showRelationshipBreakdown,
                 showAfterVotingOnly: dto.showAfterVotingOnly,
                 showOnlyAfterVoteCloses: dto.showOnlyAfterVoteCloses,
               },
@@ -884,8 +884,18 @@ export class VotesService {
       );
     }
 
-    const visibility = evaluateResultVisibility({
-      resultVisibilityMode: vote.displaySettings.resultVisibilityMode,
+    const hasAnyPublicAnalyticsEnabled =
+      vote.displaySettings.showParticipationStats ||
+      vote.displaySettings.showStakeholderBreakdown ||
+      vote.displaySettings.showBackgroundBreakdown ||
+      vote.displaySettings.showLocationBreakdown ||
+      vote.displaySettings.showAgeRangeBreakdown ||
+      vote.displaySettings.showGenderBreakdown ||
+      vote.displaySettings.showExperienceLevelBreakdown ||
+      vote.displaySettings.showRelationshipBreakdown;
+
+    const visibility = evaluateAnalyticsVisibility({
+      hasAnyPublicAnalyticsEnabled,
       showAfterVotingOnly: vote.displaySettings.showAfterVotingOnly,
       showOnlyAfterVoteCloses: vote.displaySettings.showOnlyAfterVoteCloses,
       userHasVoted,
@@ -893,7 +903,7 @@ export class VotesService {
       endAt: vote.endAt,
     });
 
-    if (!visibility.canShowResults) {
+    if (!visibility.canShowAnalytics) {
       return {
         slug: vote.slug,
         title: vote.title,
@@ -974,9 +984,7 @@ export class VotesService {
     return {
       slug: vote.slug,
       title: vote.title,
-      visibility: {
-        canShowAnalytics: true,
-      },
+      visibility,
       analytics,
     };
   }
@@ -1302,8 +1310,9 @@ export class VotesService {
       this.formatBreakdownRowsForExport(ageRangeBreakdown);
     const formattedGenderBreakdown =
       this.formatBreakdownRowsForExport(genderBreakdown);
-    const formattedExperienceLevelBreakdown =
-      this.formatBreakdownRowsForExport(experienceLevelBreakdown);
+    const formattedExperienceLevelBreakdown = this.formatBreakdownRowsForExport(
+      experienceLevelBreakdown,
+    );
     const formattedRelationshipToAreaBreakdown =
       this.formatBreakdownRowsForExport(relationshipToAreaBreakdown);
 
