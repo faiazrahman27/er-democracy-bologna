@@ -84,7 +84,9 @@ export default function AdminArticlesPage() {
 
     try {
       await deleteArticle(token, articleId);
-      setArticles((current) => current.filter((article) => article.id !== articleId));
+      setArticles((current) =>
+        current.filter((article) => article.id !== articleId),
+      );
     } catch (err) {
       setDeleteError(
         err instanceof Error ? err.message : 'Failed to delete article',
@@ -181,7 +183,7 @@ export default function AdminArticlesPage() {
                       <img
                         src={article.coverImageUrl}
                         alt={article.coverImageAlt || article.title}
-                        className="block h-full w-full object-cover object-center"
+                        className="block h-full w-full object-contain object-center"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs font-medium text-slate-400">
