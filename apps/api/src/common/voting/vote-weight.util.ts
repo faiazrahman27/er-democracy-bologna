@@ -9,9 +9,19 @@ type AssessmentForWeighting = {
   assessmentCompleted: boolean;
 };
 
+type ConsultationTopicContext = {
+  topicCategory: string;
+  title?: string | null;
+  summary?: string | null;
+  methodologySummary?: string | null;
+};
+
 type CalculateVoteWeightInput = {
   voteType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
   topicCategory: string;
+  title?: string | null;
+  summary?: string | null;
+  methodologySummary?: string | null;
   assessment?: AssessmentForWeighting | null;
   selfAssessmentScore?: number | null;
 };
@@ -23,6 +33,12 @@ type WeightResult = {
 
 const MIN_SPECIALIZED_WEIGHT = 0.75;
 const MAX_SPECIALIZED_WEIGHT = 1.75;
+const STAKEHOLDER_TOPIC_MATCH_BONUS_PER_KEYWORD = 0.12;
+const MAX_STAKEHOLDER_TOPIC_MATCH_BONUS = 0.35;
+const BACKGROUND_TOPIC_MATCH_BONUS_PER_KEYWORD = 0.1;
+const MAX_BACKGROUND_TOPIC_MATCH_BONUS = 0.25;
+const RELATIONSHIP_TOPIC_MATCH_BONUS_PER_KEYWORD = 0.08;
+const MAX_RELATIONSHIP_TOPIC_MATCH_BONUS = 0.15;
 
 type RelevanceRule = {
   topicKeywords: string[];
@@ -246,7 +262,11 @@ const TOPIC_RELEVANCE_RULES: RelevanceRule[] = [
 ];
 
 function normalizeValue(value?: string | null): string {
-  return (value ?? '').trim().toLowerCase();
+  return (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ');
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -259,14 +279,51 @@ function normalizeSelfAssessmentWeight(score: number): number {
 }
 
 function matchesAnyKeyword(value: string, keywords: string[]): boolean {
-  return keywords.some((keyword) => value.includes(keyword));
+  return keywords.some((keyword) => value.includes(normalizeValue(keyword)));
 }
 
-function getMatchingRules(topicCategory: string): RelevanceRule[] {
-  const topic = normalizeValue(topicCategory);
+function getConsultationTopicText(
+  topicContext: ConsultationTopicContext,
+): string {
+  return normalizeValue(
+    [
+      topicContext.title,
+      topicContext.topicCategory,
+      topicContext.summary,
+      topicContext.methodologySummary,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+}
+
+function getMatchingRules(
+  topicContext: ConsultationTopicContext,
+): RelevanceRule[] {
+  const topic = getConsultationTopicText(topicContext);
   return TOPIC_RELEVANCE_RULES.filter((rule) =>
     matchesAnyKeyword(topic, rule.topicKeywords),
   );
+}
+
+function getMatchedTopicKeywords(
+  topicContext: ConsultationTopicContext,
+  matchingRules: RelevanceRule[],
+): string[] {
+  const topic = getConsultationTopicText(topicContext);
+  const matchedKeywords = new Set<string>();
+
+  for (const rule of matchingRules) {
+    for (const keyword of rule.topicKeywords) {
+      const normalizedKeyword = normalizeValue(keyword);
+
+      if (topic.includes(normalizedKeyword)) {
+        matchedKeywords.add(normalizedKeyword);
+      }
+    }
+  }
+
+  return Array.from(matchedKeywords);
 }
 
 function getMaxStakeholderBonus(
@@ -327,6 +384,27 @@ function getMaxRelationshipBonus(
   return bonus;
 }
 
+function getTopicKeywordMatchBonus(
+  value: string,
+  topicKeywords: string[],
+  bonusPerKeyword: number,
+  maxBonus: number,
+): number {
+  if (!value || topicKeywords.length === 0) {
+    return 0;
+  }
+
+  const matchedKeywords = new Set<string>();
+
+  for (const keyword of topicKeywords) {
+    if (value.includes(keyword)) {
+      matchedKeywords.add(keyword);
+    }
+  }
+
+  return Math.min(matchedKeywords.size * bonusPerKeyword, maxBonus);
+}
+
 function getExperienceBonus(experienceLevel: string): number {
   switch (experienceLevel) {
     case 'expert':
@@ -340,6 +418,29 @@ function getExperienceBonus(experienceLevel: string): number {
   }
 }
 
+function getExperienceAlignmentMultiplier(
+  topicKeywordsMatched: number,
+  topicAlignmentSignal: number,
+): number {
+  if (topicKeywordsMatched === 0) {
+    return 1;
+  }
+
+  if (topicAlignmentSignal >= 0.3) {
+    return 1;
+  }
+
+  if (topicAlignmentSignal >= 0.15) {
+    return 0.65;
+  }
+
+  if (topicAlignmentSignal > 0) {
+    return 0.45;
+  }
+
+  return 0.25;
+}
+
 function getLocalityBonus(assessment: AssessmentForWeighting): number {
   const city = normalizeValue(assessment.city);
 
@@ -351,21 +452,70 @@ function getLocalityBonus(assessment: AssessmentForWeighting): number {
 }
 
 function getSpecializedWeight(
-  topicCategory: string,
+  topicContext: ConsultationTopicContext,
   assessment: AssessmentForWeighting,
 ): number {
   const stakeholderRole = normalizeValue(assessment.stakeholderRole);
   const backgroundCategory = normalizeValue(assessment.backgroundCategory);
   const experienceLevel = normalizeValue(assessment.experienceLevel);
   const relationshipToArea = normalizeValue(assessment.relationshipToArea);
-  const matchingRules = getMatchingRules(topicCategory);
+  const matchingRules = getMatchingRules(topicContext);
+  const matchedTopicKeywords = getMatchedTopicKeywords(
+    topicContext,
+    matchingRules,
+  );
+  const stakeholderBonus = getMaxStakeholderBonus(
+    stakeholderRole,
+    matchingRules,
+  );
+  const backgroundBonus = getMaxBackgroundBonus(
+    backgroundCategory,
+    matchingRules,
+  );
+  const relationshipBonus = getMaxRelationshipBonus(
+    relationshipToArea,
+    matchingRules,
+  );
+  const stakeholderTopicMatchBonus = getTopicKeywordMatchBonus(
+    stakeholderRole,
+    matchedTopicKeywords,
+    STAKEHOLDER_TOPIC_MATCH_BONUS_PER_KEYWORD,
+    MAX_STAKEHOLDER_TOPIC_MATCH_BONUS,
+  );
+  const backgroundTopicMatchBonus = getTopicKeywordMatchBonus(
+    backgroundCategory,
+    matchedTopicKeywords,
+    BACKGROUND_TOPIC_MATCH_BONUS_PER_KEYWORD,
+    MAX_BACKGROUND_TOPIC_MATCH_BONUS,
+  );
+  const relationshipTopicMatchBonus = getTopicKeywordMatchBonus(
+    relationshipToArea,
+    matchedTopicKeywords,
+    RELATIONSHIP_TOPIC_MATCH_BONUS_PER_KEYWORD,
+    MAX_RELATIONSHIP_TOPIC_MATCH_BONUS,
+  );
+  const topicAlignmentSignal =
+    stakeholderTopicMatchBonus +
+    backgroundTopicMatchBonus +
+    relationshipTopicMatchBonus +
+    relationshipBonus +
+    Math.max(stakeholderBonus - 0.1, 0);
+  const experienceBonus =
+    getExperienceBonus(experienceLevel) *
+    getExperienceAlignmentMultiplier(
+      matchedTopicKeywords.length,
+      topicAlignmentSignal,
+    );
 
   let weight = 1;
 
-  weight += getMaxStakeholderBonus(stakeholderRole, matchingRules);
-  weight += getMaxBackgroundBonus(backgroundCategory, matchingRules);
-  weight += getMaxRelationshipBonus(relationshipToArea, matchingRules);
-  weight += getExperienceBonus(experienceLevel);
+  weight += stakeholderBonus;
+  weight += backgroundBonus;
+  weight += relationshipBonus;
+  weight += stakeholderTopicMatchBonus;
+  weight += backgroundTopicMatchBonus;
+  weight += relationshipTopicMatchBonus;
+  weight += experienceBonus;
   weight += getLocalityBonus(assessment);
 
   return Number(
@@ -406,7 +556,15 @@ export function calculateVoteWeight(
   }
 
   return {
-    weightUsed: getSpecializedWeight(input.topicCategory, input.assessment),
+    weightUsed: getSpecializedWeight(
+      {
+        topicCategory: input.topicCategory,
+        title: input.title,
+        summary: input.summary,
+        methodologySummary: input.methodologySummary,
+      },
+      input.assessment,
+    ),
     calculationType: 'SPECIALIZED',
   };
 }

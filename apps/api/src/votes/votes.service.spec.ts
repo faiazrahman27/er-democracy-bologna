@@ -1,18 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { VotesService } from './votes.service';
 import { PrismaService } from '../prisma/prisma.service';
+import * as voteWeightUtil from '../common/voting/vote-weight.util';
 
 describe('VotesService', () => {
   let service: VotesService;
-  let prismaService: {
-    vote: {
-      findUnique: jest.Mock;
-    };
-  };
+  let prismaService: any;
 
   beforeEach(async () => {
     prismaService = {
       vote: {
+        findUnique: jest.fn(),
+      },
+      voteSubmission: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+      },
+      assessment: {
         findUnique: jest.fn(),
       },
     };
@@ -30,8 +34,69 @@ describe('VotesService', () => {
     service = module.get<VotesService>(VotesService);
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('passes consultation metadata into SPECIALIZED weight calculation during submission', async () => {
+    prismaService.vote.findUnique.mockResolvedValue({
+      id: 'vote-1',
+      title: 'University student housing and academic support',
+      summary: 'Education consultation for campus services in Bologna',
+      methodologySummary: 'Academic research and student participation',
+      voteType: 'SPECIALIZED',
+      topicCategory: 'governance',
+      status: 'PUBLISHED',
+      isPublished: true,
+      startAt: new Date('2020-01-01T00:00:00.000Z'),
+      endAt: new Date('2999-01-01T00:00:00.000Z'),
+      options: [{ id: 'option-1' }],
+    });
+    prismaService.voteSubmission.findUnique.mockResolvedValue(null);
+    prismaService.assessment.findUnique.mockResolvedValue({
+      stakeholderRole: 'UNIVERSITY_STUDENT',
+      backgroundCategory: 'EDUCATION',
+      experienceLevel: 'EXPERT',
+      relationshipToArea: 'RESIDENT',
+      city: 'BOLOGNA',
+      region: 'EMILIA_ROMAGNA',
+      country: 'ITALY',
+      assessmentCompleted: true,
+    });
+    prismaService.voteSubmission.create.mockResolvedValue({
+      id: 'submission-1',
+      voteId: 'vote-1',
+      userId: 'user-1',
+      selectedOptionId: 'option-1',
+      selfAssessmentScore: null,
+      weightUsed: 1.75,
+      calculationType: 'SPECIALIZED',
+      submittedAt: new Date('2026-04-18T10:00:00.000Z'),
+      createdAt: new Date('2026-04-18T10:00:00.000Z'),
+    });
+
+    const calculateVoteWeightSpy = jest.spyOn(
+      voteWeightUtil,
+      'calculateVoteWeight',
+    );
+
+    await service.submitVote('user-1', 'university-consultation', {
+      selectedOptionId: 'option-1',
+    });
+
+    expect(calculateVoteWeightSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        voteType: 'SPECIALIZED',
+        topicCategory: 'governance',
+        title: 'University student housing and academic support',
+        summary: 'Education consultation for campus services in Bologna',
+        methodologySummary: 'Academic research and student participation',
+      }),
+    );
   });
 
   it('shows public analytics when analytics are enabled even if public results are hidden', async () => {

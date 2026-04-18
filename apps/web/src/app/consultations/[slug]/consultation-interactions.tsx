@@ -31,17 +31,17 @@ type Props = {
 
 const PIE_CHART_COLORS = [
   "#2563eb",
-  "#dc2626",
+  "#f97316",
   "#16a34a",
-  "#d97706",
+  "#dc2626",
   "#7c3aed",
-  "#0f766e",
-  "#db2777",
   "#0891b2",
-  "#65a30d",
-  "#c2410c",
+  "#ca8a04",
+  "#db2777",
   "#4f46e5",
-  "#854d0e",
+  "#0f766e",
+  "#ea580c",
+  "#65a30d",
 ];
 
 const RAW_OPTION_COLORS = [
@@ -1196,6 +1196,46 @@ function SeriesLegendChip({
   );
 }
 
+type BreakdownChartLegendItem = {
+  label: string;
+  count: number;
+  percentage: number;
+  color: string;
+};
+
+function BreakdownPieTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{
+    payload?: BreakdownChartLegendItem;
+  }>;
+}) {
+  const item = payload?.[0]?.payload;
+
+  if (!active || !item) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
+      <div className="flex items-start gap-3">
+        <span className="rounded-full p-0.5 ring-2 ring-white shadow-sm">
+          <ColorDot color={item.color} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">{item.label}</p>
+          <p className="mt-1 text-xs font-medium text-slate-700">
+            {item.count} participants
+          </p>
+          <p className="text-xs text-slate-600">{item.percentage}%</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OptionResultPieCard({
   title,
   description,
@@ -1349,6 +1389,11 @@ function BreakdownChartCard({
     return null;
   }
 
+  const chartItems: BreakdownChartLegendItem[] = items.map((item, index) => ({
+    ...item,
+    color: PIE_CHART_COLORS[index % PIE_CHART_COLORS.length],
+  }));
+
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <h3 className="text-base font-semibold tracking-tight text-slate-900">
@@ -1356,62 +1401,58 @@ function BreakdownChartCard({
       </h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
 
-      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-center">
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={items}
-                dataKey="count"
-                nameKey="label"
-                outerRadius={90}
-                innerRadius={42}
-                paddingAngle={2}
-              >
-                {items.map((item, index) => (
-                  <Cell
-                    key={`${item.label}-${index}`}
-                    fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
-                    stroke="#ffffff"
-                    strokeWidth={2}
-                  />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, _name, entry) => [
-                  `${value} participants (${entry.payload.percentage}%)`,
-                  entry.payload.label,
-                ]}
-                contentStyle={{
-                  borderRadius: 12,
-                  border: "1px solid #e2e8f0",
-                  boxShadow:
-                    "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+      <div className="mt-5 grid gap-5">
+        <div className="flex justify-center">
+          <div className="aspect-square w-full max-w-[15rem]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                <Pie
+                  data={chartItems}
+                  dataKey="count"
+                  nameKey="label"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="92%"
+                  paddingAngle={chartItems.length > 1 ? 1 : 0}
+                >
+                  {chartItems.map((item) => (
+                    <Cell
+                      key={item.label}
+                      fill={item.color}
+                      stroke="#ffffff"
+                      strokeWidth={3}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<BreakdownPieTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          {items.map((item, index) => (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+          {chartItems.map((item) => (
             <div
               key={`breakdown-pie-legend-${item.label}`}
-              className="rounded-2xl bg-slate-50 px-3 py-3 ring-1 ring-slate-200"
+              className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 shadow-sm"
+              style={{ borderLeftColor: item.color, borderLeftWidth: 6 }}
             >
               <div className="flex items-start gap-3">
-                <div className="pt-0.5">
-                  <ColorDot
-                    color={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">
+                <span className="rounded-full p-0.5 ring-2 ring-white shadow-sm">
+                  <ColorDot color={item.color} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-sm font-semibold text-slate-900">
                     {item.label}
                   </p>
-                  <p className="mt-1 text-xs font-medium text-slate-700">
-                    {item.count} participants ({item.percentage}%)
-                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium text-slate-700">
+                    <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+                      {item.count} participants
+                    </span>
+                    <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+                      {item.percentage}%
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

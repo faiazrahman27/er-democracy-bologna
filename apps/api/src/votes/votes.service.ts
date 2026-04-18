@@ -514,6 +514,9 @@ export class VotesService {
       where: { slug: normalizedSlug },
       select: {
         id: true,
+        title: true,
+        summary: true,
+        methodologySummary: true,
         voteType: true,
         topicCategory: true,
         status: true,
@@ -628,6 +631,9 @@ export class VotesService {
       weightResult = calculateVoteWeight({
         voteType: vote.voteType,
         topicCategory: vote.topicCategory,
+        title: vote.title,
+        summary: vote.summary,
+        methodologySummary: vote.methodologySummary,
         assessment,
         selfAssessmentScore: dto.selfAssessmentScore,
       });
