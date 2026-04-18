@@ -126,6 +126,12 @@ export class VotesService {
         endAt: true,
         createdAt: true,
         updatedAt: true,
+        displaySettings: {
+          select: {
+            showAfterVotingOnly: true,
+            showOnlyAfterVoteCloses: true,
+          },
+        },
       },
       orderBy: [{ startAt: 'desc' }, { createdAt: 'desc' }],
     });

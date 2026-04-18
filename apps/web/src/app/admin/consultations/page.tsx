@@ -511,7 +511,7 @@ function getConsultationStatusBadges(
 
   if (shouldShowTimingStatus) {
     addBadge(
-      formatEnumLabel(vote.derivedStatus),
+      formatEnumLabel(vote.derivedStatus ?? 'Unknown'),
       deriveStatusTone(vote.derivedStatus),
     );
   }
