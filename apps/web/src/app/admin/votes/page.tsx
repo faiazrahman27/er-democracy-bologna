@@ -395,13 +395,13 @@ export default function AdminVotesPage() {
             </div>
 
             {coverImageUrl ? (
-              <div className="mt-5">
+              <div className="mt-5 max-w-md">
                 <p className="mb-2 text-sm font-medium text-slate-700">Preview</p>
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                   <img
                     src={coverImageUrl}
                     alt={coverImageAlt || 'Consultation cover preview'}
-                    className="h-64 w-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 </div>
                 <p className="mt-2 break-all text-xs text-slate-500">{coverImageUrl}</p>

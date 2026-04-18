@@ -29,11 +29,11 @@ export default async function ArticleDetailPage({
             </p>
 
             {article.coverImageUrl ? (
-              <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200">
+              <div className="mt-8 mx-auto aspect-square w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                 <img
                   src={article.coverImageUrl}
                   alt={article.coverImageAlt ?? article.title}
-                  className="h-auto w-full object-cover"
+                  className="h-full w-full object-cover"
                 />
               </div>
             ) : null}

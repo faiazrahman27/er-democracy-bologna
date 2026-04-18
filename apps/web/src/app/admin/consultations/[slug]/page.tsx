@@ -432,11 +432,11 @@ export default function AdminConsultationDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
             {vote.coverImageUrl ? (
-              <div className="mb-8 overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
+              <div className="mb-8 mx-auto aspect-square w-full max-w-3xl overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
                 <img
                   src={vote.coverImageUrl}
                   alt={vote.coverImageAlt ?? vote.title}
-                  className="h-72 w-full object-cover md:h-96"
+                  className="h-full w-full object-cover"
                 />
               </div>
             ) : null}

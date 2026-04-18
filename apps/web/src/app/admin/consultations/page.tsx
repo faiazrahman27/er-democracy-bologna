@@ -317,15 +317,15 @@ export default function AdminConsultationsPage() {
 
                     <div className="flex min-w-0 flex-col border-t border-slate-100 bg-slate-50 lg:border-l lg:border-t-0">
                       {vote.coverImageUrl ? (
-                        <div className="overflow-hidden border-b border-slate-100 bg-slate-100">
+                        <div className="aspect-square overflow-hidden border-b border-slate-100 bg-slate-100">
                           <img
                             src={vote.coverImageUrl}
                             alt={vote.coverImageAlt ?? vote.title}
-                            className="h-56 w-full object-cover lg:h-full lg:min-h-[320px]"
+                            className="h-full w-full object-cover"
                           />
                         </div>
                       ) : (
-                        <div className="flex min-h-[220px] items-center justify-center border-b border-slate-100 bg-gradient-to-br from-slate-100 via-white to-slate-100 px-6 text-center">
+                        <div className="flex aspect-square items-center justify-center border-b border-slate-100 bg-gradient-to-br from-slate-100 via-white to-slate-100 px-6 text-center">
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                               Consultation preview

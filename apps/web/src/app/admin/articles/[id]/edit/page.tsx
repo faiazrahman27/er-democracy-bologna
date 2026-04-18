@@ -299,13 +299,13 @@ export default function EditArticlePage() {
               </div>
 
               {coverImageUrl ? (
-                <div className="mt-5">
+                <div className="mt-5 max-w-md">
                   <p className="mb-2 text-sm font-medium text-slate-700">Preview</p>
-                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                  <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
                     <img
                       src={coverImageUrl}
                       alt={coverImageAlt || 'Article cover preview'}
-                      className="h-64 w-full object-cover"
+                      className="h-full w-full object-cover"
                     />
                   </div>
                   <p className="mt-2 break-all text-xs text-slate-500">
@@ -313,7 +313,7 @@ export default function EditArticlePage() {
                   </p>
                 </div>
               ) : (
-                <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
+                <div className="mt-5 flex aspect-square w-full max-w-md items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
                   No cover image uploaded yet.
                 </div>
               )}
