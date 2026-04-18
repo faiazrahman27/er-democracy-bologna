@@ -125,4 +125,197 @@ describe('calculateVoteWeight', () => {
       weaklyRelevantExpert.weightUsed - weaklyRelevantBeginner.weightUsed,
     ).toBeLessThanOrEqual(0.05);
   });
+
+  it('keeps backgroundCategory nearly neutral on broad student-life consultations', () => {
+    const informationSystemsStudent = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University of Bologna student life and academic support',
+      summary:
+        'Consultation on campus facilities, general student experience, and university services',
+      methodologySummary: 'Student participation and service design review',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'INFORMATION_SYSTEMS',
+        experienceLevel: 'ADVANCED',
+      },
+    });
+
+    const engineeringStudent = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University of Bologna student life and academic support',
+      summary:
+        'Consultation on campus facilities, general student experience, and university services',
+      methodologySummary: 'Student participation and service design review',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'ENGINEERING',
+        experienceLevel: 'ADVANCED',
+      },
+    });
+
+    expect(informationSystemsStudent.weightUsed).toBeGreaterThanOrEqual(1.4);
+    expect(
+      Math.abs(
+        informationSystemsStudent.weightUsed - engineeringStudent.weightUsed,
+      ),
+    ).toBeLessThanOrEqual(0.02);
+  });
+
+  it('only gives backgroundCategory meaningful influence when the consultation is field-specific', () => {
+    const informationSystemsStudent = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'technology',
+      title: 'Digital learning systems and IT support for University of Bologna students',
+      summary:
+        'Consultation on campus software platforms, technical curriculum tools, and data services',
+      methodologySummary: 'Technology audit for academic infrastructure',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'INFORMATION_SYSTEMS',
+        experienceLevel: 'ADVANCED',
+      },
+    });
+
+    const engineeringStudent = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'technology',
+      title: 'Digital learning systems and IT support for University of Bologna students',
+      summary:
+        'Consultation on campus software platforms, technical curriculum tools, and data services',
+      methodologySummary: 'Technology audit for academic infrastructure',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'ENGINEERING',
+        experienceLevel: 'ADVANCED',
+      },
+    });
+
+    expect(informationSystemsStudent.weightUsed).toBeGreaterThan(
+      engineeringStudent.weightUsed + 0.02,
+    );
+  });
+
+  it('keeps strongly relevant users distinguishable through secondary factors', () => {
+    const advancedResident = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University of Bologna student life and academic support',
+      summary:
+        'Consultation on campus facilities, academic support, and general student experience',
+      methodologySummary: 'Student participation on university service quality',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'INFORMATION_SYSTEMS',
+        experienceLevel: 'ADVANCED',
+        relationshipToArea: 'RESIDENT',
+      },
+    });
+
+    const beginnerNonResident = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University of Bologna student life and academic support',
+      summary:
+        'Consultation on campus facilities, academic support, and general student experience',
+      methodologySummary: 'Student participation on university service quality',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'ENGINEERING',
+        experienceLevel: 'BEGINNER',
+        relationshipToArea: 'NON_RESIDENT',
+      },
+    });
+
+    expect(advancedResident.weightUsed).toBeLessThan(2);
+    expect(advancedResident.weightUsed).toBeGreaterThan(
+      beginnerNonResident.weightUsed + 0.035,
+    );
+  });
+
+  it('applies an explicit resident > non-resident > visitor ordering for location-specific consultations', () => {
+    const resident = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University of Bologna student life and academic support',
+      summary:
+        'Consultation on Bologna campus facilities, student services, and local university experience',
+      methodologySummary: 'Student participation on place-based campus planning',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'EDUCATION',
+        experienceLevel: 'ADVANCED',
+        relationshipToArea: 'RESIDENT',
+      },
+    });
+
+    const nonResident = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University of Bologna student life and academic support',
+      summary:
+        'Consultation on Bologna campus facilities, student services, and local university experience',
+      methodologySummary: 'Student participation on place-based campus planning',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'EDUCATION',
+        experienceLevel: 'ADVANCED',
+        relationshipToArea: 'NON_RESIDENT',
+      },
+    });
+
+    const visitor = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University of Bologna student life and academic support',
+      summary:
+        'Consultation on Bologna campus facilities, student services, and local university experience',
+      methodologySummary: 'Student participation on place-based campus planning',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'EDUCATION',
+        experienceLevel: 'ADVANCED',
+        relationshipToArea: 'VISITOR',
+      },
+    });
+
+    expect(resident.weightUsed).toBeGreaterThan(nonResident.weightUsed);
+    expect(nonResident.weightUsed).toBeGreaterThan(visitor.weightUsed);
+    expect(resident.weightUsed - visitor.weightUsed).toBeLessThanOrEqual(0.08);
+  });
+
+  it('keeps relationshipToArea neutral when the consultation is not location-specific', () => {
+    const resident = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'technology',
+      title: 'Digital learning systems and academic support',
+      summary:
+        'Consultation on software tools, online learning platforms, and student IT support',
+      methodologySummary: 'Technical review of university digital services',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'INFORMATION_SYSTEMS',
+        experienceLevel: 'ADVANCED',
+        relationshipToArea: 'RESIDENT',
+      },
+    });
+
+    const visitor = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'technology',
+      title: 'Digital learning systems and academic support',
+      summary:
+        'Consultation on software tools, online learning platforms, and student IT support',
+      methodologySummary: 'Technical review of university digital services',
+      assessment: {
+        ...baseAssessment,
+        backgroundCategory: 'INFORMATION_SYSTEMS',
+        experienceLevel: 'ADVANCED',
+        relationshipToArea: 'VISITOR',
+      },
+    });
+
+    expect(resident.weightUsed).toBe(visitor.weightUsed);
+  });
 });

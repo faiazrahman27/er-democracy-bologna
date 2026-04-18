@@ -78,8 +78,23 @@ type StageConfig = {
   country: FieldWeights;
 };
 
+type ConsultationContextSignals = {
+  fullText: string;
+  keywords: string[];
+  concepts: string[];
+  isPlaceBased: boolean;
+};
+
+type StageFieldRelevance = {
+  backgroundCategory: number;
+  relationshipToArea: number;
+  location: number;
+};
+
 const MIN_SPECIALIZED_WEIGHT = 0.6;
 const MAX_SPECIALIZED_WEIGHT = 2.0;
+const SPECIALIZED_SOFT_CAP_START = 1.65;
+const SPECIALIZED_SOFT_CAP_RATIO = 0.38;
 
 const TITLE_STAGE_CONFIG: StageConfig = {
   stakeholderRole: { direct: 0.22, concept: 0.08, phrase: 0.42, cap: 0.95 },
@@ -334,23 +349,32 @@ const TOPIC_CONCEPTS: TopicConcept[] = [
 const PLACE_BASED_CONTEXT_ALIASES = [
   'area',
   'areas',
+  'bologna',
+  'campus',
+  'campuses',
   'city',
   'cities',
   'community',
   'communities',
   'district',
+  'facilities',
+  'facility',
   'housing',
   'mobility',
   'neighborhood',
   'neighbourhood',
   'public space',
+  'regional',
   'resident',
   'residents',
   'territorial',
   'territory',
   'transport',
   'urban',
+  'university of bologna',
 ];
+
+const LOW_SIGNAL_BACKGROUND_CONCEPTS = new Set(['community', 'education']);
 
 function normalizeValue(value?: string | null): string {
   return (value ?? '')
@@ -417,6 +441,33 @@ function getMatchedConceptIds(text: string): string[] {
   ).map((concept) => concept.id);
 }
 
+function getConsultationContextSignals(
+  topicContext: ConsultationTopicContext,
+): ConsultationContextSignals {
+  const fullText = normalizeValue(
+    [
+      topicContext.title,
+      topicContext.topicCategory,
+      topicContext.summary,
+      topicContext.methodologySummary,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+  const keywords = getMeaningfulKeywords(fullText);
+  const concepts = getMatchedConceptIds(fullText);
+  const normalizedTokens = new Set(keywords);
+
+  return {
+    fullText,
+    keywords,
+    concepts,
+    isPlaceBased: PLACE_BASED_CONTEXT_ALIASES.some((alias) =>
+      textContainsAlias(fullText, alias, normalizedTokens),
+    ),
+  };
+}
+
 function countSharedValues(left: string[], right: string[]): number {
   const rightSet = new Set(right);
 
@@ -424,6 +475,11 @@ function countSharedValues(left: string[], right: string[]): number {
     (count, value) => (rightSet.has(value) ? count + 1 : count),
     0,
   );
+}
+
+function getSharedValues(left: string[], right: string[]): string[] {
+  const rightSet = new Set(right);
+  return Array.from(new Set(left.filter((value) => rightSet.has(value))));
 }
 
 function hasPhraseMatch(stageText: string, fieldText: string): boolean {
@@ -471,6 +527,7 @@ function getStageMetrics(
   stageText: string,
   assessment: AssessmentForWeighting,
   config: StageConfig,
+  fieldRelevance: StageFieldRelevance,
 ): StageMetrics {
   const normalizedStageText = normalizeValue(stageText);
   const stageKeywords = getMeaningfulKeywords(normalizedStageText);
@@ -522,47 +579,101 @@ function getStageMetrics(
   return {
     weightedSignal:
       stakeholderRole.weightedSignal +
-      backgroundCategory.weightedSignal +
-      relationshipToArea.weightedSignal +
-      city.weightedSignal +
-      region.weightedSignal +
-      country.weightedSignal,
+      backgroundCategory.weightedSignal * fieldRelevance.backgroundCategory +
+      relationshipToArea.weightedSignal * fieldRelevance.relationshipToArea +
+      (city.weightedSignal + region.weightedSignal + country.weightedSignal) *
+        fieldRelevance.location,
     primaryDirectMatches:
       stakeholderRole.directMatches +
-      backgroundCategory.directMatches +
-      relationshipToArea.directMatches,
+      backgroundCategory.directMatches * fieldRelevance.backgroundCategory +
+      relationshipToArea.directMatches * fieldRelevance.relationshipToArea,
     primaryConceptMatches:
       stakeholderRole.conceptMatches +
-      backgroundCategory.conceptMatches +
-      relationshipToArea.conceptMatches,
+      backgroundCategory.conceptMatches * fieldRelevance.backgroundCategory +
+      relationshipToArea.conceptMatches * fieldRelevance.relationshipToArea,
     primaryPhraseMatches:
       stakeholderRole.phraseMatches +
-      backgroundCategory.phraseMatches +
-      relationshipToArea.phraseMatches,
+      backgroundCategory.phraseMatches * fieldRelevance.backgroundCategory +
+      relationshipToArea.phraseMatches * fieldRelevance.relationshipToArea,
     contextualDirectMatches:
-      city.directMatches + region.directMatches + country.directMatches,
+      (city.directMatches + region.directMatches + country.directMatches) *
+      fieldRelevance.location,
     contextualPhraseMatches:
-      city.phraseMatches + region.phraseMatches + country.phraseMatches,
+      (city.phraseMatches + region.phraseMatches + country.phraseMatches) *
+      fieldRelevance.location,
+  };
+}
+
+function getBackgroundCategoryRelevance(
+  contextSignals: ConsultationContextSignals,
+  backgroundCategory: string | null | undefined,
+): number {
+  const fieldText = normalizeValue(backgroundCategory);
+
+  if (!fieldText) {
+    return 0;
+  }
+
+  const fieldKeywords = getMeaningfulKeywords(fieldText);
+  const fieldConcepts = getMatchedConceptIds(fieldText);
+  const directMatches = countSharedValues(contextSignals.keywords, fieldKeywords);
+  const sharedConcepts = getSharedValues(contextSignals.concepts, fieldConcepts);
+  const hasPhraseOverlap = hasPhraseMatch(contextSignals.fullText, fieldText);
+  const hasSpecializedConceptOverlap = sharedConcepts.some(
+    (conceptId) => !LOW_SIGNAL_BACKGROUND_CONCEPTS.has(conceptId),
+  );
+
+  if (hasPhraseOverlap || directMatches >= 2) {
+    return 1;
+  }
+
+  if (
+    (directMatches >= 1 || sharedConcepts.length > 0) &&
+    hasSpecializedConceptOverlap
+  ) {
+    return directMatches >= 1 ? 0.85 : 0.7;
+  }
+
+  if (directMatches >= 1 || sharedConcepts.length > 0) {
+    return 0.18;
+  }
+
+  return 0;
+}
+
+function getStageFieldRelevance(
+  contextSignals: ConsultationContextSignals,
+  assessment: AssessmentForWeighting,
+): StageFieldRelevance {
+  return {
+    backgroundCategory: getBackgroundCategoryRelevance(
+      contextSignals,
+      assessment.backgroundCategory,
+    ),
+    relationshipToArea: 0,
+    location: contextSignals.isPlaceBased ? 1 : 0.35,
   };
 }
 
 function evaluateTitleStage(
   topicContext: ConsultationTopicContext,
   assessment: AssessmentForWeighting,
+  fieldRelevance: StageFieldRelevance,
 ): StageResult {
   const metrics = getStageMetrics(
     topicContext.title ?? '',
     assessment,
     TITLE_STAGE_CONFIG,
+    fieldRelevance,
   );
   const hasStrongMatch =
-    metrics.primaryPhraseMatches > 0 ||
-    metrics.primaryDirectMatches >= 2 ||
-    metrics.weightedSignal >= 1.1;
+    metrics.primaryPhraseMatches >= 0.9 ||
+    metrics.primaryDirectMatches >= 1.8 ||
+    metrics.weightedSignal >= 1.05;
   const hasWeakMatch =
-    metrics.primaryDirectMatches >= 1 ||
-    metrics.contextualDirectMatches >= 1 ||
-    metrics.contextualPhraseMatches > 0;
+    metrics.primaryDirectMatches >= 0.85 ||
+    metrics.contextualDirectMatches >= 0.8 ||
+    metrics.contextualPhraseMatches >= 0.75;
 
   if (hasStrongMatch) {
     return {
@@ -609,18 +720,21 @@ function evaluateTitleStage(
 function evaluateTopicCategoryStage(
   topicContext: ConsultationTopicContext,
   assessment: AssessmentForWeighting,
+  fieldRelevance: StageFieldRelevance,
 ): StageResult {
   const metrics = getStageMetrics(
     topicContext.topicCategory,
     assessment,
     CATEGORY_STAGE_CONFIG,
+    fieldRelevance,
   );
   const hasStrongMatch =
-    metrics.primaryPhraseMatches > 0 ||
-    metrics.primaryDirectMatches >= 1 ||
-    metrics.primaryConceptMatches >= 1;
+    metrics.primaryPhraseMatches >= 0.9 ||
+    metrics.primaryDirectMatches >= 0.85 ||
+    metrics.primaryConceptMatches >= 0.85;
   const hasWeakMatch =
-    metrics.contextualDirectMatches >= 1 || metrics.contextualPhraseMatches > 0;
+    metrics.contextualDirectMatches >= 0.8 ||
+    metrics.contextualPhraseMatches >= 0.75;
 
   if (hasStrongMatch) {
     return {
@@ -666,14 +780,35 @@ function evaluateTopicCategoryStage(
 function getExperienceBonus(experienceLevel: string): number {
   switch (experienceLevel) {
     case 'expert':
-      return 0.3;
+      return 0.085;
     case 'advanced':
-      return 0.2;
+      return 0.055;
     case 'intermediate':
-      return 0.1;
+      return 0.03;
     default:
       return 0;
   }
+}
+
+function hasPrimaryRelevance(
+  titleStage: StageResult,
+  topicCategoryStage: StageResult,
+): boolean {
+  return titleStage.level !== 'none' || topicCategoryStage.level !== 'none';
+}
+
+function hasStrongPrimaryRelevance(
+  titleStage: StageResult,
+  topicCategoryStage: StageResult,
+): boolean {
+  const combinedSignal =
+    titleStage.metrics.weightedSignal + topicCategoryStage.metrics.weightedSignal;
+
+  return (
+    titleStage.level === 'strong' ||
+    (titleStage.level === 'weak' && topicCategoryStage.level === 'strong') ||
+    combinedSignal >= 1.2
+  );
 }
 
 function getConditionalExperienceBonus(
@@ -689,44 +824,46 @@ function getConditionalExperienceBonus(
     return 0;
   }
 
-  const relevanceSignal =
-    titleStage.metrics.weightedSignal * 1.35 +
-    topicCategoryStage.metrics.weightedSignal * 0.8;
+  if (!hasPrimaryRelevance(titleStage, topicCategoryStage)) {
+    return 0;
+  }
 
-  if (titleStage.level === 'strong' && relevanceSignal >= 1.1) {
+  if (hasStrongPrimaryRelevance(titleStage, topicCategoryStage)) {
     return baseBonus;
   }
 
-  if (
-    relevanceSignal >= 0.85 &&
-    (titleStage.level !== 'none' || topicCategoryStage.level !== 'none')
-  ) {
-    return Number(Math.min(baseBonus * 0.45, 0.15).toFixed(4));
+  return Number(Math.min(baseBonus * 0.35, 0.03).toFixed(4));
+}
+
+function getRelationshipToAreaAdjustment(
+  isPlaceBasedConsultation: boolean,
+  relationshipToArea: string,
+): number {
+  if (!isPlaceBasedConsultation) {
+    return 0;
   }
 
-  return Number(Math.min(baseBonus * 0.15, 0.05).toFixed(4));
+  switch (relationshipToArea) {
+    case 'resident':
+      return 0.045;
+    case 'non resident':
+      return 0;
+    case 'visitor':
+      return -0.035;
+    default:
+      return 0;
+  }
 }
 
 function getSecondaryContextAdjustment(
-  topicContext: ConsultationTopicContext,
+  contextSignals: ConsultationContextSignals,
   assessment: AssessmentForWeighting,
   titleStage: StageResult,
   topicCategoryStage: StageResult,
 ): number {
-  if (titleStage.level === 'none' && topicCategoryStage.level === 'none') {
+  if (!hasPrimaryRelevance(titleStage, topicCategoryStage)) {
     return 0;
   }
-
-  const fullContextText = normalizeValue(
-    [
-      topicContext.title,
-      topicContext.topicCategory,
-      topicContext.summary,
-      topicContext.methodologySummary,
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
 
   let adjustment = 0;
   const city = normalizeValue(assessment.city);
@@ -734,34 +871,33 @@ function getSecondaryContextAdjustment(
   const country = normalizeValue(assessment.country);
   const relationshipToArea = normalizeValue(assessment.relationshipToArea);
 
-  if (city && fullContextText.includes(city)) {
-    adjustment += 0.04;
+  if (city && contextSignals.fullText.includes(city)) {
+    adjustment += 0.03;
   }
 
-  if (region && fullContextText.includes(region)) {
-    adjustment += 0.02;
+  if (region && contextSignals.fullText.includes(region)) {
+    adjustment += 0.015;
   }
 
-  if (country && fullContextText.includes(country)) {
+  if (country && contextSignals.fullText.includes(country)) {
     adjustment += 0.01;
   }
 
-  const fullContextTokens = new Set(getMeaningfulKeywords(fullContextText));
-  const isPlaceBasedConsultation = PLACE_BASED_CONTEXT_ALIASES.some((alias) =>
-    textContainsAlias(fullContextText, alias, fullContextTokens),
+  adjustment += getRelationshipToAreaAdjustment(
+    contextSignals.isPlaceBased,
+    relationshipToArea,
   );
 
-  if (isPlaceBasedConsultation) {
-    if (relationshipToArea === 'resident') {
-      adjustment += 0.04;
-    } else if (relationshipToArea === 'non resident') {
-      adjustment -= 0.03;
-    } else if (relationshipToArea === 'visitor') {
-      adjustment -= 0.04;
-    }
-  }
+  const relevanceMultiplier = hasStrongPrimaryRelevance(
+    titleStage,
+    topicCategoryStage,
+  )
+    ? 1
+    : 0.55;
 
-  return Number(clamp(adjustment, -0.08, 0.08).toFixed(4));
+  return Number(
+    clamp(adjustment * relevanceMultiplier, -0.07, 0.08).toFixed(4),
+  );
 }
 
 function applyRelevanceGate(
@@ -782,14 +918,28 @@ function applyRelevanceGate(
   return Math.min(weight, 1.05) - gatingPenalty;
 }
 
+function softenSpecializedCeiling(weight: number): number {
+  if (weight <= SPECIALIZED_SOFT_CAP_START) {
+    return weight;
+  }
+
+  return (
+    SPECIALIZED_SOFT_CAP_START +
+    (weight - SPECIALIZED_SOFT_CAP_START) * SPECIALIZED_SOFT_CAP_RATIO
+  );
+}
+
 function getSpecializedWeight(
   topicContext: ConsultationTopicContext,
   assessment: AssessmentForWeighting,
 ): number {
-  const titleStage = evaluateTitleStage(topicContext, assessment);
+  const contextSignals = getConsultationContextSignals(topicContext);
+  const fieldRelevance = getStageFieldRelevance(contextSignals, assessment);
+  const titleStage = evaluateTitleStage(topicContext, assessment, fieldRelevance);
   const topicCategoryStage = evaluateTopicCategoryStage(
     topicContext,
     assessment,
+    fieldRelevance,
   );
 
   let weight = 1;
@@ -803,11 +953,12 @@ function getSpecializedWeight(
     topicCategoryStage,
   );
   weight += getSecondaryContextAdjustment(
-    topicContext,
+    contextSignals,
     assessment,
     titleStage,
     topicCategoryStage,
   );
+  weight = softenSpecializedCeiling(weight);
 
   return Number(
     clamp(weight, MIN_SPECIALIZED_WEIGHT, MAX_SPECIALIZED_WEIGHT).toFixed(4),
