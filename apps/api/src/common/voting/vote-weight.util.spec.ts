@@ -37,22 +37,53 @@ describe('calculateVoteWeight', () => {
     });
   });
 
-  it('gives specialized votes a clearly higher weight for direct topic matches than for unrelated generic expertise', () => {
+  it('prioritizes title alignment over weaker category-only support', () => {
+    const teacherAssessment = {
+      ...baseAssessment,
+      stakeholderRole: 'TEACHER',
+      backgroundCategory: 'TEACHING_AND_TRAINING',
+      experienceLevel: 'ADVANCED',
+    };
+
+    const titleAligned = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'Teacher training and school support plan',
+      summary: 'Consultation on education services for teachers and schools',
+      methodologySummary: 'Teacher participation workshops',
+      assessment: teacherAssessment,
+    });
+
+    const categoryOnly = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'Consultation on service delivery and operations',
+      summary: 'Education services review for the university community',
+      methodologySummary: 'General participation workshops',
+      assessment: teacherAssessment,
+    });
+
+    expect(titleAligned.weightUsed).toBeGreaterThan(
+      categoryOnly.weightUsed + 0.12,
+    );
+  });
+
+  it('gives specialized votes a clearly higher weight for direct stakeholder and context matches than for unrelated generic expertise', () => {
     const directTopicMatch = calculateVoteWeight({
       voteType: 'SPECIALIZED',
-      topicCategory: 'governance',
-      title: 'University student academic support and education policy',
-      summary: 'Education consultation for campus services in Bologna',
-      methodologySummary: 'Academic research and student participation',
+      topicCategory: 'education',
+      title: 'University student academic support and campus services',
+      summary: 'Education consultation for students and university services',
+      methodologySummary: 'Student participation and academic service review',
       assessment: baseAssessment,
     });
 
     const unrelatedGenericExpert = calculateVoteWeight({
       voteType: 'SPECIALIZED',
-      topicCategory: 'governance',
-      title: 'University student academic support and education policy',
-      summary: 'Education consultation for campus services in Bologna',
-      methodologySummary: 'Academic research and student participation',
+      topicCategory: 'education',
+      title: 'University student academic support and campus services',
+      summary: 'Education consultation for students and university services',
+      methodologySummary: 'Student participation and academic service review',
       assessment: {
         ...baseAssessment,
         stakeholderRole: 'PUBLIC_SECTOR_EMPLOYEE',
@@ -62,19 +93,19 @@ describe('calculateVoteWeight', () => {
     });
 
     expect(directTopicMatch.calculationType).toBe('SPECIALIZED');
-    expect(directTopicMatch.weightUsed).toBeGreaterThanOrEqual(1.5);
+    expect(directTopicMatch.weightUsed).toBeGreaterThan(1.3);
     expect(directTopicMatch.weightUsed).toBeGreaterThan(
-      unrelatedGenericExpert.weightUsed + 0.4,
+      unrelatedGenericExpert.weightUsed + 0.35,
     );
-    expect(unrelatedGenericExpert.weightUsed).toBeLessThan(1.1);
+    expect(unrelatedGenericExpert.weightUsed).toBeLessThan(1);
   });
 
-  it('keeps irrelevant specialized participants below baseline when title and topic category do not match', () => {
+  it('keeps genuinely irrelevant specialized participants below baseline without over-penalizing', () => {
     const irrelevantGenericExpert = calculateVoteWeight({
       voteType: 'SPECIALIZED',
       topicCategory: 'healthcare',
       title: 'Healthcare access and public health services',
-      summary: 'Medical and wellbeing consultation for local care planning',
+      summary: 'Medical and wellbeing consultation for care delivery',
       methodologySummary: 'Public health evidence review',
       assessment: {
         ...baseAssessment,
@@ -89,13 +120,13 @@ describe('calculateVoteWeight', () => {
     expect(irrelevantGenericExpert.weightUsed).toBeLessThan(1);
   });
 
-  it('does not let generic experience rescue weakly relevant specialized matches', () => {
+  it('does not let experience rescue weakly relevant specialized matches', () => {
     const weaklyRelevantExpert = calculateVoteWeight({
       voteType: 'SPECIALIZED',
       topicCategory: 'education',
       title: 'Education consultation for community learning access',
-      summary: 'Consultation about school support for local residents',
-      methodologySummary: 'Education outreach planning',
+      summary: 'Review of school support and learning resources',
+      methodologySummary: 'Community participation planning',
       assessment: {
         ...baseAssessment,
         stakeholderRole: 'VOLUNTEER',
@@ -109,8 +140,8 @@ describe('calculateVoteWeight', () => {
       voteType: 'SPECIALIZED',
       topicCategory: 'education',
       title: 'Education consultation for community learning access',
-      summary: 'Consultation about school support for local residents',
-      methodologySummary: 'Education outreach planning',
+      summary: 'Review of school support and learning resources',
+      methodologySummary: 'Community participation planning',
       assessment: {
         ...baseAssessment,
         stakeholderRole: 'VOLUNTEER',
@@ -120,13 +151,14 @@ describe('calculateVoteWeight', () => {
       },
     });
 
-    expect(weaklyRelevantExpert.weightUsed).toBeLessThanOrEqual(1.2);
+    expect(weaklyRelevantExpert.weightUsed).toBeLessThan(1);
+    expect(weaklyRelevantBeginner.weightUsed).toBeLessThan(1);
     expect(
       weaklyRelevantExpert.weightUsed - weaklyRelevantBeginner.weightUsed,
-    ).toBeLessThanOrEqual(0.05);
+    ).toBeLessThanOrEqual(0.04);
   });
 
-  it('keeps backgroundCategory nearly neutral on broad student-life consultations', () => {
+  it('keeps backgroundCategory nearly neutral on broad consultations where it is not clearly relevant', () => {
     const informationSystemsStudent = calculateVoteWeight({
       voteType: 'SPECIALIZED',
       topicCategory: 'education',
@@ -155,22 +187,23 @@ describe('calculateVoteWeight', () => {
       },
     });
 
-    expect(informationSystemsStudent.weightUsed).toBeGreaterThanOrEqual(1.4);
+    expect(informationSystemsStudent.weightUsed).toBeGreaterThan(1.2);
     expect(
       Math.abs(
         informationSystemsStudent.weightUsed - engineeringStudent.weightUsed,
       ),
-    ).toBeLessThanOrEqual(0.02);
+    ).toBeLessThanOrEqual(0.03);
   });
 
   it('only gives backgroundCategory meaningful influence when the consultation is field-specific', () => {
     const informationSystemsStudent = calculateVoteWeight({
       voteType: 'SPECIALIZED',
       topicCategory: 'technology',
-      title: 'Digital learning systems and IT support for University of Bologna students',
+      title:
+        'Digital learning systems and IT support for University of Bologna students',
       summary:
-        'Consultation on campus software platforms, technical curriculum tools, and data services',
-      methodologySummary: 'Technology audit for academic infrastructure',
+        'Consultation on software platforms, data services, and technical learning tools',
+      methodologySummary: 'Digital systems review for academic operations',
       assessment: {
         ...baseAssessment,
         backgroundCategory: 'INFORMATION_SYSTEMS',
@@ -181,10 +214,11 @@ describe('calculateVoteWeight', () => {
     const engineeringStudent = calculateVoteWeight({
       voteType: 'SPECIALIZED',
       topicCategory: 'technology',
-      title: 'Digital learning systems and IT support for University of Bologna students',
+      title:
+        'Digital learning systems and IT support for University of Bologna students',
       summary:
-        'Consultation on campus software platforms, technical curriculum tools, and data services',
-      methodologySummary: 'Technology audit for academic infrastructure',
+        'Consultation on software platforms, data services, and technical learning tools',
+      methodologySummary: 'Digital systems review for academic operations',
       assessment: {
         ...baseAssessment,
         backgroundCategory: 'ENGINEERING',
@@ -197,7 +231,7 @@ describe('calculateVoteWeight', () => {
     );
   });
 
-  it('keeps strongly relevant users distinguishable through secondary factors', () => {
+  it('keeps strongly relevant users distinguishable through secondary refinements', () => {
     const advancedResident = calculateVoteWeight({
       voteType: 'SPECIALIZED',
       topicCategory: 'education',
@@ -228,20 +262,21 @@ describe('calculateVoteWeight', () => {
       },
     });
 
-    expect(advancedResident.weightUsed).toBeLessThan(2);
     expect(advancedResident.weightUsed).toBeGreaterThan(
-      beginnerNonResident.weightUsed + 0.035,
+      beginnerNonResident.weightUsed + 0.04,
     );
+    expect(beginnerNonResident.weightUsed).toBeGreaterThan(1);
   });
 
-  it('applies an explicit resident > non-resident > visitor ordering for location-specific consultations', () => {
+  it('applies a resident > non-resident > visitor ordering for location-specific consultations', () => {
     const resident = calculateVoteWeight({
       voteType: 'SPECIALIZED',
       topicCategory: 'education',
       title: 'University of Bologna student life and academic support',
       summary:
-        'Consultation on Bologna campus facilities, student services, and local university experience',
-      methodologySummary: 'Student participation on place-based campus planning',
+        'Consultation on Bologna campus facilities, local student services, and university experience',
+      methodologySummary:
+        'Student participation on place-based campus planning',
       assessment: {
         ...baseAssessment,
         backgroundCategory: 'EDUCATION',
@@ -255,8 +290,9 @@ describe('calculateVoteWeight', () => {
       topicCategory: 'education',
       title: 'University of Bologna student life and academic support',
       summary:
-        'Consultation on Bologna campus facilities, student services, and local university experience',
-      methodologySummary: 'Student participation on place-based campus planning',
+        'Consultation on Bologna campus facilities, local student services, and university experience',
+      methodologySummary:
+        'Student participation on place-based campus planning',
       assessment: {
         ...baseAssessment,
         backgroundCategory: 'EDUCATION',
@@ -270,8 +306,9 @@ describe('calculateVoteWeight', () => {
       topicCategory: 'education',
       title: 'University of Bologna student life and academic support',
       summary:
-        'Consultation on Bologna campus facilities, student services, and local university experience',
-      methodologySummary: 'Student participation on place-based campus planning',
+        'Consultation on Bologna campus facilities, local student services, and university experience',
+      methodologySummary:
+        'Student participation on place-based campus planning',
       assessment: {
         ...baseAssessment,
         backgroundCategory: 'EDUCATION',
@@ -283,6 +320,7 @@ describe('calculateVoteWeight', () => {
     expect(resident.weightUsed).toBeGreaterThan(nonResident.weightUsed);
     expect(nonResident.weightUsed).toBeGreaterThan(visitor.weightUsed);
     expect(resident.weightUsed - visitor.weightUsed).toBeLessThanOrEqual(0.08);
+    expect(visitor.weightUsed).toBeGreaterThan(1);
   });
 
   it('keeps relationshipToArea neutral when the consultation is not location-specific', () => {
@@ -292,7 +330,7 @@ describe('calculateVoteWeight', () => {
       title: 'Digital learning systems and academic support',
       summary:
         'Consultation on software tools, online learning platforms, and student IT support',
-      methodologySummary: 'Technical review of university digital services',
+      methodologySummary: 'Technical review of digital university services',
       assessment: {
         ...baseAssessment,
         backgroundCategory: 'INFORMATION_SYSTEMS',
@@ -307,7 +345,7 @@ describe('calculateVoteWeight', () => {
       title: 'Digital learning systems and academic support',
       summary:
         'Consultation on software tools, online learning platforms, and student IT support',
-      methodologySummary: 'Technical review of university digital services',
+      methodologySummary: 'Technical review of digital university services',
       assessment: {
         ...baseAssessment,
         backgroundCategory: 'INFORMATION_SYSTEMS',

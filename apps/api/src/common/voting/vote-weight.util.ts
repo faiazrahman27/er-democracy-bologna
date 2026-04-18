@@ -33,323 +33,98 @@ type WeightResult = {
   calculationType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
 };
 
-type TopicConcept = {
-  id: string;
-  aliases: string[];
-};
+type ConsultationStageName =
+  | 'title'
+  | 'topicCategory'
+  | 'summary'
+  | 'methodologySummary';
 
-type FieldWeights = {
-  direct: number;
-  concept: number;
-  phrase: number;
-  cap: number;
-};
-
-type FieldMatchMetrics = {
-  weightedSignal: number;
-  directMatches: number;
-  conceptMatches: number;
-  phraseMatches: number;
-};
-
-type StageMetrics = {
-  weightedSignal: number;
-  primaryDirectMatches: number;
-  primaryConceptMatches: number;
-  primaryPhraseMatches: number;
-  contextualDirectMatches: number;
-  contextualPhraseMatches: number;
-};
-
-type StageLevel = 'strong' | 'weak' | 'none';
-
-type StageResult = {
-  level: StageLevel;
-  adjustment: number;
-  metrics: StageMetrics;
-};
-
-type StageConfig = {
-  stakeholderRole: FieldWeights;
-  backgroundCategory: FieldWeights;
-  relationshipToArea: FieldWeights;
-  city: FieldWeights;
-  region: FieldWeights;
-  country: FieldWeights;
+type ConsultationStage = {
+  name: ConsultationStageName;
+  text: string;
+  sourceWeight: number;
+  tokens: string[];
+  roots: string[];
+  phrases: string[];
 };
 
 type ConsultationContextSignals = {
   fullText: string;
-  keywords: string[];
-  concepts: string[];
-  isPlaceBased: boolean;
+  stages: ConsultationStage[];
+  rootWeights: Map<string, number>;
+  rootStrongestSource: Map<string, number>;
+  phraseWeights: Map<string, number>;
+  locationMarkerSignal: number;
 };
 
-type StageFieldRelevance = {
-  backgroundCategory: number;
-  relationshipToArea: number;
-  location: number;
+type FieldMatchKind = 'none' | 'partial' | 'strong';
+
+type FieldMatch = {
+  kind: FieldMatchKind;
+  strength: number;
+  exactPhraseWeight: number;
+  matchedRootCount: number;
+  matchedRootSignal: number;
+  coverage: number;
+  strongestSourceWeight: number;
 };
+
+type BackgroundInfluence = {
+  applicability: number;
+  active: boolean;
+  stronglyActive: boolean;
+  match: FieldMatch;
+};
+
+type RelevanceLevel = 'strong' | 'partial' | 'weak';
 
 const MIN_SPECIALIZED_WEIGHT = 0.6;
 const MAX_SPECIALIZED_WEIGHT = 2.0;
-const SPECIALIZED_SOFT_CAP_START = 1.65;
-const SPECIALIZED_SOFT_CAP_RATIO = 0.38;
 
-const TITLE_STAGE_CONFIG: StageConfig = {
-  stakeholderRole: { direct: 0.22, concept: 0.08, phrase: 0.42, cap: 0.95 },
-  backgroundCategory: { direct: 0.18, concept: 0.08, phrase: 0.34, cap: 0.8 },
-  relationshipToArea: { direct: 0.14, concept: 0.06, phrase: 0.24, cap: 0.5 },
-  city: { direct: 0.06, concept: 0, phrase: 0.12, cap: 0.16 },
-  region: { direct: 0.05, concept: 0, phrase: 0.1, cap: 0.12 },
-  country: { direct: 0.04, concept: 0, phrase: 0.08, cap: 0.1 },
-};
-
-const CATEGORY_STAGE_CONFIG: StageConfig = {
-  stakeholderRole: { direct: 0.12, concept: 0.18, phrase: 0.2, cap: 0.7 },
-  backgroundCategory: { direct: 0.14, concept: 0.2, phrase: 0.22, cap: 0.75 },
-  relationshipToArea: { direct: 0.1, concept: 0.14, phrase: 0.16, cap: 0.45 },
-  city: { direct: 0.04, concept: 0, phrase: 0.08, cap: 0.12 },
-  region: { direct: 0.03, concept: 0, phrase: 0.07, cap: 0.1 },
-  country: { direct: 0.03, concept: 0, phrase: 0.06, cap: 0.08 },
+const CONSULTATION_STAGE_WEIGHTS: Record<ConsultationStageName, number> = {
+  title: 1,
+  topicCategory: 0.72,
+  summary: 0.38,
+  methodologySummary: 0.28,
 };
 
 const GENERIC_STOP_WORDS = new Set([
   'a',
-  'about',
   'an',
   'and',
-  'around',
+  'are',
   'as',
   'at',
+  'be',
   'by',
   'for',
   'from',
   'in',
   'into',
-  'local',
+  'is',
+  'it',
+  'its',
   'of',
   'on',
   'or',
-  'plan',
-  'plans',
-  'policy',
-  'policies',
-  'program',
-  'programs',
-  'project',
-  'projects',
-  'public',
-  'service',
-  'services',
-  'support',
-  'system',
-  'systems',
+  'that',
   'the',
+  'their',
+  'these',
+  'this',
+  'those',
   'to',
+  'via',
   'vote',
   'voting',
   'with',
 ]);
 
-const TOPIC_CONCEPTS: TopicConcept[] = [
-  {
-    id: 'education',
-    aliases: [
-      'academic',
-      'campus',
-      'education',
-      'research',
-      'school',
-      'schools',
-      'student',
-      'students',
-      'teacher',
-      'teachers',
-      'teaching',
-      'training',
-      'university',
-      'universities',
-    ],
-  },
-  {
-    id: 'governance',
-    aliases: [
-      'administration',
-      'citizen participation',
-      'civil servant',
-      'civil service',
-      'civic',
-      'democracy',
-      'democratic',
-      'governance',
-      'government',
-      'governments',
-      'institutional',
-      'municipal',
-      'municipality',
-      'participation',
-      'policy maker',
-      'policy makers',
-      'public administration',
-      'public sector',
-    ],
-  },
-  {
-    id: 'economy',
-    aliases: [
-      'accounting',
-      'audit',
-      'auditing',
-      'business',
-      'businesses',
-      'commerce',
-      'economic',
-      'economics',
-      'economy',
-      'employment',
-      'entrepreneur',
-      'entrepreneurship',
-      'finance',
-      'financial',
-      'industry',
-      'innovation',
-      'management',
-      'market',
-      'markets',
-      'startup',
-      'startups',
-    ],
-  },
-  {
-    id: 'technology',
-    aliases: [
-      'artificial intelligence',
-      'computer',
-      'cybersecurity',
-      'data',
-      'digital',
-      'information systems',
-      'software',
-      'technology',
-      'technological',
-    ],
-  },
-  {
-    id: 'engineering',
-    aliases: [
-      'civil engineering',
-      'construction',
-      'electrical',
-      'engineering',
-      'engineer',
-      'industrial',
-      'infrastructure',
-      'mechanical',
-    ],
-  },
-  {
-    id: 'urban',
-    aliases: [
-      'city',
-      'cities',
-      'district',
-      'housing',
-      'mobility',
-      'neighborhood',
-      'neighbourhood',
-      'planning',
-      'public space',
-      'regeneration',
-      'territorial',
-      'territory',
-      'transport',
-      'transportation',
-      'urban',
-      'urban planning',
-    ],
-  },
-  {
-    id: 'health',
-    aliases: [
-      'care',
-      'health',
-      'healthcare',
-      'medical',
-      'medicine',
-      'nursing',
-      'psychology',
-      'public health',
-      'well being',
-      'wellbeing',
-    ],
-  },
-  {
-    id: 'legal',
-    aliases: [
-      'crime',
-      'criminology',
-      'justice',
-      'law',
-      'legal',
-      'public safety',
-      'safety',
-      'security',
-    ],
-  },
-  {
-    id: 'environment',
-    aliases: [
-      'agriculture',
-      'climate',
-      'ecology',
-      'environment',
-      'environmental',
-      'food',
-      'green',
-      'sustainability',
-      'sustainable',
-    ],
-  },
-  {
-    id: 'culture',
-    aliases: [
-      'art',
-      'arts',
-      'creative',
-      'culture',
-      'cultural',
-      'design',
-      'history',
-      'hospitality',
-      'humanities',
-      'journalism',
-      'languages',
-      'literature',
-      'media',
-      'philosophy',
-      'tourism',
-    ],
-  },
-  {
-    id: 'community',
-    aliases: [
-      'citizen',
-      'citizens',
-      'community',
-      'communities',
-      'resident',
-      'residents',
-      'visitor',
-      'visitors',
-    ],
-  },
-];
+const NON_SCORING_FIELD_TOKENS = new Set(['other', 'prefer', 'not', 'say']);
 
-const PLACE_BASED_CONTEXT_ALIASES = [
+const LOCATION_CONTEXT_MARKERS = new Set([
   'area',
   'areas',
-  'bologna',
   'campus',
   'campuses',
   'city',
@@ -357,612 +132,617 @@ const PLACE_BASED_CONTEXT_ALIASES = [
   'community',
   'communities',
   'district',
-  'facilities',
+  'districts',
   'facility',
-  'housing',
-  'mobility',
+  'facilities',
+  'local',
+  'municipal',
+  'municipality',
   'neighborhood',
   'neighbourhood',
-  'public space',
-  'regional',
+  'place',
+  'places',
   'resident',
   'residents',
+  'site',
+  'sites',
+  'street',
+  'streets',
   'territorial',
-  'territory',
-  'transport',
   'urban',
-  'university of bologna',
-];
-
-const LOW_SIGNAL_BACKGROUND_CONCEPTS = new Set(['community', 'education']);
+  'zone',
+  'zones',
+]);
 
 function normalizeValue(value?: string | null): string {
   return (value ?? '')
-    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ');
+    .replace(/[^a-z0-9\s]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function round(value: number, digits = 4): number {
+  return Number(value.toFixed(digits));
+}
+
 function normalizeSelfAssessmentWeight(score: number): number {
   return Number((score / 10).toFixed(4));
 }
 
-function getMeaningfulKeywords(text: string): string[] {
+function toUniqueArray(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function shouldKeepToken(
+  token: string,
+  removeNonScoringFieldTokens = false,
+): boolean {
+  if (!token || token.length < 2 || GENERIC_STOP_WORDS.has(token)) {
+    return false;
+  }
+
+  if (removeNonScoringFieldTokens && NON_SCORING_FIELD_TOKENS.has(token)) {
+    return false;
+  }
+
+  return true;
+}
+
+function getMeaningfulTokens(
+  text: string,
+  removeNonScoringFieldTokens = false,
+): string[] {
   const normalized = normalizeValue(text);
 
   if (!normalized) {
     return [];
   }
 
-  return Array.from(
-    new Set(
-      normalized
-        .split(/[^a-z0-9]+/)
-        .filter((token) => token.length > 2 && !GENERIC_STOP_WORDS.has(token)),
-    ),
+  return toUniqueArray(
+    normalized
+      .split(' ')
+      .filter((token) => shouldKeepToken(token, removeNonScoringFieldTokens)),
   );
 }
 
-function textContainsAlias(
-  normalizedText: string,
-  alias: string,
-  normalizedTokens: Set<string>,
-): boolean {
-  const normalizedAlias = normalizeValue(alias);
-
-  if (!normalizedAlias) {
-    return false;
+function stemToken(token: string): string {
+  if (token.length <= 3) {
+    return token;
   }
 
-  if (normalizedAlias.includes(' ')) {
-    return normalizedText.includes(normalizedAlias);
+  if (token.endsWith('ies') && token.length > 4) {
+    return `${token.slice(0, -3)}y`;
   }
 
-  return normalizedTokens.has(normalizedAlias);
-}
+  const suffixes = ['ments', 'ment', 'ations', 'ation', 'ingly', 'edly', 'ing'];
 
-function getMatchedConceptIds(text: string): string[] {
-  const normalizedText = normalizeValue(text);
-  const normalizedTokens = new Set(getMeaningfulKeywords(normalizedText));
-
-  if (!normalizedText) {
-    return [];
+  for (const suffix of suffixes) {
+    if (token.endsWith(suffix) && token.length - suffix.length >= 3) {
+      return token.slice(0, -suffix.length);
+    }
   }
 
-  return TOPIC_CONCEPTS.filter((concept) =>
-    concept.aliases.some((alias) =>
-      textContainsAlias(normalizedText, alias, normalizedTokens),
-    ),
-  ).map((concept) => concept.id);
-}
-
-function getConsultationContextSignals(
-  topicContext: ConsultationTopicContext,
-): ConsultationContextSignals {
-  const fullText = normalizeValue(
-    [
-      topicContext.title,
-      topicContext.topicCategory,
-      topicContext.summary,
-      topicContext.methodologySummary,
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
-  const keywords = getMeaningfulKeywords(fullText);
-  const concepts = getMatchedConceptIds(fullText);
-  const normalizedTokens = new Set(keywords);
-
-  return {
-    fullText,
-    keywords,
-    concepts,
-    isPlaceBased: PLACE_BASED_CONTEXT_ALIASES.some((alias) =>
-      textContainsAlias(fullText, alias, normalizedTokens),
-    ),
-  };
-}
-
-function countSharedValues(left: string[], right: string[]): number {
-  const rightSet = new Set(right);
-
-  return left.reduce(
-    (count, value) => (rightSet.has(value) ? count + 1 : count),
-    0,
-  );
-}
-
-function getSharedValues(left: string[], right: string[]): string[] {
-  const rightSet = new Set(right);
-  return Array.from(new Set(left.filter((value) => rightSet.has(value))));
-}
-
-function hasPhraseMatch(stageText: string, fieldText: string): boolean {
-  return fieldText.split(' ').length >= 2 && stageText.includes(fieldText);
-}
-
-function getFieldMatchMetrics(
-  stageText: string,
-  stageKeywords: string[],
-  stageConcepts: string[],
-  fieldValue: string | null | undefined,
-  weights: FieldWeights,
-): FieldMatchMetrics {
-  const fieldText = normalizeValue(fieldValue);
-
-  if (!fieldText) {
-    return {
-      weightedSignal: 0,
-      directMatches: 0,
-      conceptMatches: 0,
-      phraseMatches: 0,
-    };
-  }
-
-  const fieldKeywords = getMeaningfulKeywords(fieldText);
-  const fieldConcepts = getMatchedConceptIds(fieldText);
-  const directMatches = countSharedValues(stageKeywords, fieldKeywords);
-  const conceptMatches = countSharedValues(stageConcepts, fieldConcepts);
-  const phraseMatches = hasPhraseMatch(stageText, fieldText) ? 1 : 0;
-
-  return {
-    weightedSignal: Math.min(
-      phraseMatches * weights.phrase +
-        Math.min(directMatches, 3) * weights.direct +
-        Math.min(conceptMatches, 2) * weights.concept,
-      weights.cap,
-    ),
-    directMatches,
-    conceptMatches,
-    phraseMatches,
-  };
-}
-
-function getStageMetrics(
-  stageText: string,
-  assessment: AssessmentForWeighting,
-  config: StageConfig,
-  fieldRelevance: StageFieldRelevance,
-): StageMetrics {
-  const normalizedStageText = normalizeValue(stageText);
-  const stageKeywords = getMeaningfulKeywords(normalizedStageText);
-  const stageConcepts = getMatchedConceptIds(normalizedStageText);
-
-  const stakeholderRole = getFieldMatchMetrics(
-    normalizedStageText,
-    stageKeywords,
-    stageConcepts,
-    assessment.stakeholderRole,
-    config.stakeholderRole,
-  );
-  const backgroundCategory = getFieldMatchMetrics(
-    normalizedStageText,
-    stageKeywords,
-    stageConcepts,
-    assessment.backgroundCategory,
-    config.backgroundCategory,
-  );
-  const relationshipToArea = getFieldMatchMetrics(
-    normalizedStageText,
-    stageKeywords,
-    stageConcepts,
-    assessment.relationshipToArea,
-    config.relationshipToArea,
-  );
-  const city = getFieldMatchMetrics(
-    normalizedStageText,
-    stageKeywords,
-    stageConcepts,
-    assessment.city,
-    config.city,
-  );
-  const region = getFieldMatchMetrics(
-    normalizedStageText,
-    stageKeywords,
-    stageConcepts,
-    assessment.region,
-    config.region,
-  );
-  const country = getFieldMatchMetrics(
-    normalizedStageText,
-    stageKeywords,
-    stageConcepts,
-    assessment.country,
-    config.country,
-  );
-
-  return {
-    weightedSignal:
-      stakeholderRole.weightedSignal +
-      backgroundCategory.weightedSignal * fieldRelevance.backgroundCategory +
-      relationshipToArea.weightedSignal * fieldRelevance.relationshipToArea +
-      (city.weightedSignal + region.weightedSignal + country.weightedSignal) *
-        fieldRelevance.location,
-    primaryDirectMatches:
-      stakeholderRole.directMatches +
-      backgroundCategory.directMatches * fieldRelevance.backgroundCategory +
-      relationshipToArea.directMatches * fieldRelevance.relationshipToArea,
-    primaryConceptMatches:
-      stakeholderRole.conceptMatches +
-      backgroundCategory.conceptMatches * fieldRelevance.backgroundCategory +
-      relationshipToArea.conceptMatches * fieldRelevance.relationshipToArea,
-    primaryPhraseMatches:
-      stakeholderRole.phraseMatches +
-      backgroundCategory.phraseMatches * fieldRelevance.backgroundCategory +
-      relationshipToArea.phraseMatches * fieldRelevance.relationshipToArea,
-    contextualDirectMatches:
-      (city.directMatches + region.directMatches + country.directMatches) *
-      fieldRelevance.location,
-    contextualPhraseMatches:
-      (city.phraseMatches + region.phraseMatches + country.phraseMatches) *
-      fieldRelevance.location,
-  };
-}
-
-function getBackgroundCategoryRelevance(
-  contextSignals: ConsultationContextSignals,
-  backgroundCategory: string | null | undefined,
-): number {
-  const fieldText = normalizeValue(backgroundCategory);
-
-  if (!fieldText) {
-    return 0;
-  }
-
-  const fieldKeywords = getMeaningfulKeywords(fieldText);
-  const fieldConcepts = getMatchedConceptIds(fieldText);
-  const directMatches = countSharedValues(contextSignals.keywords, fieldKeywords);
-  const sharedConcepts = getSharedValues(contextSignals.concepts, fieldConcepts);
-  const hasPhraseOverlap = hasPhraseMatch(contextSignals.fullText, fieldText);
-  const hasSpecializedConceptOverlap = sharedConcepts.some(
-    (conceptId) => !LOW_SIGNAL_BACKGROUND_CONCEPTS.has(conceptId),
-  );
-
-  if (hasPhraseOverlap || directMatches >= 2) {
-    return 1;
+  if (token.endsWith('ers') && token.length > 5) {
+    return token.slice(0, -3);
   }
 
   if (
-    (directMatches >= 1 || sharedConcepts.length > 0) &&
-    hasSpecializedConceptOverlap
+    (token.endsWith('er') || token.endsWith('ed') || token.endsWith('es')) &&
+    token.length > 4
   ) {
-    return directMatches >= 1 ? 0.85 : 0.7;
+    return token.slice(0, -2);
   }
 
-  if (directMatches >= 1 || sharedConcepts.length > 0) {
-    return 0.18;
+  if (token.endsWith('s') && !token.endsWith('ss') && token.length > 4) {
+    return token.slice(0, -1);
+  }
+
+  return token;
+}
+
+function buildPhrases(tokens: string[]): string[] {
+  const phrases = new Set<string>();
+
+  for (let size = 2; size <= Math.min(3, tokens.length); size += 1) {
+    for (let index = 0; index <= tokens.length - size; index += 1) {
+      phrases.add(tokens.slice(index, index + size).join(' '));
+    }
+  }
+
+  return Array.from(phrases);
+}
+
+function addWeightedSignal(
+  map: Map<string, number>,
+  key: string,
+  signal: number,
+): void {
+  map.set(key, (map.get(key) ?? 0) + signal);
+}
+
+function updateStrongestSignal(
+  map: Map<string, number>,
+  key: string,
+  signal: number,
+): void {
+  map.set(key, Math.max(map.get(key) ?? 0, signal));
+}
+
+function buildConsultationContextSignals(
+  topicContext: ConsultationTopicContext,
+): ConsultationContextSignals {
+  const stageInputs: ConsultationStage[] = (
+    [
+      { name: 'title', text: topicContext.title ?? '' },
+      { name: 'topicCategory', text: topicContext.topicCategory },
+      { name: 'summary', text: topicContext.summary ?? '' },
+      {
+        name: 'methodologySummary',
+        text: topicContext.methodologySummary ?? '',
+      },
+    ] as const
+  )
+    .map((stage) => {
+      const normalizedText = normalizeValue(stage.text);
+      const tokens = getMeaningfulTokens(normalizedText);
+
+      return {
+        name: stage.name,
+        text: normalizedText,
+        sourceWeight: CONSULTATION_STAGE_WEIGHTS[stage.name],
+        tokens,
+        roots: toUniqueArray(tokens.map(stemToken)),
+        phrases: buildPhrases(tokens),
+      };
+    })
+    .filter((stage) => stage.text);
+
+  const rootWeights = new Map<string, number>();
+  const rootStrongestSource = new Map<string, number>();
+  const phraseWeights = new Map<string, number>();
+  let locationMarkerSignal = 0;
+
+  for (const stage of stageInputs) {
+    for (const root of stage.roots) {
+      addWeightedSignal(rootWeights, root, stage.sourceWeight);
+      updateStrongestSignal(rootStrongestSource, root, stage.sourceWeight);
+    }
+
+    for (const phrase of stage.phrases) {
+      addWeightedSignal(phraseWeights, phrase, stage.sourceWeight);
+    }
+
+    const locationTokenCount = stage.tokens.filter((token) =>
+      LOCATION_CONTEXT_MARKERS.has(token),
+    ).length;
+
+    if (locationTokenCount > 0) {
+      locationMarkerSignal +=
+        stage.sourceWeight + Math.min((locationTokenCount - 1) * 0.08, 0.16);
+    }
+  }
+
+  return {
+    fullText: stageInputs
+      .map((stage) => stage.text)
+      .join(' ')
+      .trim(),
+    stages: stageInputs,
+    rootWeights,
+    rootStrongestSource,
+    phraseWeights,
+    locationMarkerSignal: round(locationMarkerSignal),
+  };
+}
+
+function getRootRelation(left: string, right: string): number {
+  if (left === right) {
+    return 1;
+  }
+
+  const minLength = Math.min(left.length, right.length);
+
+  if (minLength >= 5 && (left.startsWith(right) || right.startsWith(left))) {
+    return 0.72;
   }
 
   return 0;
 }
 
-function getStageFieldRelevance(
+function getNoMatch(): FieldMatch {
+  return {
+    kind: 'none',
+    strength: 0,
+    exactPhraseWeight: 0,
+    matchedRootCount: 0,
+    matchedRootSignal: 0,
+    coverage: 0,
+    strongestSourceWeight: 0,
+  };
+}
+
+function getFieldMatch(
+  contextSignals: ConsultationContextSignals,
+  fieldValue: string | null | undefined,
+): FieldMatch {
+  const normalizedField = normalizeValue(fieldValue);
+
+  if (!normalizedField) {
+    return getNoMatch();
+  }
+
+  const fieldTokens = getMeaningfulTokens(normalizedField, true);
+
+  if (fieldTokens.length === 0) {
+    return getNoMatch();
+  }
+
+  const fieldRoots = toUniqueArray(fieldTokens.map(stemToken));
+  const fieldPhrases = toUniqueArray([
+    ...(fieldTokens.length >= 2 ? [fieldTokens.join(' ')] : []),
+    ...buildPhrases(fieldTokens),
+  ]);
+
+  let exactPhraseWeight = 0;
+
+  for (const phrase of fieldPhrases) {
+    exactPhraseWeight = Math.max(
+      exactPhraseWeight,
+      contextSignals.phraseWeights.get(phrase) ?? 0,
+    );
+  }
+
+  let matchedRootCount = 0;
+  let matchedRootSignal = 0;
+  let strongestSourceWeight = 0;
+
+  for (const fieldRoot of fieldRoots) {
+    let bestRootSignal = 0;
+    let bestSourceWeight = 0;
+
+    for (const [contextRoot, contextSignal] of contextSignals.rootWeights) {
+      const relation = getRootRelation(fieldRoot, contextRoot);
+
+      if (relation === 0) {
+        continue;
+      }
+
+      const adjustedSignal = contextSignal * relation;
+      const adjustedSourceWeight =
+        (contextSignals.rootStrongestSource.get(contextRoot) ?? 0) * relation;
+
+      if (adjustedSignal > bestRootSignal) {
+        bestRootSignal = adjustedSignal;
+        bestSourceWeight = adjustedSourceWeight;
+      }
+    }
+
+    if (bestRootSignal > 0) {
+      matchedRootCount += 1;
+      matchedRootSignal += Math.min(bestRootSignal, 1.25);
+      strongestSourceWeight = Math.max(strongestSourceWeight, bestSourceWeight);
+    }
+  }
+
+  const coverage =
+    fieldRoots.length > 0 ? matchedRootCount / fieldRoots.length : 0;
+
+  let kind: FieldMatchKind = 'none';
+
+  if (
+    exactPhraseWeight >= 0.72 ||
+    matchedRootSignal >= 1.45 ||
+    (matchedRootCount >= 2 &&
+      coverage >= 0.5 &&
+      strongestSourceWeight >= 0.72) ||
+    (exactPhraseWeight >= 0.38 && matchedRootSignal >= 0.78)
+  ) {
+    kind = 'strong';
+  } else if (exactPhraseWeight > 0 || matchedRootCount > 0) {
+    kind = 'partial';
+  }
+
+  const strength = clamp(
+    exactPhraseWeight * 0.28 +
+      matchedRootSignal * 0.22 +
+      coverage * 0.34 +
+      strongestSourceWeight * 0.16,
+    0,
+    1,
+  );
+
+  return {
+    kind,
+    strength: round(strength),
+    exactPhraseWeight: round(exactPhraseWeight),
+    matchedRootCount,
+    matchedRootSignal: round(matchedRootSignal),
+    coverage: round(coverage),
+    strongestSourceWeight: round(strongestSourceWeight),
+  };
+}
+
+function getBackgroundInfluence(
   contextSignals: ConsultationContextSignals,
   assessment: AssessmentForWeighting,
-): StageFieldRelevance {
+): BackgroundInfluence {
+  const match = getFieldMatch(contextSignals, assessment.backgroundCategory);
+
+  if (match.kind === 'none') {
+    return {
+      applicability: 0,
+      active: false,
+      stronglyActive: false,
+      match,
+    };
+  }
+
+  let applicability = 0;
+
+  if (
+    match.exactPhraseWeight >= 0.72 ||
+    match.matchedRootCount >= 2 ||
+    match.matchedRootSignal >= 1.45
+  ) {
+    applicability = 1;
+  } else if (
+    match.exactPhraseWeight >= 0.38 ||
+    (match.matchedRootCount >= 1 && match.strongestSourceWeight >= 0.72)
+  ) {
+    applicability = 0.35 + Math.min(match.strength * 0.15, 0.15);
+  }
+
+  applicability = round(applicability);
+
   return {
-    backgroundCategory: getBackgroundCategoryRelevance(
-      contextSignals,
-      assessment.backgroundCategory,
-    ),
-    relationshipToArea: 0,
-    location: contextSignals.isPlaceBased ? 1 : 0.35,
+    applicability,
+    active: applicability >= 0.35,
+    stronglyActive: applicability >= 0.85,
+    match,
   };
 }
 
-function evaluateTitleStage(
-  topicContext: ConsultationTopicContext,
-  assessment: AssessmentForWeighting,
-  fieldRelevance: StageFieldRelevance,
-): StageResult {
-  const metrics = getStageMetrics(
-    topicContext.title ?? '',
-    assessment,
-    TITLE_STAGE_CONFIG,
-    fieldRelevance,
-  );
-  const hasStrongMatch =
-    metrics.primaryPhraseMatches >= 0.9 ||
-    metrics.primaryDirectMatches >= 1.8 ||
-    metrics.weightedSignal >= 1.05;
-  const hasWeakMatch =
-    metrics.primaryDirectMatches >= 0.85 ||
-    metrics.contextualDirectMatches >= 0.8 ||
-    metrics.contextualPhraseMatches >= 0.75;
+function determineOverallRelevanceLevel(
+  stakeholderRoleMatch: FieldMatch,
+  backgroundInfluence: BackgroundInfluence,
+): RelevanceLevel {
+  const backgroundStrong =
+    backgroundInfluence.stronglyActive &&
+    backgroundInfluence.match.kind === 'strong';
+  const backgroundPartial =
+    backgroundInfluence.active && backgroundInfluence.match.kind !== 'none';
+  const combinedPartialStrength =
+    stakeholderRoleMatch.strength + backgroundInfluence.match.strength;
 
-  if (hasStrongMatch) {
-    return {
-      level: 'strong',
-      adjustment: Number(
-        clamp(
-          0.5 +
-            metrics.weightedSignal * 0.12 +
-            metrics.primaryDirectMatches * 0.03,
-          0.5,
-          0.9,
-        ).toFixed(4),
-      ),
-      metrics,
-    };
+  if (
+    stakeholderRoleMatch.kind === 'strong' ||
+    backgroundStrong ||
+    (stakeholderRoleMatch.kind === 'partial' &&
+      backgroundPartial &&
+      combinedPartialStrength >= 0.95)
+  ) {
+    return 'strong';
   }
 
-  if (hasWeakMatch) {
-    return {
-      level: 'weak',
-      adjustment: Number(
-        clamp(
-          0.1 +
-            metrics.weightedSignal * 0.25 +
-            metrics.primaryDirectMatches * 0.05 +
-            metrics.contextualDirectMatches * 0.02,
-          0.1,
-          0.3,
-        ).toFixed(4),
-      ),
-      metrics,
-    };
+  if (stakeholderRoleMatch.kind === 'partial' || backgroundPartial) {
+    return 'partial';
   }
 
-  return {
-    level: 'none',
-    adjustment: Number(
-      (-clamp(0.52 - metrics.weightedSignal * 0.45, 0.3, 0.6)).toFixed(4),
-    ),
-    metrics,
-  };
+  return 'weak';
 }
 
-function evaluateTopicCategoryStage(
-  topicContext: ConsultationTopicContext,
-  assessment: AssessmentForWeighting,
-  fieldRelevance: StageFieldRelevance,
-): StageResult {
-  const metrics = getStageMetrics(
-    topicContext.topicCategory,
-    assessment,
-    CATEGORY_STAGE_CONFIG,
-    fieldRelevance,
-  );
-  const hasStrongMatch =
-    metrics.primaryPhraseMatches >= 0.9 ||
-    metrics.primaryDirectMatches >= 0.85 ||
-    metrics.primaryConceptMatches >= 0.85;
-  const hasWeakMatch =
-    metrics.contextualDirectMatches >= 0.8 ||
-    metrics.contextualPhraseMatches >= 0.75;
+function getPrimaryRelevanceWeight(
+  relevanceLevel: RelevanceLevel,
+  stakeholderRoleMatch: FieldMatch,
+  backgroundInfluence: BackgroundInfluence,
+): number {
+  const stakeholderRoleContribution =
+    stakeholderRoleMatch.kind === 'strong'
+      ? 0.24 + stakeholderRoleMatch.strength * 0.18
+      : stakeholderRoleMatch.kind === 'partial'
+        ? 0.05 + stakeholderRoleMatch.strength * 0.1
+        : 0;
 
-  if (hasStrongMatch) {
-    return {
-      level: 'strong',
-      adjustment: Number(
-        clamp(
-          0.3 +
-            metrics.weightedSignal * 0.12 +
-            metrics.primaryConceptMatches * 0.015,
-          0.3,
-          0.6,
-        ).toFixed(4),
-      ),
-      metrics,
-    };
+  const backgroundBaseContribution =
+    backgroundInfluence.match.kind === 'strong'
+      ? 0.14 + backgroundInfluence.match.strength * 0.12
+      : backgroundInfluence.match.kind === 'partial'
+        ? 0.03 + backgroundInfluence.match.strength * 0.07
+        : 0;
+
+  const backgroundContribution =
+    backgroundBaseContribution * backgroundInfluence.applicability;
+
+  if (relevanceLevel === 'strong') {
+    const synergy =
+      stakeholderRoleMatch.kind !== 'none' && backgroundInfluence.active
+        ? 0.04
+        : 0;
+
+    return (
+      1.04 + stakeholderRoleContribution + backgroundContribution + synergy
+    );
   }
 
-  if (hasWeakMatch) {
-    return {
-      level: 'weak',
-      adjustment: Number(
-        clamp(
-          0.05 +
-            metrics.weightedSignal * 0.12 +
-            metrics.contextualDirectMatches * 0.02,
-          0.05,
-          0.15,
-        ).toFixed(4),
-      ),
-      metrics,
-    };
+  if (relevanceLevel === 'partial') {
+    const synergy =
+      stakeholderRoleMatch.kind === 'partial' && backgroundInfluence.active
+        ? 0.03
+        : 0;
+
+    return (
+      0.94 +
+      stakeholderRoleContribution * 0.75 +
+      backgroundContribution * 0.85 +
+      synergy
+    );
   }
 
-  return {
-    level: 'none',
-    adjustment: Number(
-      (-clamp(0.24 - metrics.weightedSignal * 0.2, 0.2, 0.4)).toFixed(4),
-    ),
-    metrics,
-  };
-}
+  let penalty = 0.08;
 
-function getExperienceBonus(experienceLevel: string): number {
-  switch (experienceLevel) {
-    case 'expert':
-      return 0.085;
-    case 'advanced':
-      return 0.055;
-    case 'intermediate':
-      return 0.03;
-    default:
-      return 0;
+  if (stakeholderRoleMatch.kind === 'none') {
+    penalty += 0.07;
   }
-}
 
-function hasPrimaryRelevance(
-  titleStage: StageResult,
-  topicCategoryStage: StageResult,
-): boolean {
-  return titleStage.level !== 'none' || topicCategoryStage.level !== 'none';
-}
-
-function hasStrongPrimaryRelevance(
-  titleStage: StageResult,
-  topicCategoryStage: StageResult,
-): boolean {
-  const combinedSignal =
-    titleStage.metrics.weightedSignal + topicCategoryStage.metrics.weightedSignal;
+  if (
+    !backgroundInfluence.active ||
+    backgroundInfluence.match.kind === 'none'
+  ) {
+    penalty += 0.05;
+  }
 
   return (
-    titleStage.level === 'strong' ||
-    (titleStage.level === 'weak' && topicCategoryStage.level === 'strong') ||
-    combinedSignal >= 1.2
+    1 -
+    penalty +
+    stakeholderRoleContribution * 0.25 +
+    backgroundContribution * 0.25
   );
 }
 
-function getConditionalExperienceBonus(
-  assessment: AssessmentForWeighting,
-  titleStage: StageResult,
-  topicCategoryStage: StageResult,
+function getExperienceAdjustment(
+  relevanceLevel: RelevanceLevel,
+  experienceLevel: string | null | undefined,
 ): number {
-  const baseBonus = getExperienceBonus(
-    normalizeValue(assessment.experienceLevel),
-  );
-
-  if (baseBonus === 0) {
+  if (relevanceLevel === 'weak') {
     return 0;
   }
 
-  if (!hasPrimaryRelevance(titleStage, topicCategoryStage)) {
+  let baseAdjustment = 0;
+
+  switch (normalizeValue(experienceLevel)) {
+    case 'expert':
+      baseAdjustment = 0.06;
+      break;
+    case 'advanced':
+      baseAdjustment = 0.04;
+      break;
+    case 'intermediate':
+      baseAdjustment = 0.02;
+      break;
+    default:
+      baseAdjustment = 0;
+      break;
+  }
+
+  if (baseAdjustment === 0) {
     return 0;
   }
 
-  if (hasStrongPrimaryRelevance(titleStage, topicCategoryStage)) {
-    return baseBonus;
+  return relevanceLevel === 'strong'
+    ? baseAdjustment
+    : round(baseAdjustment * 0.6);
+}
+
+function isLocationRelevant(
+  contextSignals: ConsultationContextSignals,
+  assessment: AssessmentForWeighting,
+): boolean {
+  const normalizedCity = normalizeValue(assessment.city);
+
+  if (normalizedCity && contextSignals.fullText.includes(normalizedCity)) {
+    return true;
   }
 
-  return Number(Math.min(baseBonus * 0.35, 0.03).toFixed(4));
+  return contextSignals.locationMarkerSignal >= 1;
 }
 
 function getRelationshipToAreaAdjustment(
-  isPlaceBasedConsultation: boolean,
-  relationshipToArea: string,
+  relevanceLevel: RelevanceLevel,
+  locationRelevant: boolean,
+  relationshipToArea: string | null | undefined,
 ): number {
-  if (!isPlaceBasedConsultation) {
+  if (!locationRelevant || relevanceLevel === 'weak') {
     return 0;
   }
 
-  switch (relationshipToArea) {
+  let baseAdjustment = 0;
+
+  switch (normalizeValue(relationshipToArea)) {
     case 'resident':
-      return 0.045;
+      baseAdjustment = 0.035;
+      break;
     case 'non resident':
-      return 0;
+      baseAdjustment = 0.012;
+      break;
     case 'visitor':
-      return -0.035;
+      baseAdjustment = -0.018;
+      break;
     default:
-      return 0;
+      baseAdjustment = 0;
+      break;
   }
+
+  return relevanceLevel === 'strong'
+    ? baseAdjustment
+    : round(baseAdjustment * 0.7);
 }
 
-function getSecondaryContextAdjustment(
+function getCityAdjustment(
+  relevanceLevel: RelevanceLevel,
   contextSignals: ConsultationContextSignals,
-  assessment: AssessmentForWeighting,
-  titleStage: StageResult,
-  topicCategoryStage: StageResult,
+  locationRelevant: boolean,
+  city: string | null | undefined,
 ): number {
-  if (!hasPrimaryRelevance(titleStage, topicCategoryStage)) {
+  if (!locationRelevant || relevanceLevel === 'weak') {
     return 0;
   }
 
-  let adjustment = 0;
-  const city = normalizeValue(assessment.city);
-  const region = normalizeValue(assessment.region);
-  const country = normalizeValue(assessment.country);
-  const relationshipToArea = normalizeValue(assessment.relationshipToArea);
+  const normalizedCity = normalizeValue(city);
 
-  if (city && contextSignals.fullText.includes(city)) {
-    adjustment += 0.03;
+  if (!normalizedCity || !contextSignals.fullText.includes(normalizedCity)) {
+    return 0;
   }
 
-  if (region && contextSignals.fullText.includes(region)) {
-    adjustment += 0.015;
-  }
-
-  if (country && contextSignals.fullText.includes(country)) {
-    adjustment += 0.01;
-  }
-
-  adjustment += getRelationshipToAreaAdjustment(
-    contextSignals.isPlaceBased,
-    relationshipToArea,
-  );
-
-  const relevanceMultiplier = hasStrongPrimaryRelevance(
-    titleStage,
-    topicCategoryStage,
-  )
-    ? 1
-    : 0.55;
-
-  return Number(
-    clamp(adjustment * relevanceMultiplier, -0.07, 0.08).toFixed(4),
-  );
-}
-
-function applyRelevanceGate(
-  weight: number,
-  titleStage: StageResult,
-  topicCategoryStage: StageResult,
-): number {
-  if (titleStage.level === 'strong' || topicCategoryStage.level === 'strong') {
-    return weight;
-  }
-
-  const combinedSignal =
-    titleStage.metrics.weightedSignal +
-    topicCategoryStage.metrics.weightedSignal;
-  const gatingPenalty =
-    combinedSignal >= 0.6 ? 0.1 : combinedSignal >= 0.3 ? 0.16 : 0.22;
-
-  return Math.min(weight, 1.05) - gatingPenalty;
-}
-
-function softenSpecializedCeiling(weight: number): number {
-  if (weight <= SPECIALIZED_SOFT_CAP_START) {
-    return weight;
-  }
-
-  return (
-    SPECIALIZED_SOFT_CAP_START +
-    (weight - SPECIALIZED_SOFT_CAP_START) * SPECIALIZED_SOFT_CAP_RATIO
-  );
+  return relevanceLevel === 'strong' ? 0.015 : 0.01;
 }
 
 function getSpecializedWeight(
   topicContext: ConsultationTopicContext,
   assessment: AssessmentForWeighting,
 ): number {
-  const contextSignals = getConsultationContextSignals(topicContext);
-  const fieldRelevance = getStageFieldRelevance(contextSignals, assessment);
-  const titleStage = evaluateTitleStage(topicContext, assessment, fieldRelevance);
-  const topicCategoryStage = evaluateTopicCategoryStage(
-    topicContext,
-    assessment,
-    fieldRelevance,
+  const contextSignals = buildConsultationContextSignals(topicContext);
+  const stakeholderRoleMatch = getFieldMatch(
+    contextSignals,
+    assessment.stakeholderRole,
   );
-
-  let weight = 1;
-
-  weight += titleStage.adjustment;
-  weight += topicCategoryStage.adjustment;
-  weight = applyRelevanceGate(weight, titleStage, topicCategoryStage);
-  weight += getConditionalExperienceBonus(
-    assessment,
-    titleStage,
-    topicCategoryStage,
-  );
-  weight += getSecondaryContextAdjustment(
+  const backgroundInfluence = getBackgroundInfluence(
     contextSignals,
     assessment,
-    titleStage,
-    topicCategoryStage,
   );
-  weight = softenSpecializedCeiling(weight);
+  const relevanceLevel = determineOverallRelevanceLevel(
+    stakeholderRoleMatch,
+    backgroundInfluence,
+  );
+  const locationRelevant = isLocationRelevant(contextSignals, assessment);
 
-  return Number(
-    clamp(weight, MIN_SPECIALIZED_WEIGHT, MAX_SPECIALIZED_WEIGHT).toFixed(4),
+  let weight = getPrimaryRelevanceWeight(
+    relevanceLevel,
+    stakeholderRoleMatch,
+    backgroundInfluence,
   );
+
+  weight += getExperienceAdjustment(relevanceLevel, assessment.experienceLevel);
+  weight += getRelationshipToAreaAdjustment(
+    relevanceLevel,
+    locationRelevant,
+    assessment.relationshipToArea,
+  );
+  weight += getCityAdjustment(
+    relevanceLevel,
+    contextSignals,
+    locationRelevant,
+    assessment.city,
+  );
+
+  return round(clamp(weight, MIN_SPECIALIZED_WEIGHT, MAX_SPECIALIZED_WEIGHT));
 }
 
 export function calculateVoteWeight(
