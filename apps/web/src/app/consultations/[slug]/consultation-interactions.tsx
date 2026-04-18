@@ -11,7 +11,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   PieChart,
   Pie,
   Cell,
@@ -31,49 +30,52 @@ type Props = {
 };
 
 const PIE_CHART_COLORS = [
-  "#16a34a",
   "#2563eb",
-  "#f59e0b",
-  "#8b5cf6",
-  "#ef4444",
-  "#0ea5e9",
-  "#14b8a6",
-  "#f97316",
-  "#84cc16",
-  "#ec4899",
-  "#06b6d4",
-  "#a855f7",
+  "#dc2626",
+  "#16a34a",
+  "#d97706",
+  "#7c3aed",
+  "#0f766e",
+  "#db2777",
+  "#0891b2",
+  "#65a30d",
+  "#c2410c",
+  "#4f46e5",
+  "#854d0e",
 ];
 
 const RAW_OPTION_COLORS = [
   "#2563eb",
-  "#0ea5e9",
+  "#dc2626",
+  "#16a34a",
+  "#d97706",
   "#7c3aed",
-  "#8b5cf6",
-  "#1d4ed8",
-  "#0891b2",
-  "#6366f1",
+  "#0f766e",
+  "#c2410c",
+  "#be185d",
   "#4f46e5",
-  "#3b82f6",
-  "#0284c7",
-  "#4338ca",
-  "#6d28d9",
+  "#65a30d",
+  "#0891b2",
+  "#854d0e",
 ];
 
 const WEIGHTED_OPTION_COLORS = [
-  "#16a34a",
-  "#84cc16",
-  "#f59e0b",
-  "#f97316",
-  "#22c55e",
-  "#65a30d",
-  "#d97706",
-  "#ea580c",
+  "#1d4ed8",
+  "#b91c1c",
   "#15803d",
+  "#b45309",
+  "#6d28d9",
+  "#0f766e",
+  "#ea580c",
+  "#db2777",
+  "#4338ca",
   "#4d7c0f",
-  "#ca8a04",
-  "#c2410c",
+  "#0e7490",
+  "#92400e",
 ];
+
+const RAW_SERIES_LEGEND_COLOR = "#1d4ed8";
+const WEIGHTED_SERIES_LEGEND_COLOR = "#b45309";
 
 export function ConsultationInteractions({ vote }: Props) {
   const router = useRouter();
@@ -151,10 +153,6 @@ export function ConsultationInteractions({ vote }: Props) {
       .filter((option) => typeof option.rawCount !== "undefined")
       .map((option, index) => ({
         label: `Option ${option.displayOrder}`,
-        legendLabel: truncateLabel(
-          `Option ${option.displayOrder}: ${option.optionText}`,
-          44,
-        ),
         fullLabel: option.optionText,
         count: option.rawCount ?? 0,
         percentage: option.rawPercentage ?? 0,
@@ -167,10 +165,6 @@ export function ConsultationInteractions({ vote }: Props) {
       .filter((option) => typeof option.weightedCount !== "undefined")
       .map((option, index) => ({
         label: `Option ${option.displayOrder}`,
-        legendLabel: truncateLabel(
-          `Option ${option.displayOrder}: ${option.optionText}`,
-          44,
-        ),
         fullLabel: option.optionText,
         count: option.weightedCount ?? 0,
         percentage: option.weightedPercentage ?? 0,
@@ -335,38 +329,44 @@ export function ConsultationInteractions({ vote }: Props) {
     experienceLevelChartData.length > 0 ||
     relationshipToAreaChartData.length > 0;
 
-  const resultsUnavailableMessage = vote.displaySettings
-    ?.showOnlyAfterVoteCloses
-    ? "Results will become visible after this consultation closes."
-    : vote.displaySettings?.showAfterVotingOnly
-      ? "Results will become visible after you submit your vote."
-      : resultVisibilityMode === "HIDE_ALL"
-        ? "The consultation administrator has chosen not to publish public results."
-        : "Results are not currently visible for this consultation.";
+  const resultsUnavailableMessage = getResultsUnavailableMessage({
+    resultVisibilityMode,
+    showAfterVotingOnly: vote.displaySettings?.showAfterVotingOnly ?? false,
+    showOnlyAfterVoteCloses:
+      vote.displaySettings?.showOnlyAfterVoteCloses ?? false,
+  });
 
-  const analyticsUnavailableMessage = vote.displaySettings
-    ?.showOnlyAfterVoteCloses
-    ? "Public analytics will become visible after this consultation closes."
-    : vote.displaySettings?.showAfterVotingOnly
-      ? "Public analytics will become visible after you submit your vote."
-      : !hasAnyPublicAnalyticsEnabled
-        ? "The consultation administrator has not enabled public analytics for this consultation."
-        : "Analytics are not currently visible for this consultation.";
+  const analyticsUnavailableMessage = getAnalyticsUnavailableMessage({
+    hasAnyPublicAnalyticsEnabled,
+    showAfterVotingOnly: vote.displaySettings?.showAfterVotingOnly ?? false,
+    showOnlyAfterVoteCloses:
+      vote.displaySettings?.showOnlyAfterVoteCloses ?? false,
+  });
+
+  const isComparingVisibleResults = showRawResults && showWeightedResults;
+  const rawVotesLabel = isComparingVisibleResults ? "Raw Votes" : "Votes";
+  const weightedVotesLabel = isComparingVisibleResults
+    ? "Weighted Votes"
+    : "Votes";
+  const rawVotesValueLabel = isComparingVisibleResults ? "raw votes" : "votes";
+  const weightedVotesValueLabel = isComparingVisibleResults
+    ? "weighted votes"
+    : "votes";
 
   const visibleResultSeries = useMemo(() => {
     const series: Array<{ key: "rawVotes" | "weightedVotes"; label: string }> =
       [];
 
     if (showRawResults) {
-      series.push({ key: "rawVotes", label: "Unweighted vote count" });
+      series.push({ key: "rawVotes", label: rawVotesLabel });
     }
 
     if (showWeightedResults) {
-      series.push({ key: "weightedVotes", label: "Weighted vote total" });
+      series.push({ key: "weightedVotes", label: weightedVotesLabel });
     }
 
     return series;
-  }, [showRawResults, showWeightedResults]);
+  }, [rawVotesLabel, showRawResults, showWeightedResults, weightedVotesLabel]);
 
   const visibleTotalsCount =
     Number(
@@ -386,15 +386,13 @@ export function ConsultationInteractions({ vote }: Props) {
 
   const resultsComparisonTitle =
     visibleResultSeries.length === 1
-      ? visibleResultSeries[0].label
-      : "Unweighted and weighted results by option";
+      ? "Votes by option"
+      : "Raw Votes and Weighted Votes by option";
 
   const resultsComparisonDescription =
     visibleResultSeries.length === 1
-      ? showRawResults
-        ? "This chart shows the unweighted number of votes recorded for each option."
-        : "This chart shows the weighted vote total assigned to each option."
-      : "This chart compares simple vote counts with weighted vote totals for each option.";
+      ? "This chart shows the published votes for each option. Use the option color key directly below to match each bar to its option."
+      : "This chart compares raw votes with weighted votes for each option. Use the option color key directly below to identify each option across both series.";
 
   return (
     <div className="mt-10 grid gap-12">
@@ -635,9 +633,9 @@ export function ConsultationInteractions({ vote }: Props) {
             Consultation results
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
-            Review the current outcome of this consultation. The labels below
-            explain whether you are seeing simple vote counts, weighted totals,
-            or both.
+            {isComparingVisibleResults
+              ? "Review the current outcome of this consultation. When both result types are public, the labels below compare raw votes with weighted votes."
+              : "Review the current outcome of this consultation. Public vote totals appear here whenever the consultation settings allow them."}
           </p>
         </div>
 
@@ -658,7 +656,7 @@ export function ConsultationInteractions({ vote }: Props) {
               typeof resultsState.data?.results?.results?.totals
                 .totalRawVotes !== "undefined" ? (
                 <SummaryStrip
-                  label="Unweighted votes recorded"
+                  label={rawVotesLabel}
                   value={String(
                     resultsState.data.results.results.totals.totalRawVotes,
                   )}
@@ -669,7 +667,7 @@ export function ConsultationInteractions({ vote }: Props) {
               typeof resultsState.data?.results?.results?.totals
                 .totalWeightedVotes !== "undefined" ? (
                 <SummaryStrip
-                  label="Weighted vote total"
+                  label={weightedVotesLabel}
                   value={String(
                     resultsState.data.results.results.totals.totalWeightedVotes,
                   )}
@@ -691,6 +689,21 @@ export function ConsultationInteractions({ vote }: Props) {
                   </p>
                 </div>
 
+                <div className="mb-4 flex flex-wrap gap-3">
+                  {showRawResults ? (
+                    <SeriesLegendChip
+                      color={RAW_SERIES_LEGEND_COLOR}
+                      label={rawVotesLabel}
+                    />
+                  ) : null}
+                  {showWeightedResults ? (
+                    <SeriesLegendChip
+                      color={WEIGHTED_SERIES_LEGEND_COLOR}
+                      label={weightedVotesLabel}
+                    />
+                  ) : null}
+                </div>
+
                 <div className="h-96 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -709,9 +722,9 @@ export function ConsultationInteractions({ vote }: Props) {
                         formatter={(value, name, entry) => {
                           const label =
                             name === "rawVotes"
-                              ? "Unweighted vote count"
+                              ? rawVotesLabel
                               : name === "weightedVotes"
-                                ? "Weighted vote total"
+                                ? weightedVotesLabel
                                 : String(name);
 
                           return [
@@ -726,17 +739,6 @@ export function ConsultationInteractions({ vote }: Props) {
                             "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
                         }}
                       />
-                      {visibleResultSeries.length > 1 ? (
-                        <Legend
-                          formatter={(value) =>
-                            value === "rawVotes"
-                              ? "Unweighted vote count"
-                              : value === "weightedVotes"
-                                ? "Weighted vote total"
-                                : value
-                          }
-                        />
-                      ) : null}
 
                       {showRawResults ? (
                         <Bar
@@ -770,6 +772,51 @@ export function ConsultationInteractions({ vote }: Props) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+
+                <div className="mt-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Option color key
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {resultOptions.map((option, index) => (
+                      <div
+                        key={`result-key-${option.optionId}`}
+                        className="rounded-2xl bg-slate-50 px-4 py-3 shadow-sm ring-1 ring-slate-200"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="mt-1 flex shrink-0 items-center gap-2">
+                            {showRawResults ? (
+                              <ColorDot
+                                color={
+                                  RAW_OPTION_COLORS[
+                                    index % RAW_OPTION_COLORS.length
+                                  ]
+                                }
+                              />
+                            ) : null}
+                            {showWeightedResults ? (
+                              <ColorDot
+                                color={
+                                  WEIGHTED_OPTION_COLORS[
+                                    index % WEIGHTED_OPTION_COLORS.length
+                                  ]
+                                }
+                              />
+                            ) : null}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900">
+                              Option {option.displayOrder}
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-slate-600">
+                              {option.optionText}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : null}
 
@@ -780,16 +827,34 @@ export function ConsultationInteractions({ vote }: Props) {
             >
               {showRawResults && rawPieData.length > 0 ? (
                 <OptionResultPieCard
-                  title="How the unweighted votes are split"
-                  description="Each slice shows the share of simple vote counts recorded for an option."
+                  title={
+                    isComparingVisibleResults
+                      ? "How raw votes are split"
+                      : "How votes are split"
+                  }
+                  description={
+                    isComparingVisibleResults
+                      ? "Each slice shows the share of raw votes recorded for an option."
+                      : "Each slice shows how the visible votes are distributed across the options."
+                  }
+                  valueLabel={rawVotesValueLabel}
                   items={rawPieData}
                 />
               ) : null}
 
               {showWeightedResults && weightedPieData.length > 0 ? (
                 <OptionResultPieCard
-                  title="How the weighted totals are split"
-                  description="Each slice shows the share of the weighted vote total assigned to an option."
+                  title={
+                    isComparingVisibleResults
+                      ? "How weighted votes are split"
+                      : "How votes are split"
+                  }
+                  description={
+                    isComparingVisibleResults
+                      ? "Each slice shows the share of weighted votes assigned to an option."
+                      : "Each slice shows how the visible votes are distributed across the options."
+                  }
+                  valueLabel={weightedVotesValueLabel}
                   items={weightedPieData}
                 />
               ) : null}
@@ -826,7 +891,7 @@ export function ConsultationInteractions({ vote }: Props) {
                         />
                         <span>
                           <span className="font-medium text-slate-900">
-                            Unweighted votes:
+                            {rawVotesLabel}:
                           </span>{" "}
                           {option.rawCount} ({option.rawPercentage}%)
                         </span>
@@ -848,7 +913,7 @@ export function ConsultationInteractions({ vote }: Props) {
                         />
                         <span>
                           <span className="font-medium text-slate-900">
-                            Weighted total:
+                            {weightedVotesLabel}:
                           </span>{" "}
                           {option.weightedCount} ({option.weightedPercentage}%)
                         </span>
@@ -871,9 +936,8 @@ export function ConsultationInteractions({ vote }: Props) {
             Participation analytics
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
-            View the public participant breakdowns enabled for this
-            consultation. Small groups may still be grouped or hidden to protect
-            privacy.
+            View the public participant breakdowns the consultation
+            administrator has chosen to show.
           </p>
         </div>
 
@@ -885,9 +949,8 @@ export function ConsultationInteractions({ vote }: Props) {
           <NoticeBox tone="neutral">{analyticsUnavailableMessage}</NoticeBox>
         ) : !hasRenderedAnalyticsContent ? (
           <NoticeBox tone="neutral">
-            Public analytics are enabled for this consultation, but the
-            currently available breakdowns are being suppressed because there is
-            not enough privacy-safe participant volume yet.
+            Public analytics are enabled for this consultation, but there is no
+            participant breakdown data available yet.
           </NoticeBox>
         ) : (
           <div className="mt-6 space-y-8">
@@ -997,6 +1060,58 @@ function formatBreakdownItems(
   }));
 }
 
+function getResultsUnavailableMessage({
+  resultVisibilityMode,
+  showAfterVotingOnly,
+  showOnlyAfterVoteCloses,
+}: {
+  resultVisibilityMode:
+    | "HIDE_ALL"
+    | "SHOW_RAW_ONLY"
+    | "SHOW_WEIGHTED_ONLY"
+    | "SHOW_BOTH";
+  showAfterVotingOnly: boolean;
+  showOnlyAfterVoteCloses: boolean;
+}) {
+  if (resultVisibilityMode === "HIDE_ALL") {
+    return "The consultation administrator has chosen not to publish public results.";
+  }
+
+  if (showOnlyAfterVoteCloses) {
+    return "Results will become visible after this consultation closes.";
+  }
+
+  if (showAfterVotingOnly) {
+    return "Results will become visible after you submit your vote.";
+  }
+
+  return "Results are not currently visible for this consultation.";
+}
+
+function getAnalyticsUnavailableMessage({
+  hasAnyPublicAnalyticsEnabled,
+  showAfterVotingOnly,
+  showOnlyAfterVoteCloses,
+}: {
+  hasAnyPublicAnalyticsEnabled: boolean;
+  showAfterVotingOnly: boolean;
+  showOnlyAfterVoteCloses: boolean;
+}) {
+  if (!hasAnyPublicAnalyticsEnabled) {
+    return "The consultation administrator has not enabled public analytics for this consultation.";
+  }
+
+  if (showOnlyAfterVoteCloses) {
+    return "Public analytics will become visible after this consultation closes.";
+  }
+
+  if (showAfterVotingOnly) {
+    return "Public analytics will become visible after you submit your vote.";
+  }
+
+  return "Analytics are not currently visible for this consultation.";
+}
+
 function NoticeBox({
   children,
   tone,
@@ -1056,16 +1171,42 @@ function InfoPill({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ColorDot({ color }: { color: string }) {
+  return (
+    <span
+      className="h-3 w-3 rounded-full"
+      style={{ backgroundColor: color }}
+      aria-hidden="true"
+    />
+  );
+}
+
+function SeriesLegendChip({
+  color,
+  label,
+}: {
+  color: string;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+      <ColorDot color={color} />
+      {label}
+    </span>
+  );
+}
+
 function OptionResultPieCard({
   title,
   description,
+  valueLabel,
   items,
 }: {
   title: string;
   description: string;
+  valueLabel: string;
   items: Array<{
     label: string;
-    legendLabel: string;
     fullLabel: string;
     count: number;
     percentage: number;
@@ -1078,46 +1219,73 @@ function OptionResultPieCard({
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="text-base font-semibold tracking-tight text-slate-900">
         {title}
       </h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
 
-      <div className="mt-4 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={items}
-              dataKey="count"
-              nameKey="legendLabel"
-              outerRadius={90}
-              innerRadius={42}
-              paddingAngle={2}
+      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-center">
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={items}
+                dataKey="count"
+                nameKey="label"
+                outerRadius={90}
+                innerRadius={42}
+                paddingAngle={2}
+              >
+                {items.map((item, index) => (
+                  <Cell
+                    key={`${item.label}-${index}`}
+                    fill={item.color}
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value, _name, entry) => [
+                  `${value} ${valueLabel} (${entry.payload.percentage}%)`,
+                  entry.payload.fullLabel,
+                ]}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid #e2e8f0",
+                  boxShadow:
+                    "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div
+              key={`result-pie-legend-${item.label}`}
+              className="rounded-2xl bg-slate-50 px-3 py-3 ring-1 ring-slate-200"
             >
-              {items.map((item, index) => (
-                <Cell
-                  key={`${item.label}-${index}`}
-                  fill={item.color}
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value, _name, entry) => [
-                `${value} votes (${entry.payload.percentage}%)`,
-                entry.payload.fullLabel,
-              ]}
-              contentStyle={{
-                borderRadius: 12,
-                border: "1px solid #e2e8f0",
-                boxShadow:
-                  "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-              }}
-            />
-            {items.length > 1 ? <Legend /> : null}
-          </PieChart>
-        </ResponsiveContainer>
+              <div className="flex items-start gap-3">
+                <div className="pt-0.5">
+                  <ColorDot color={item.color} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                    {item.fullLabel}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-700">
+                    {item.count} {valueLabel} ({item.percentage}%)
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1183,55 +1351,73 @@ function BreakdownChartCard({
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="text-base font-semibold tracking-tight text-slate-900">
         {title}
       </h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
 
-      <div className="mt-4 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={items}
-              dataKey="count"
-              nameKey="label"
-              outerRadius={90}
-              innerRadius={42}
-              paddingAngle={2}
+      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-center">
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={items}
+                dataKey="count"
+                nameKey="label"
+                outerRadius={90}
+                innerRadius={42}
+                paddingAngle={2}
+              >
+                {items.map((item, index) => (
+                  <Cell
+                    key={`${item.label}-${index}`}
+                    fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value, _name, entry) => [
+                  `${value} participants (${entry.payload.percentage}%)`,
+                  entry.payload.label,
+                ]}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid #e2e8f0",
+                  boxShadow:
+                    "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="space-y-2">
+          {items.map((item, index) => (
+            <div
+              key={`breakdown-pie-legend-${item.label}`}
+              className="rounded-2xl bg-slate-50 px-3 py-3 ring-1 ring-slate-200"
             >
-              {items.map((item, index) => (
-                <Cell
-                  key={`${item.label}-${index}`}
-                  fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value, _name, entry) => [
-                `${value} participants (${entry.payload.percentage}%)`,
-                entry.payload.label,
-              ]}
-              contentStyle={{
-                borderRadius: 12,
-                border: "1px solid #e2e8f0",
-                boxShadow:
-                  "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-              }}
-            />
-            {items.length > 1 ? <Legend /> : null}
-          </PieChart>
-        </ResponsiveContainer>
+              <div className="flex items-start gap-3">
+                <div className="pt-0.5">
+                  <ColorDot
+                    color={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-700">
+                    {item.count} participants ({item.percentage}%)
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
-}
-
-function truncateLabel(value: string, maxLength: number) {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  return `${value.slice(0, maxLength - 3)}...`;
 }

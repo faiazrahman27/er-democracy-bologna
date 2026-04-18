@@ -72,6 +72,9 @@ export default function AdminVotesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const normalizedShowAfterVotingOnly = showOnlyAfterVoteCloses
+    ? false
+    : showAfterVotingOnly;
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -124,6 +127,22 @@ export default function AdminVotesPage() {
   function handleCoverFileChange(file: File | null) {
     setSelectedCoverFile(file);
     setCoverUploadMessage(null);
+  }
+
+  function handleShowAfterVotingOnlyChange(value: boolean) {
+    setShowAfterVotingOnly(value);
+
+    if (value) {
+      setShowOnlyAfterVoteCloses(false);
+    }
+  }
+
+  function handleShowOnlyAfterVoteClosesChange(value: boolean) {
+    setShowOnlyAfterVoteCloses(value);
+
+    if (value) {
+      setShowAfterVotingOnly(false);
+    }
   }
 
   async function handleUploadCoverImage() {
@@ -226,7 +245,7 @@ export default function AdminVotesPage() {
           showGenderBreakdown,
           showExperienceLevelBreakdown,
           showRelationshipBreakdown,
-          showAfterVotingOnly,
+          showAfterVotingOnly: normalizedShowAfterVotingOnly,
           showOnlyAfterVoteCloses,
         },
       });
@@ -521,13 +540,14 @@ export default function AdminVotesPage() {
               />
               <CheckboxField
                 label="Show after voting only"
-                checked={showAfterVotingOnly}
-                onChange={setShowAfterVotingOnly}
+                checked={normalizedShowAfterVotingOnly}
+                onChange={handleShowAfterVotingOnlyChange}
+                disabled={showOnlyAfterVoteCloses}
               />
               <CheckboxField
                 label="Show only after vote closes"
                 checked={showOnlyAfterVoteCloses}
-                onChange={setShowOnlyAfterVoteCloses}
+                onChange={handleShowOnlyAfterVoteClosesChange}
               />
             </div>
           </div>
@@ -618,16 +638,25 @@ function CheckboxField({
   label,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string;
   checked: boolean;
   onChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
-    <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+    <label
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
+        disabled
+          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500'
+          : 'border-slate-200 bg-slate-50 text-slate-700'
+      }`}
+    >
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
         className="mt-0.5"
       />

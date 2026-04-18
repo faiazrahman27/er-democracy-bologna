@@ -256,22 +256,13 @@ export default function AdminConsultationsPage() {
                           label={formatEnumLabel(vote.topicCategory)}
                           tone="muted"
                         />
-                        <StatusBadge
-                          label={formatEnumLabel(vote.status)}
-                          tone={deriveWorkflowTone(vote.status)}
-                        />
-                        <StatusBadge
-                          label={
-                            vote.derivedStatus
-                              ? formatEnumLabel(vote.derivedStatus)
-                              : 'Unknown'
-                          }
-                          tone={deriveStatusTone(vote.derivedStatus)}
-                        />
-                        <StatusBadge
-                          label={vote.isPublished ? 'Published' : 'Unpublished'}
-                          tone={vote.isPublished ? 'success' : 'warning'}
-                        />
+                        {getConsultationStatusBadges(vote).map((badge) => (
+                          <StatusBadge
+                            key={`${vote.id}-${badge.label}`}
+                            label={badge.label}
+                            tone={badge.tone}
+                          />
+                        ))}
                       </div>
 
                       <h2 className="mt-5 break-words text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
@@ -480,4 +471,50 @@ function deriveWorkflowTone(
   }
 
   return 'muted';
+}
+
+function getConsultationStatusBadges(
+  vote: AdminVoteListItem,
+): Array<{
+  label: string;
+  tone: 'default' | 'muted' | 'success' | 'warning' | 'danger';
+}> {
+  const badges: Array<{
+    label: string;
+    tone: 'default' | 'muted' | 'success' | 'warning' | 'danger';
+  }> = [];
+
+  const addBadge = (
+    label: string,
+    tone: 'default' | 'muted' | 'success' | 'warning' | 'danger',
+  ) => {
+    if (badges.some((badge) => badge.label === label)) {
+      return;
+    }
+
+    badges.push({ label, tone });
+  };
+
+  if (vote.isPublished) {
+    addBadge('Published', 'success');
+  }
+
+  if (!vote.isPublished || vote.status !== 'PUBLISHED') {
+    addBadge(formatEnumLabel(vote.status), deriveWorkflowTone(vote.status));
+  }
+
+  const shouldShowTimingStatus =
+    vote.status === 'PUBLISHED' &&
+    (vote.derivedStatus === 'UPCOMING' ||
+      vote.derivedStatus === 'ONGOING' ||
+      vote.derivedStatus === 'PAST');
+
+  if (shouldShowTimingStatus) {
+    addBadge(
+      formatEnumLabel(vote.derivedStatus),
+      deriveStatusTone(vote.derivedStatus),
+    );
+  }
+
+  return badges;
 }

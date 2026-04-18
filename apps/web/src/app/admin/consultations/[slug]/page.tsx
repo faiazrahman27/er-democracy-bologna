@@ -11,7 +11,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   PieChart,
   Pie,
   Cell,
@@ -37,49 +36,52 @@ import type {
 import type { AnalyticsBreakdownItem } from '@/types/analytics';
 
 const PIE_CHART_COLORS = [
-  '#16a34a',
   '#2563eb',
-  '#f59e0b',
-  '#8b5cf6',
-  '#ef4444',
-  '#0ea5e9',
-  '#14b8a6',
-  '#f97316',
-  '#84cc16',
-  '#ec4899',
-  '#06b6d4',
-  '#a855f7',
+  '#dc2626',
+  '#16a34a',
+  '#d97706',
+  '#7c3aed',
+  '#0f766e',
+  '#db2777',
+  '#0891b2',
+  '#65a30d',
+  '#c2410c',
+  '#4f46e5',
+  '#854d0e',
 ];
 
 const RAW_OPTION_COLORS = [
   '#2563eb',
-  '#0ea5e9',
+  '#dc2626',
+  '#16a34a',
+  '#d97706',
   '#7c3aed',
-  '#8b5cf6',
-  '#1d4ed8',
-  '#0891b2',
-  '#6366f1',
+  '#0f766e',
+  '#c2410c',
+  '#be185d',
   '#4f46e5',
-  '#3b82f6',
-  '#0284c7',
-  '#4338ca',
-  '#6d28d9',
+  '#65a30d',
+  '#0891b2',
+  '#854d0e',
 ];
 
 const WEIGHTED_OPTION_COLORS = [
-  '#16a34a',
-  '#84cc16',
-  '#f59e0b',
-  '#f97316',
-  '#22c55e',
-  '#65a30d',
-  '#d97706',
-  '#ea580c',
+  '#1d4ed8',
+  '#b91c1c',
   '#15803d',
+  '#b45309',
+  '#6d28d9',
+  '#0f766e',
+  '#ea580c',
+  '#db2777',
+  '#4338ca',
   '#4d7c0f',
-  '#ca8a04',
-  '#c2410c',
+  '#0e7490',
+  '#92400e',
 ];
+
+const RAW_SERIES_LEGEND_COLOR = '#1d4ed8';
+const WEIGHTED_SERIES_LEGEND_COLOR = '#b45309';
 
 export default function AdminConsultationDetailPage() {
   const router = useRouter();
@@ -690,9 +692,24 @@ export default function AdminConsultationDetailPage() {
 
                   {resultsChartData.length > 0 ? (
                     <div className="mt-6 min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                      <h3 className="text-base font-semibold tracking-tight text-slate-900">
                         Raw vs weighted results
                       </h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        Compare simple vote counts with weighted vote totals for
+                        each option. Use the series chips and option color key
+                        below to match the chart to each consultation option.
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <SeriesLegendChip
+                          color={RAW_SERIES_LEGEND_COLOR}
+                          label="Raw votes"
+                        />
+                        <SeriesLegendChip
+                          color={WEIGHTED_SERIES_LEGEND_COLOR}
+                          label="Weighted votes"
+                        />
+                      </div>
                       <div className="mt-4 h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
@@ -731,15 +748,6 @@ export default function AdminConsultationDetailPage() {
                                   '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
                               }}
                             />
-                            <Legend
-                              formatter={(value) =>
-                                value === 'rawVotes'
-                                  ? 'Raw votes'
-                                  : value === 'weightedVotes'
-                                    ? 'Weighted votes'
-                                    : value
-                              }
-                            />
                             <Bar
                               dataKey="rawVotes"
                               name="rawVotes"
@@ -767,16 +775,61 @@ export default function AdminConsultationDetailPage() {
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
+
+                      <div className="mt-5">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Option color key
+                        </p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {results.options.map((option, index) => (
+                            <div
+                              key={`result-key-${option.optionId}`}
+                              className="rounded-2xl bg-slate-50 px-4 py-3 shadow-sm ring-1 ring-slate-200"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="mt-1 flex shrink-0 items-center gap-2">
+                                  <ColorDot
+                                    color={
+                                      RAW_OPTION_COLORS[
+                                        index % RAW_OPTION_COLORS.length
+                                      ]
+                                    }
+                                  />
+                                  <ColorDot
+                                    color={
+                                      WEIGHTED_OPTION_COLORS[
+                                        index % WEIGHTED_OPTION_COLORS.length
+                                      ]
+                                    }
+                                  />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    Option {option.displayOrder}
+                                  </p>
+                                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                                    {option.optionText}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ) : null}
 
                   <div className="mt-6 grid gap-6 lg:grid-cols-2">
                     <OptionResultPieCard
                       title="Raw vote distribution"
+                      description="Each slice shows the share of raw votes recorded for an option."
+                      valueLabel="votes"
                       items={rawPieData}
                     />
                     <OptionResultPieCard
                       title="Weighted vote distribution"
+                      description="Each slice shows the share of the weighted total assigned to an option."
+                      valueLabel="weighted total"
                       items={weightedPieData}
                     />
                   </div>
@@ -896,61 +949,37 @@ export default function AdminConsultationDetailPage() {
                   <div className="mt-6 grid gap-6 lg:grid-cols-3">
                     <BreakdownChartCard
                       title="Stakeholder breakdown"
+                      description="Shows which stakeholder categories participated in this consultation."
                       items={stakeholderChartData}
                     />
                     <BreakdownChartCard
                       title="Background breakdown"
+                      description="Shows how participants are distributed across background categories."
                       items={backgroundChartData}
                     />
                     <BreakdownChartCard
                       title="Location breakdown"
+                      description="Shows which reported locations participants came from."
                       items={locationChartData}
                     />
                     <BreakdownChartCard
                       title="Age range breakdown"
+                      description="Shows participation by age range."
                       items={ageRangeChartData}
                     />
                     <BreakdownChartCard
                       title="Gender breakdown"
+                      description="Shows participation by gender."
                       items={genderChartData}
                     />
                     <BreakdownChartCard
                       title="Experience level breakdown"
+                      description="Shows participation by experience level."
                       items={experienceLevelChartData}
                     />
                     <BreakdownChartCard
                       title="Relationship to area breakdown"
-                      items={relationshipToAreaChartData}
-                    />
-                  </div>
-
-                  <div className="mt-6 grid gap-6 lg:grid-cols-3">
-                    <MiniBreakdown
-                      title="Stakeholder"
-                      items={stakeholderChartData}
-                    />
-                    <MiniBreakdown
-                      title="Background"
-                      items={backgroundChartData}
-                    />
-                    <MiniBreakdown
-                      title="Location"
-                      items={locationChartData}
-                    />
-                    <MiniBreakdown
-                      title="Age range"
-                      items={ageRangeChartData}
-                    />
-                    <MiniBreakdown
-                      title="Gender"
-                      items={genderChartData}
-                    />
-                    <MiniBreakdown
-                      title="Experience level"
-                      items={experienceLevelChartData}
-                    />
-                    <MiniBreakdown
-                      title="Relationship to area"
+                      description="Shows how participants relate to the consultation area."
                       items={relationshipToAreaChartData}
                     />
                   </div>
@@ -1159,11 +1188,40 @@ function StatusBadge({
   return <span className={`rounded-full px-3 py-1 ${toneClass}`}>{label}</span>;
 }
 
+function ColorDot({ color }: { color: string }) {
+  return (
+    <span
+      className="h-3 w-3 rounded-full"
+      style={{ backgroundColor: color }}
+      aria-hidden="true"
+    />
+  );
+}
+
+function SeriesLegendChip({
+  color,
+  label,
+}: {
+  color: string;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+      <ColorDot color={color} />
+      {label}
+    </span>
+  );
+}
+
 function OptionResultPieCard({
   title,
+  description,
+  valueLabel,
   items,
 }: {
   title: string;
+  description: string;
+  valueLabel: string;
   items: Array<{
     label: string;
     fullLabel: string;
@@ -1175,7 +1233,7 @@ function OptionResultPieCard({
   if (items.length === 0) {
     return (
       <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="text-base font-semibold tracking-tight text-slate-900">
           {title}
         </h3>
         <p className="mt-4 text-sm text-slate-600">No data available.</p>
@@ -1185,45 +1243,73 @@ function OptionResultPieCard({
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="text-base font-semibold tracking-tight text-slate-900">
         {title}
       </h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
 
-      <div className="mt-4 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={items}
-              dataKey="count"
-              nameKey="label"
-              outerRadius={90}
-              innerRadius={42}
-              paddingAngle={2}
+      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-center">
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={items}
+                dataKey="count"
+                nameKey="label"
+                outerRadius={90}
+                innerRadius={42}
+                paddingAngle={2}
+              >
+                {items.map((item, index) => (
+                  <Cell
+                    key={`${item.label}-${index}`}
+                    fill={item.color}
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value, _name, entry) => [
+                  `${value} ${valueLabel} (${entry.payload.percentage}%)`,
+                  `${entry.payload.label}: ${entry.payload.fullLabel}`,
+                ]}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: '1px solid #e2e8f0',
+                  boxShadow:
+                    '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div
+              key={`result-pie-legend-${item.label}`}
+              className="rounded-2xl bg-slate-50 px-3 py-3 ring-1 ring-slate-200"
             >
-              {items.map((item, index) => (
-                <Cell
-                  key={`${item.label}-${index}`}
-                  fill={item.color}
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value, _name, entry) => [
-                `${value}`,
-                `${entry.payload.fullLabel} (${entry.payload.percentage}%)`,
-              ]}
-              contentStyle={{
-                borderRadius: 12,
-                border: '1px solid #e2e8f0',
-                boxShadow:
-                  '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-              }}
-            />
-            {items.length > 1 ? <Legend /> : null}
-          </PieChart>
-        </ResponsiveContainer>
+              <div className="flex items-start gap-3">
+                <div className="pt-0.5">
+                  <ColorDot color={item.color} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                    {item.fullLabel}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-700">
+                    {item.count} {valueLabel} ({item.percentage}%)
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1231,9 +1317,11 @@ function OptionResultPieCard({
 
 function BreakdownChartCard({
   title,
+  description,
   items,
 }: {
   title: string;
+  description: string;
   items: Array<{
     label: string;
     count: number;
@@ -1243,7 +1331,7 @@ function BreakdownChartCard({
   if (items.length === 0) {
     return (
       <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="text-base font-semibold tracking-tight text-slate-900">
           {title}
         </h3>
         <p className="mt-4 text-sm text-slate-600">No data available.</p>
@@ -1253,54 +1341,55 @@ function BreakdownChartCard({
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="text-base font-semibold tracking-tight text-slate-900">
         {title}
       </h3>
-      <div className="mt-4 h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={items}
-              dataKey="count"
-              nameKey="label"
-              outerRadius={90}
-              innerRadius={42}
-              paddingAngle={2}
-            >
-              {items.map((item, index) => (
-                <Cell
-                  key={`${item.label}-${index}`}
-                  fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value, _name, entry) => [
-                `${value} (${entry.payload.percentage}%)`,
-                entry.payload.label,
-              ]}
-              contentStyle={{
-                borderRadius: 12,
-                border: '1px solid #e2e8f0',
-                boxShadow:
-                  '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-              }}
-            />
-            {items.length > 1 ? <Legend /> : null}
-          </PieChart>
-        </ResponsiveContainer>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-center">
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={items}
+                dataKey="count"
+                nameKey="label"
+                outerRadius={90}
+                innerRadius={42}
+                paddingAngle={2}
+              >
+                {items.map((item, index) => (
+                  <Cell
+                    key={`${item.label}-${index}`}
+                    fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]}
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value, _name, entry) => [
+                  `${value} participants (${entry.payload.percentage}%)`,
+                  entry.payload.label,
+                ]}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: '1px solid #e2e8f0',
+                  boxShadow:
+                    '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <BreakdownLegendList items={items} />
       </div>
     </div>
   );
 }
 
-function MiniBreakdown({
-  title,
+function BreakdownLegendList({
   items,
 }: {
-  title: string;
   items: Array<{
     label: string;
     count: number;
@@ -1312,12 +1401,8 @@ function MiniBreakdown({
   }
 
   return (
-    <div className="min-w-0">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-        {title}
-      </h3>
-      <div className="mt-2 space-y-2">
-        {items.map((item) => (
+    <div className="space-y-2">
+      {items.map((item) => (
           <div
             key={item.label}
             className="min-w-0 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200"
@@ -1327,7 +1412,6 @@ function MiniBreakdown({
             </span>
           </div>
         ))}
-      </div>
     </div>
   );
 }

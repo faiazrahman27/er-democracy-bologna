@@ -13,11 +13,9 @@ import { calculateVoteWeight } from '../common/voting/vote-weight.util';
 import {
   evaluateAnalyticsVisibility,
   evaluateResultVisibility,
+  normalizeVisibilityTimingSettings,
 } from '../common/voting/result-visibility.util';
-import {
-  buildBreakdown,
-  buildPublicSafeBreakdown,
-} from '../common/voting/analytics.util';
+import { buildBreakdown } from '../common/voting/analytics.util';
 import { formatStoredValueLabel } from '../assessments/assessment-value-labels';
 
 @Injectable()
@@ -27,6 +25,9 @@ export class VotesService {
   async createVote(adminUserId: string, dto: CreateVoteDto) {
     const startAt = new Date(dto.startAt);
     const endAt = new Date(dto.endAt);
+    const displaySettings = normalizeVisibilityTimingSettings(
+      dto.displaySettings,
+    );
 
     if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
       throw new BadRequestException('Invalid startAt or endAt');
@@ -81,22 +82,19 @@ export class VotesService {
         },
         displaySettings: {
           create: {
-            resultVisibilityMode: dto.displaySettings.resultVisibilityMode,
-            showParticipationStats: dto.displaySettings.showParticipationStats,
-            showStakeholderBreakdown:
-              dto.displaySettings.showStakeholderBreakdown,
-            showBackgroundBreakdown:
-              dto.displaySettings.showBackgroundBreakdown,
-            showLocationBreakdown: dto.displaySettings.showLocationBreakdown,
-            showAgeRangeBreakdown: dto.displaySettings.showAgeRangeBreakdown,
-            showGenderBreakdown: dto.displaySettings.showGenderBreakdown,
+            resultVisibilityMode: displaySettings.resultVisibilityMode,
+            showParticipationStats: displaySettings.showParticipationStats,
+            showStakeholderBreakdown: displaySettings.showStakeholderBreakdown,
+            showBackgroundBreakdown: displaySettings.showBackgroundBreakdown,
+            showLocationBreakdown: displaySettings.showLocationBreakdown,
+            showAgeRangeBreakdown: displaySettings.showAgeRangeBreakdown,
+            showGenderBreakdown: displaySettings.showGenderBreakdown,
             showExperienceLevelBreakdown:
-              dto.displaySettings.showExperienceLevelBreakdown,
+              displaySettings.showExperienceLevelBreakdown,
             showRelationshipBreakdown:
-              dto.displaySettings.showRelationshipBreakdown,
-            showAfterVotingOnly: dto.displaySettings.showAfterVotingOnly,
-            showOnlyAfterVoteCloses:
-              dto.displaySettings.showOnlyAfterVoteCloses,
+              displaySettings.showRelationshipBreakdown,
+            showAfterVotingOnly: displaySettings.showAfterVotingOnly,
+            showOnlyAfterVoteCloses: displaySettings.showOnlyAfterVoteCloses,
           },
         },
       },
@@ -133,7 +131,7 @@ export class VotesService {
     });
 
     return votes.map((vote) => ({
-      ...vote,
+      ...this.normalizeVoteDisplaySettings(vote),
       derivedStatus: this.getDerivedStatus(
         vote.startAt,
         vote.endAt,
@@ -279,7 +277,7 @@ export class VotesService {
     const now = new Date();
 
     return {
-      ...vote,
+      ...this.normalizeVoteDisplaySettings(vote),
       derivedStatus: this.getDerivedStatus(
         vote.startAt,
         vote.endAt,
@@ -309,7 +307,7 @@ export class VotesService {
     const now = new Date();
 
     return {
-      ...vote,
+      ...this.normalizeVoteDisplaySettings(vote),
       derivedStatus: this.getDerivedStatus(
         vote.startAt,
         vote.endAt,
@@ -338,7 +336,20 @@ export class VotesService {
           take: 1,
         },
         displaySettings: {
-          select: { id: true },
+          select: {
+            id: true,
+            resultVisibilityMode: true,
+            showParticipationStats: true,
+            showStakeholderBreakdown: true,
+            showBackgroundBreakdown: true,
+            showLocationBreakdown: true,
+            showAgeRangeBreakdown: true,
+            showGenderBreakdown: true,
+            showExperienceLevelBreakdown: true,
+            showRelationshipBreakdown: true,
+            showAfterVotingOnly: true,
+            showOnlyAfterVoteCloses: true,
+          },
         },
       },
     });
@@ -348,6 +359,18 @@ export class VotesService {
     }
 
     const hasSubmissions = existingVote.submissions.length > 0;
+    const hasDisplaySettingsUpdate =
+      dto.resultVisibilityMode !== undefined ||
+      dto.showParticipationStats !== undefined ||
+      dto.showStakeholderBreakdown !== undefined ||
+      dto.showBackgroundBreakdown !== undefined ||
+      dto.showLocationBreakdown !== undefined ||
+      dto.showAgeRangeBreakdown !== undefined ||
+      dto.showGenderBreakdown !== undefined ||
+      dto.showExperienceLevelBreakdown !== undefined ||
+      dto.showRelationshipBreakdown !== undefined ||
+      dto.showAfterVotingOnly !== undefined ||
+      dto.showOnlyAfterVoteCloses !== undefined;
 
     if (hasSubmissions) {
       const attemptedCoreChanges =
@@ -379,6 +402,45 @@ export class VotesService {
       throw new BadRequestException('endAt must be after startAt');
     }
 
+    const nextDisplaySettings =
+      existingVote.displaySettings && hasDisplaySettingsUpdate
+        ? normalizeVisibilityTimingSettings({
+            resultVisibilityMode:
+              dto.resultVisibilityMode ??
+              existingVote.displaySettings.resultVisibilityMode,
+            showParticipationStats:
+              dto.showParticipationStats ??
+              existingVote.displaySettings.showParticipationStats,
+            showStakeholderBreakdown:
+              dto.showStakeholderBreakdown ??
+              existingVote.displaySettings.showStakeholderBreakdown,
+            showBackgroundBreakdown:
+              dto.showBackgroundBreakdown ??
+              existingVote.displaySettings.showBackgroundBreakdown,
+            showLocationBreakdown:
+              dto.showLocationBreakdown ??
+              existingVote.displaySettings.showLocationBreakdown,
+            showAgeRangeBreakdown:
+              dto.showAgeRangeBreakdown ??
+              existingVote.displaySettings.showAgeRangeBreakdown,
+            showGenderBreakdown:
+              dto.showGenderBreakdown ??
+              existingVote.displaySettings.showGenderBreakdown,
+            showExperienceLevelBreakdown:
+              dto.showExperienceLevelBreakdown ??
+              existingVote.displaySettings.showExperienceLevelBreakdown,
+            showRelationshipBreakdown:
+              dto.showRelationshipBreakdown ??
+              existingVote.displaySettings.showRelationshipBreakdown,
+            showAfterVotingOnly:
+              dto.showAfterVotingOnly ??
+              existingVote.displaySettings.showAfterVotingOnly,
+            showOnlyAfterVoteCloses:
+              dto.showOnlyAfterVoteCloses ??
+              existingVote.displaySettings.showOnlyAfterVoteCloses,
+          })
+        : null;
+
     return this.prisma.vote.update({
       where: { slug: normalizedSlug },
       data: {
@@ -409,20 +471,28 @@ export class VotesService {
               ? null
               : undefined,
         lockedAt: hasSubmissions ? new Date() : undefined,
-        displaySettings: existingVote.displaySettings
+        displaySettings: nextDisplaySettings
           ? {
               update: {
-                resultVisibilityMode: dto.resultVisibilityMode,
-                showParticipationStats: dto.showParticipationStats,
-                showStakeholderBreakdown: dto.showStakeholderBreakdown,
-                showBackgroundBreakdown: dto.showBackgroundBreakdown,
-                showLocationBreakdown: dto.showLocationBreakdown,
-                showAgeRangeBreakdown: dto.showAgeRangeBreakdown,
-                showGenderBreakdown: dto.showGenderBreakdown,
-                showExperienceLevelBreakdown: dto.showExperienceLevelBreakdown,
-                showRelationshipBreakdown: dto.showRelationshipBreakdown,
-                showAfterVotingOnly: dto.showAfterVotingOnly,
-                showOnlyAfterVoteCloses: dto.showOnlyAfterVoteCloses,
+                resultVisibilityMode: nextDisplaySettings.resultVisibilityMode,
+                showParticipationStats:
+                  nextDisplaySettings.showParticipationStats,
+                showStakeholderBreakdown:
+                  nextDisplaySettings.showStakeholderBreakdown,
+                showBackgroundBreakdown:
+                  nextDisplaySettings.showBackgroundBreakdown,
+                showLocationBreakdown:
+                  nextDisplaySettings.showLocationBreakdown,
+                showAgeRangeBreakdown:
+                  nextDisplaySettings.showAgeRangeBreakdown,
+                showGenderBreakdown: nextDisplaySettings.showGenderBreakdown,
+                showExperienceLevelBreakdown:
+                  nextDisplaySettings.showExperienceLevelBreakdown,
+                showRelationshipBreakdown:
+                  nextDisplaySettings.showRelationshipBreakdown,
+                showAfterVotingOnly: nextDisplaySettings.showAfterVotingOnly,
+                showOnlyAfterVoteCloses:
+                  nextDisplaySettings.showOnlyAfterVoteCloses,
               },
             }
           : undefined,
@@ -630,6 +700,10 @@ export class VotesService {
       throw new NotFoundException('Vote results not found');
     }
 
+    const displaySettings = normalizeVisibilityTimingSettings(
+      vote.displaySettings,
+    );
+
     let userHasVoted = false;
 
     if (userId) {
@@ -647,9 +721,9 @@ export class VotesService {
     }
 
     const visibility = evaluateResultVisibility({
-      resultVisibilityMode: vote.displaySettings.resultVisibilityMode,
-      showAfterVotingOnly: vote.displaySettings.showAfterVotingOnly,
-      showOnlyAfterVoteCloses: vote.displaySettings.showOnlyAfterVoteCloses,
+      resultVisibilityMode: displaySettings.resultVisibilityMode,
+      showAfterVotingOnly: displaySettings.showAfterVotingOnly,
+      showOnlyAfterVoteCloses: displaySettings.showOnlyAfterVoteCloses,
       userHasVoted,
       now: new Date(),
       endAt: vote.endAt,
@@ -726,7 +800,7 @@ export class VotesService {
           ...(visibility.showWeightedResults ? { totalWeightedVotes } : {}),
         },
         options: results,
-        ...(vote.displaySettings.showParticipationStats
+        ...(displaySettings.showParticipationStats
           ? { participation: { totalParticipants: totalRawVotes } }
           : {}),
       },
@@ -876,6 +950,10 @@ export class VotesService {
       throw new NotFoundException('Vote analytics not found');
     }
 
+    const displaySettings = normalizeVisibilityTimingSettings(
+      vote.displaySettings,
+    );
+
     let userHasVoted = false;
 
     if (userId) {
@@ -885,19 +963,19 @@ export class VotesService {
     }
 
     const hasAnyPublicAnalyticsEnabled =
-      vote.displaySettings.showParticipationStats ||
-      vote.displaySettings.showStakeholderBreakdown ||
-      vote.displaySettings.showBackgroundBreakdown ||
-      vote.displaySettings.showLocationBreakdown ||
-      vote.displaySettings.showAgeRangeBreakdown ||
-      vote.displaySettings.showGenderBreakdown ||
-      vote.displaySettings.showExperienceLevelBreakdown ||
-      vote.displaySettings.showRelationshipBreakdown;
+      displaySettings.showParticipationStats ||
+      displaySettings.showStakeholderBreakdown ||
+      displaySettings.showBackgroundBreakdown ||
+      displaySettings.showLocationBreakdown ||
+      displaySettings.showAgeRangeBreakdown ||
+      displaySettings.showGenderBreakdown ||
+      displaySettings.showExperienceLevelBreakdown ||
+      displaySettings.showRelationshipBreakdown;
 
     const visibility = evaluateAnalyticsVisibility({
       hasAnyPublicAnalyticsEnabled,
-      showAfterVotingOnly: vote.displaySettings.showAfterVotingOnly,
-      showOnlyAfterVoteCloses: vote.displaySettings.showOnlyAfterVoteCloses,
+      showAfterVotingOnly: displaySettings.showAfterVotingOnly,
+      showOnlyAfterVoteCloses: displaySettings.showOnlyAfterVoteCloses,
       userHasVoted,
       now: new Date(),
       endAt: vote.endAt,
@@ -916,30 +994,30 @@ export class VotesService {
 
     const analytics: Record<string, unknown> = {};
 
-    if (vote.displaySettings.showParticipationStats) {
+    if (displaySettings.showParticipationStats) {
       analytics.participation = {
         totalParticipants: vote.submissions.length,
       };
     }
 
-    if (vote.displaySettings.showStakeholderBreakdown) {
-      analytics.stakeholderBreakdown = buildPublicSafeBreakdown(
+    if (displaySettings.showStakeholderBreakdown) {
+      analytics.stakeholderBreakdown = buildBreakdown(
         vote.submissions.map(
           (submission) => submission.user.assessment?.stakeholderRole,
         ),
       );
     }
 
-    if (vote.displaySettings.showBackgroundBreakdown) {
-      analytics.backgroundBreakdown = buildPublicSafeBreakdown(
+    if (displaySettings.showBackgroundBreakdown) {
+      analytics.backgroundBreakdown = buildBreakdown(
         vote.submissions.map(
           (submission) => submission.user.assessment?.backgroundCategory,
         ),
       );
     }
 
-    if (vote.displaySettings.showLocationBreakdown) {
-      analytics.locationBreakdown = buildPublicSafeBreakdown(
+    if (displaySettings.showLocationBreakdown) {
+      analytics.locationBreakdown = buildBreakdown(
         vote.submissions.map(
           (submission) =>
             submission.user.assessment?.city ||
@@ -949,32 +1027,32 @@ export class VotesService {
       );
     }
 
-    if (vote.displaySettings.showAgeRangeBreakdown) {
-      analytics.ageRangeBreakdown = buildPublicSafeBreakdown(
+    if (displaySettings.showAgeRangeBreakdown) {
+      analytics.ageRangeBreakdown = buildBreakdown(
         vote.submissions.map(
           (submission) => submission.user.assessment?.ageRange,
         ),
       );
     }
 
-    if (vote.displaySettings.showGenderBreakdown) {
-      analytics.genderBreakdown = buildPublicSafeBreakdown(
+    if (displaySettings.showGenderBreakdown) {
+      analytics.genderBreakdown = buildBreakdown(
         vote.submissions.map(
           (submission) => submission.user.assessment?.gender,
         ),
       );
     }
 
-    if (vote.displaySettings.showExperienceLevelBreakdown) {
-      analytics.experienceLevelBreakdown = buildPublicSafeBreakdown(
+    if (displaySettings.showExperienceLevelBreakdown) {
+      analytics.experienceLevelBreakdown = buildBreakdown(
         vote.submissions.map(
           (submission) => submission.user.assessment?.experienceLevel,
         ),
       );
     }
 
-    if (vote.displaySettings.showRelationshipBreakdown) {
-      analytics.relationshipToAreaBreakdown = buildPublicSafeBreakdown(
+    if (displaySettings.showRelationshipBreakdown) {
+      analytics.relationshipToAreaBreakdown = buildBreakdown(
         vote.submissions.map(
           (submission) => submission.user.assessment?.relationshipToArea,
         ),
@@ -1560,6 +1638,24 @@ export class VotesService {
           updatedAt: true,
         },
       },
+    };
+  }
+
+  private normalizeVoteDisplaySettings<
+    T extends {
+      displaySettings: {
+        showAfterVotingOnly: boolean;
+        showOnlyAfterVoteCloses: boolean;
+      } | null;
+    },
+  >(vote: T): T {
+    if (!vote.displaySettings) {
+      return vote;
+    }
+
+    return {
+      ...vote,
+      displaySettings: normalizeVisibilityTimingSettings(vote.displaySettings),
     };
   }
 

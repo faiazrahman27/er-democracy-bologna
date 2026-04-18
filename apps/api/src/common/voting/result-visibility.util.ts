@@ -32,10 +32,30 @@ type AnalyticsVisibilityOutput = {
   canShowAnalytics: boolean;
 };
 
+type TimingVisibilitySettings = {
+  showAfterVotingOnly: boolean;
+  showOnlyAfterVoteCloses: boolean;
+};
+
+export function normalizeVisibilityTimingSettings<
+  T extends TimingVisibilitySettings,
+>(settings: T): T {
+  if (!settings.showOnlyAfterVoteCloses || !settings.showAfterVotingOnly) {
+    return settings;
+  }
+
+  return {
+    ...settings,
+    showAfterVotingOnly: false,
+  };
+}
+
 export function evaluateResultVisibility(
   input: VisibilityInput,
 ): VisibilityOutput {
-  if (input.resultVisibilityMode === 'HIDE_ALL') {
+  const normalizedInput = normalizeVisibilityTimingSettings(input);
+
+  if (normalizedInput.resultVisibilityMode === 'HIDE_ALL') {
     return {
       canShowResults: false,
       showRawResults: false,
@@ -43,7 +63,10 @@ export function evaluateResultVisibility(
     };
   }
 
-  if (input.showOnlyAfterVoteCloses && input.now <= input.endAt) {
+  if (
+    normalizedInput.showOnlyAfterVoteCloses &&
+    normalizedInput.now <= normalizedInput.endAt
+  ) {
     return {
       canShowResults: false,
       showRawResults: false,
@@ -51,7 +74,7 @@ export function evaluateResultVisibility(
     };
   }
 
-  if (input.showAfterVotingOnly && !input.userHasVoted) {
+  if (normalizedInput.showAfterVotingOnly && !normalizedInput.userHasVoted) {
     return {
       canShowResults: false,
       showRawResults: false,
@@ -62,30 +85,35 @@ export function evaluateResultVisibility(
   return {
     canShowResults: true,
     showRawResults:
-      input.resultVisibilityMode === 'SHOW_RAW_ONLY' ||
-      input.resultVisibilityMode === 'SHOW_BOTH',
+      normalizedInput.resultVisibilityMode === 'SHOW_RAW_ONLY' ||
+      normalizedInput.resultVisibilityMode === 'SHOW_BOTH',
     showWeightedResults:
-      input.resultVisibilityMode === 'SHOW_WEIGHTED_ONLY' ||
-      input.resultVisibilityMode === 'SHOW_BOTH',
+      normalizedInput.resultVisibilityMode === 'SHOW_WEIGHTED_ONLY' ||
+      normalizedInput.resultVisibilityMode === 'SHOW_BOTH',
   };
 }
 
 export function evaluateAnalyticsVisibility(
   input: AnalyticsVisibilityInput,
 ): AnalyticsVisibilityOutput {
-  if (!input.hasAnyPublicAnalyticsEnabled) {
+  const normalizedInput = normalizeVisibilityTimingSettings(input);
+
+  if (!normalizedInput.hasAnyPublicAnalyticsEnabled) {
     return {
       canShowAnalytics: false,
     };
   }
 
-  if (input.showOnlyAfterVoteCloses && input.now <= input.endAt) {
+  if (
+    normalizedInput.showOnlyAfterVoteCloses &&
+    normalizedInput.now <= normalizedInput.endAt
+  ) {
     return {
       canShowAnalytics: false,
     };
   }
 
-  if (input.showAfterVotingOnly && !input.userHasVoted) {
+  if (normalizedInput.showAfterVotingOnly && !normalizedInput.userHasVoted) {
     return {
       canShowAnalytics: false,
     };

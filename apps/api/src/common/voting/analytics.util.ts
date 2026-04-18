@@ -4,8 +4,6 @@ type BreakdownItem = {
   percentage: number;
 };
 
-const PUBLIC_BREAKDOWN_MIN_COUNT = 5;
-
 const BREAKDOWN_LABEL_ORDER: Record<string, number> = {
   AGE_18_24: 1,
   AGE_25_34: 2,
@@ -98,33 +96,4 @@ export function buildBreakdown(
 ): BreakdownItem[] {
   const labels = values.map((value) => normalizeLabel(value));
   return buildFromNormalizedLabels(labels);
-}
-
-export function buildPublicSafeBreakdown(
-  values: Array<string | null | undefined>,
-): BreakdownItem[] {
-  const labels = values.map((value) => normalizeLabel(value));
-  const items = buildFromNormalizedLabels(labels);
-
-  if (items.length === 0) {
-    return [];
-  }
-
-  const total = labels.length;
-  const visibleItems = items.filter(
-    (item) => item.count >= PUBLIC_BREAKDOWN_MIN_COUNT,
-  );
-  const suppressedCount = items
-    .filter((item) => item.count < PUBLIC_BREAKDOWN_MIN_COUNT)
-    .reduce((sum, item) => sum + item.count, 0);
-
-  if (suppressedCount >= PUBLIC_BREAKDOWN_MIN_COUNT) {
-    visibleItems.push({
-      label: 'Other',
-      count: suppressedCount,
-      percentage: Number(((suppressedCount / total) * 100).toFixed(2)),
-    });
-  }
-
-  return visibleItems.sort(sortBreakdownItems);
 }

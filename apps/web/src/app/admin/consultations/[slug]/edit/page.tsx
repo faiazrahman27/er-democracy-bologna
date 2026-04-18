@@ -134,12 +134,15 @@ export default function AdminEditConsultationPage() {
         setShowRelationshipBreakdown(
           vote.displaySettings?.showRelationshipBreakdown ?? false,
         );
+        const closeOnlyEnabled =
+          vote.displaySettings?.showOnlyAfterVoteCloses ?? false;
+
         setShowAfterVotingOnly(
-          vote.displaySettings?.showAfterVotingOnly ?? false,
+          closeOnlyEnabled
+            ? false
+            : (vote.displaySettings?.showAfterVotingOnly ?? false),
         );
-        setShowOnlyAfterVoteCloses(
-          vote.displaySettings?.showOnlyAfterVoteCloses ?? false,
-        );
+        setShowOnlyAfterVoteCloses(closeOnlyEnabled);
 
         setHasSubmissions((vote.submissionCount ?? 0) > 0);
       } catch (err) {
@@ -164,6 +167,25 @@ export default function AdminEditConsultationPage() {
   }, [user, token, params.slug]);
 
   const coreFieldsLocked = useMemo(() => hasSubmissions, [hasSubmissions]);
+  const normalizedShowAfterVotingOnly = showOnlyAfterVoteCloses
+    ? false
+    : showAfterVotingOnly;
+
+  function handleShowAfterVotingOnlyChange(value: boolean) {
+    setShowAfterVotingOnly(value);
+
+    if (value) {
+      setShowOnlyAfterVoteCloses(false);
+    }
+  }
+
+  function handleShowOnlyAfterVoteClosesChange(value: boolean) {
+    setShowOnlyAfterVoteCloses(value);
+
+    if (value) {
+      setShowAfterVotingOnly(false);
+    }
+  }
 
   function handleCoverFileChange(file: File | null) {
     setSelectedCoverFile(file);
@@ -241,7 +263,7 @@ export default function AdminEditConsultationPage() {
             showGenderBreakdown,
             showExperienceLevelBreakdown,
             showRelationshipBreakdown,
-            showAfterVotingOnly,
+            showAfterVotingOnly: normalizedShowAfterVotingOnly,
             showOnlyAfterVoteCloses,
           }
         : {
@@ -263,7 +285,7 @@ export default function AdminEditConsultationPage() {
             showGenderBreakdown,
             showExperienceLevelBreakdown,
             showRelationshipBreakdown,
-            showAfterVotingOnly,
+            showAfterVotingOnly: normalizedShowAfterVotingOnly,
             showOnlyAfterVoteCloses,
           };
 
@@ -644,15 +666,20 @@ export default function AdminEditConsultationPage() {
                     />
                     <CheckboxField
                       label="Show after voting only"
-                      description="Hide results and analytics until the user submits a vote."
-                      checked={showAfterVotingOnly}
-                      onChange={setShowAfterVotingOnly}
+                      description={
+                        showOnlyAfterVoteCloses
+                          ? 'Disabled while close-only visibility is enabled.'
+                          : 'Hide results and analytics until the user submits a vote.'
+                      }
+                      checked={normalizedShowAfterVotingOnly}
+                      onChange={handleShowAfterVotingOnlyChange}
+                      disabled={showOnlyAfterVoteCloses}
                     />
                     <CheckboxField
                       label="Show only after vote closes"
                       description="Hide public insights until the consultation has ended."
                       checked={showOnlyAfterVoteCloses}
-                      onChange={setShowOnlyAfterVoteCloses}
+                      onChange={handleShowOnlyAfterVoteClosesChange}
                     />
                   </div>
                 </div>
@@ -857,23 +884,44 @@ function CheckboxField({
   description,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string;
   description: string;
   checked: boolean;
   onChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
-    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+    <label
+      className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-sm ${
+        disabled
+          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500'
+          : 'border-slate-200 bg-slate-50 text-slate-700'
+      }`}
+    >
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
         className="mt-0.5"
       />
       <div>
-        <p className="font-medium text-slate-900">{label}</p>
-        <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+        <p
+          className={`font-medium ${
+            disabled ? 'text-slate-500' : 'text-slate-900'
+          }`}
+        >
+          {label}
+        </p>
+        <p
+          className={`mt-1 text-sm leading-6 ${
+            disabled ? 'text-slate-500' : 'text-slate-600'
+          }`}
+        >
+          {description}
+        </p>
       </div>
     </label>
   );

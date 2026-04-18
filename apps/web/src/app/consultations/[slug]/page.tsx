@@ -60,8 +60,9 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
   const showAfterVotingOnly = vote.displaySettings?.showAfterVotingOnly ?? false;
   const showOnlyAfterVoteCloses =
     vote.displaySettings?.showOnlyAfterVoteCloses ?? false;
-
-  const isVisibilityGated = showAfterVotingOnly || showOnlyAfterVoteCloses;
+  const closeOnlyGateActive =
+    showOnlyAfterVoteCloses && vote.derivedStatus !== 'PAST';
+  const isVisibilityGated = showAfterVotingOnly || closeOnlyGateActive;
 
   const showRawDots =
     !isVisibilityGated &&
