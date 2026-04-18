@@ -223,13 +223,13 @@ export default function CreateArticlePage() {
               </div>
 
               {coverImageUrl ? (
-                <div className="mt-5 max-w-md">
+                <div className="mt-5 w-full max-w-md">
                   <p className="mb-2 text-sm font-medium text-slate-700">Preview</p>
                   <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
                     <img
                       src={coverImageUrl}
                       alt={coverImageAlt || 'Article cover preview'}
-                      className="h-full w-full object-cover"
+                      className="block h-full w-full object-cover object-center"
                     />
                   </div>
                   <p className="mt-2 break-all text-xs text-slate-500">

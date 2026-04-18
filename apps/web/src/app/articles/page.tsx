@@ -35,7 +35,7 @@ export default async function ArticlesPage() {
                       <img
                         src={article.coverImageUrl}
                         alt={article.coverImageAlt || article.title}
-                        className="h-full w-full object-cover"
+                        className="block h-full w-full object-cover object-center"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs font-medium text-slate-400">

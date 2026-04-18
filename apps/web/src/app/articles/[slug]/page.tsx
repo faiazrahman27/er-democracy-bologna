@@ -33,7 +33,7 @@ export default async function ArticleDetailPage({
                 <img
                   src={article.coverImageUrl}
                   alt={article.coverImageAlt ?? article.title}
-                  className="h-full w-full object-cover"
+                  className="block h-full w-full object-cover object-center"
                 />
               </div>
             ) : null}
