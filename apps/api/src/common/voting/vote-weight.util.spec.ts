@@ -62,9 +62,67 @@ describe('calculateVoteWeight', () => {
     });
 
     expect(directTopicMatch.calculationType).toBe('SPECIALIZED');
+    expect(directTopicMatch.weightUsed).toBeGreaterThanOrEqual(1.5);
     expect(directTopicMatch.weightUsed).toBeGreaterThan(
-      unrelatedGenericExpert.weightUsed + 0.25,
+      unrelatedGenericExpert.weightUsed + 0.4,
     );
-    expect(unrelatedGenericExpert.weightUsed).toBeLessThan(1.5);
+    expect(unrelatedGenericExpert.weightUsed).toBeLessThan(1.1);
+  });
+
+  it('keeps irrelevant specialized participants below baseline when title and topic category do not match', () => {
+    const irrelevantGenericExpert = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'healthcare',
+      title: 'Healthcare access and public health services',
+      summary: 'Medical and wellbeing consultation for local care planning',
+      methodologySummary: 'Public health evidence review',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'BUSINESS_OWNER',
+        backgroundCategory: 'BUSINESS_AND_MANAGEMENT',
+        relationshipToArea: 'NON_RESIDENT',
+      },
+    });
+
+    expect(irrelevantGenericExpert.calculationType).toBe('SPECIALIZED');
+    expect(irrelevantGenericExpert.weightUsed).toBeGreaterThanOrEqual(0.6);
+    expect(irrelevantGenericExpert.weightUsed).toBeLessThan(1);
+  });
+
+  it('does not let generic experience rescue weakly relevant specialized matches', () => {
+    const weaklyRelevantExpert = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'Education consultation for community learning access',
+      summary: 'Consultation about school support for local residents',
+      methodologySummary: 'Education outreach planning',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'VOLUNTEER',
+        backgroundCategory: 'SOCIAL_SCIENCES',
+        relationshipToArea: 'RESIDENT',
+        experienceLevel: 'EXPERT',
+      },
+    });
+
+    const weaklyRelevantBeginner = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'Education consultation for community learning access',
+      summary: 'Consultation about school support for local residents',
+      methodologySummary: 'Education outreach planning',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'VOLUNTEER',
+        backgroundCategory: 'SOCIAL_SCIENCES',
+        relationshipToArea: 'RESIDENT',
+        experienceLevel: 'BEGINNER',
+      },
+    });
+
+    expect(weaklyRelevantExpert.weightUsed).toBeLessThanOrEqual(1.2);
+    expect(
+      weaklyRelevantExpert.weightUsed - weaklyRelevantBeginner.weightUsed,
+    ).toBeLessThanOrEqual(0.05);
   });
 });
