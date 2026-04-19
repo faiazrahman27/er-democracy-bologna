@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/providers/auth-provider';
 import { isAdminRole } from '@/lib/roles';
 import { hasPermission } from '@/lib/permissions';
@@ -15,9 +15,11 @@ type HeaderProps = {
 };
 
 export default function Header({ variant = 'public' }: HeaderProps) {
+  const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isAuthenticated = !!user;
   const isAdminVariant = variant === 'admin';
@@ -53,6 +55,10 @@ export default function Header({ variant = 'public' }: HeaderProps) {
     });
   }, [user]);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   async function handleLogout() {
     setIsLoggingOut(true);
 
@@ -62,6 +68,14 @@ export default function Header({ variant = 'public' }: HeaderProps) {
     } finally {
       setIsLoggingOut(false);
     }
+  }
+
+  function closeMobileMenu() {
+    setIsMobileMenuOpen(false);
+  }
+
+  function toggleMobileMenu() {
+    setIsMobileMenuOpen((current) => !current);
   }
 
   const headerClass = isAdminVariant
@@ -79,6 +93,20 @@ export default function Header({ variant = 'public' }: HeaderProps) {
 
   const darkActionClass =
     'inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md active:translate-y-0 disabled:opacity-60';
+
+  const mobileMenuButtonClass =
+    'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 md:hidden';
+
+  const mobileMenuLinkClass =
+    'block rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900';
+
+  const publicAccountHref = isAdminUser
+    ? adminHomeHref
+    : ROUTES.user.dashboard;
+  const publicAccountLabel = isAdminUser ? 'Admin' : 'Dashboard';
+  const mobileMenuId = isAdminVariant
+    ? 'admin-mobile-navigation'
+    : 'public-mobile-navigation';
 
   return (
     <header className={headerClass}>
@@ -107,6 +135,38 @@ export default function Header({ variant = 'public' }: HeaderProps) {
             </p>
           </div>
         </Link>
+
+        <button
+          type="button"
+          onClick={toggleMobileMenu}
+          aria-controls={mobileMenuId}
+          aria-expanded={isMobileMenuOpen}
+          aria-label={
+            isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'
+          }
+          className={mobileMenuButtonClass}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {isMobileMenuOpen ? (
+              <path d="M6 6l12 12M18 6L6 18" />
+            ) : (
+              <>
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h16" />
+              </>
+            )}
+          </svg>
+        </button>
 
         {!isAdminVariant ? (
           <nav className="hidden items-center gap-6 md:flex">
@@ -185,6 +245,127 @@ export default function Header({ variant = 'public' }: HeaderProps) {
           </nav>
         )}
       </div>
+
+      {isMobileMenuOpen ? (
+        <div
+          id={mobileMenuId}
+          className="border-t border-slate-200 px-6 pb-6 pt-4 md:hidden"
+        >
+          {!isAdminVariant ? (
+            <nav className="flex flex-col gap-2" aria-label="Mobile navigation">
+              {PUBLIC_NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={mobileMenuLinkClass}
+                  onClick={closeMobileMenu}
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    href={publicAccountHref}
+                    className={mobileMenuLinkClass}
+                    onClick={closeMobileMenu}
+                  >
+                    {publicAccountLabel}
+                  </Link>
+
+                  <Link
+                    href={ROUTES.user.assessment}
+                    className={mobileMenuLinkClass}
+                    onClick={closeMobileMenu}
+                  >
+                    Assessment
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMobileMenu();
+                      void handleLogout();
+                    }}
+                    disabled={isLoggingOut}
+                    className={`${darkActionClass} mt-2 w-full`}
+                  >
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={ROUTES.public.login}
+                    className={`${subtleActionClass} mt-2 w-full`}
+                    onClick={closeMobileMenu}
+                  >
+                    Login
+                  </Link>
+
+                  <Link
+                    href={ROUTES.public.register}
+                    className={`${primaryActionClass} w-full`}
+                    onClick={closeMobileMenu}
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+
+              {isLoading ? (
+                <span className="px-4 pt-2 text-sm text-slate-400">Loading...</span>
+              ) : null}
+            </nav>
+          ) : (
+            <nav className="flex flex-col gap-2" aria-label="Mobile navigation">
+              {visibleAdminNav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={mobileMenuLinkClass}
+                  onClick={closeMobileMenu}
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <Link
+                href={ROUTES.public.consultations}
+                className={`${subtleActionClass} mt-2 w-full`}
+                onClick={closeMobileMenu}
+              >
+                Public view
+              </Link>
+
+              {isLoading ? (
+                <span className="px-4 pt-2 text-sm text-slate-400">Loading...</span>
+              ) : isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    void handleLogout();
+                  }}
+                  disabled={isLoggingOut}
+                  className={`${darkActionClass} w-full`}
+                >
+                  {isLoggingOut ? 'Logging out...' : 'Logout'}
+                </button>
+              ) : (
+                <Link
+                  href={ROUTES.public.login}
+                  className={`${darkActionClass} w-full`}
+                  onClick={closeMobileMenu}
+                >
+                  Login
+                </Link>
+              )}
+            </nav>
+          )}
+        </div>
+      ) : null}
 
       <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
     </header>
