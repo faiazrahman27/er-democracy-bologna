@@ -89,7 +89,7 @@ export default function ContactPage() {
                 you attempted, and any visible error message.
               </p>
               <p>
-                For privacy or account requests, include the nature of your
+                For privacy or account requests, please include the nature of your
                 request and any context necessary to identify the relevant data.
               </p>
             </div>
