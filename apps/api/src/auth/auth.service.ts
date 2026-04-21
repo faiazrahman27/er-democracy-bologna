@@ -103,6 +103,8 @@ export class AuthService {
         },
       });
 
+      await this.refreshTokenService.revokeAllUserRefreshTokens(user.id);
+
       throw new ForbiddenException(
         'Please verify your email address before signing in',
       );
@@ -228,6 +230,14 @@ export class AuthService {
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User is invalid or inactive');
+    }
+
+    if (!user.emailVerified) {
+      await this.refreshTokenService.revokeAllUserRefreshTokens(user.id);
+
+      throw new ForbiddenException(
+        'Please verify your email address before signing in',
+      );
     }
 
     const nextRefreshToken = await this.refreshTokenService.rotateRefreshToken(

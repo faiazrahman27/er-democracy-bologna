@@ -40,6 +40,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User account is inactive');
     }
 
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email address before signing in',
+      );
+    }
+
     return {
       id: user.id,
       fullName: user.fullName,

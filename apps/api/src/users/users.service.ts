@@ -34,6 +34,7 @@ export class UsersService {
         fullName: input.fullName.trim(),
         email: normalizedEmail,
         passwordHash: input.passwordHash,
+        emailVerified: false,
         termsAcceptedAt: input.termsAcceptedAt,
       },
       select: {
