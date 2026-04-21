@@ -119,7 +119,9 @@ describe('AuthService', () => {
         password: 'password123',
       }),
     ).rejects.toThrow(
-      new ForbiddenException('Please verify your email address before signing in'),
+      new ForbiddenException(
+        'Please verify your email address before signing in',
+      ),
     );
 
     expect(refreshTokenService.revokeAllUserRefreshTokens).toHaveBeenCalledWith(
@@ -129,7 +131,9 @@ describe('AuthService', () => {
   });
 
   it('blocks refresh for unverified users and revokes refresh tokens', async () => {
-    refreshTokenService.assertRefreshTokenPresent.mockReturnValue('refresh-token');
+    refreshTokenService.assertRefreshTokenPresent.mockReturnValue(
+      'refresh-token',
+    );
     refreshTokenService.verifyRefreshToken.mockResolvedValue({
       sub: 'user-1',
       type: 'refresh',
@@ -149,7 +153,9 @@ describe('AuthService', () => {
     await expect(
       service.refreshAccessTokenFromRefreshToken('refresh-token'),
     ).rejects.toThrow(
-      new ForbiddenException('Please verify your email address before signing in'),
+      new ForbiddenException(
+        'Please verify your email address before signing in',
+      ),
     );
 
     expect(refreshTokenService.revokeAllUserRefreshTokens).toHaveBeenCalledWith(
@@ -177,7 +183,9 @@ describe('AuthService', () => {
       lastLoginAt: new Date(),
     });
     jwtService.signAsync.mockResolvedValue('access-token');
-    refreshTokenService.createPlainRefreshToken.mockResolvedValue('refresh-token');
+    refreshTokenService.createPlainRefreshToken.mockResolvedValue(
+      'refresh-token',
+    );
     refreshTokenService.storeRefreshToken.mockResolvedValue(undefined);
 
     const result = await service.login({
@@ -189,6 +197,8 @@ describe('AuthService', () => {
     expect(result.user.emailVerified).toBe(true);
     expect(result.accessToken).toBe('access-token');
     expect(result.refreshToken).toBe('refresh-token');
-    expect(refreshTokenService.revokeAllUserRefreshTokens).not.toHaveBeenCalled();
+    expect(
+      refreshTokenService.revokeAllUserRefreshTokens,
+    ).not.toHaveBeenCalled();
   });
 });

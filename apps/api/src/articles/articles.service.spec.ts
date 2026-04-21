@@ -69,15 +69,25 @@ describe('ArticlesService', () => {
       },
     );
 
-    expect(prisma.article.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        title: 'New article',
-        slug: 'new-article',
-        status: 'DRAFT',
-        createdById: 'admin-1',
-        publishedAt: null,
-      }),
-    });
+    const [[createCall]] = prisma.article.create.mock.calls as [
+      [
+        {
+          data: {
+            title: string;
+            slug: string;
+            status: string;
+            createdById: string;
+            publishedAt: Date | null;
+          };
+        },
+      ],
+    ];
+
+    expect(createCall.data.title).toBe('New article');
+    expect(createCall.data.slug).toBe('new-article');
+    expect(createCall.data.status).toBe('DRAFT');
+    expect(createCall.data.createdById).toBe('admin-1');
+    expect(createCall.data.publishedAt).toBeNull();
   });
 
   it('blocks publishing on create without ARTICLE_PUBLISH', async () => {
@@ -121,13 +131,23 @@ describe('ArticlesService', () => {
       },
     );
 
-    expect(prisma.article.update).toHaveBeenCalledWith({
-      where: { id: 'article-1' },
-      data: expect.objectContaining({
-        title: 'Updated title',
-        status: 'PUBLISHED',
-      }),
-    });
+    const [[updateCall]] = prisma.article.update.mock.calls as [
+      [
+        {
+          where: {
+            id: string;
+          };
+          data: {
+            title: string;
+            status: string;
+          };
+        },
+      ],
+    ];
+
+    expect(updateCall.where.id).toBe('article-1');
+    expect(updateCall.data.title).toBe('Updated title');
+    expect(updateCall.data.status).toBe('PUBLISHED');
   });
 
   it('blocks article status changes on update without ARTICLE_PUBLISH', async () => {
@@ -175,13 +195,23 @@ describe('ArticlesService', () => {
       },
     );
 
-    expect(prisma.article.update).toHaveBeenCalledWith({
-      where: { id: 'article-1' },
-      data: expect.objectContaining({
-        status: 'PUBLISHED',
-        publishedAt: expect.any(Date),
-      }),
-    });
+    const [[updateCall]] = prisma.article.update.mock.calls as [
+      [
+        {
+          where: {
+            id: string;
+          };
+          data: {
+            status: string;
+            publishedAt: Date | null;
+          };
+        },
+      ],
+    ];
+
+    expect(updateCall.where.id).toBe('article-1');
+    expect(updateCall.data.status).toBe('PUBLISHED');
+    expect(updateCall.data.publishedAt).toBeInstanceOf(Date);
     expect(auditService.logAdminAction).toHaveBeenCalled();
   });
 });

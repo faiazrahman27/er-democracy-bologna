@@ -25,6 +25,10 @@ import {
   setRefreshTokenCookie,
 } from './utils/auth-cookie.util';
 
+type RequestWithCookies = Request & {
+  cookies?: Partial<Record<typeof REFRESH_TOKEN_COOKIE_NAME, string>>;
+};
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -91,7 +95,7 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('refresh')
   async refresh(
-    @Req() request: Request,
+    @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: Response,
   ) {
     const refreshToken = request.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
@@ -116,10 +120,10 @@ export class AuthController {
 
   @Post('logout')
   async logout(
-    @Req() request: Request,
+    @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const refreshToken = request.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+    const refreshToken = request.cookies?.[REFRESH_TOKEN_COOKIE_NAME] ?? null;
 
     clearRefreshTokenCookie(
       response,
@@ -132,7 +136,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@CurrentUser() user: unknown) {
+  me(@CurrentUser() user: unknown) {
     return {
       message: 'Authenticated user fetched successfully',
       user,

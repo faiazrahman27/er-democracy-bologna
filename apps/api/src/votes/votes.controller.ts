@@ -10,8 +10,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { VotesService } from './votes.service';
@@ -23,7 +21,9 @@ import { SubmitVoteDto } from './dto/submit-vote.dto';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/permissions/require-permissions.decorator';
 import { PERMISSIONS } from '../auth/permissions/permissions.constants';
+import { roleHasPermission } from '../auth/permissions/role-permissions.constants';
 import { SupabaseService } from '../common/supabase/supabase.service';
+import { ImageUploadInterceptor } from '../common/upload/image-upload.interceptor';
 
 type AuthenticatedUser = {
   id: string;
@@ -140,10 +140,20 @@ export class VotesController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(PERMISSIONS.PARTICIPANTS_VIEW_ADMIN)
   @Get('admin/:slug/participants')
-  async getAdminParticipants(@Param('slug') slug: string) {
+  async getAdminParticipants(
+    @Param('slug') slug: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const includeSecretUserId = roleHasPermission(
+      user.role,
+      PERMISSIONS.ASSESSMENT_SECRET_LOOKUP,
+    );
+
     return {
       message: 'Admin vote participants fetched successfully',
-      participants: await this.votesService.getAdminParticipants(slug),
+      participants: await this.votesService.getAdminParticipants(slug, {
+        includeSecretUserId,
+      }),
     };
   }
 
@@ -152,9 +162,22 @@ export class VotesController {
   @Get('admin/:slug/export')
   async exportAdminAnalyticsExcel(
     @Param('slug') slug: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Res() response: Response,
   ) {
-    const file = await this.votesService.exportAdminAnalyticsExcel(slug);
+    const includeParticipantSheet = roleHasPermission(
+      user.role,
+      PERMISSIONS.PARTICIPANTS_VIEW_ADMIN,
+    );
+    const includeSecretUserId =
+      includeParticipantSheet &&
+      roleHasPermission(user.role, PERMISSIONS.ASSESSMENT_SECRET_LOOKUP);
+    const includeSensitiveAssessmentDetails = includeSecretUserId;
+    const file = await this.votesService.exportAdminAnalyticsExcel(slug, {
+      includeParticipantSheet,
+      includeSecretUserId,
+      includeSensitiveAssessmentDetails,
+    });
 
     response.setHeader(
       'Content-Type',
@@ -172,15 +195,7 @@ export class VotesController {
   @RequirePermissions(PERMISSIONS.MEDIA_UPLOAD)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('admin/upload-cover')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 2 * 1024 * 1024,
-        files: 1,
-      },
-    }),
-  )
+  @UseInterceptors(ImageUploadInterceptor('file'))
   async uploadVoteCoverImage(
     @UploadedFile() file: Express.Multer.File,
     @Body('slug') slug?: string,

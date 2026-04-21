@@ -9,7 +9,7 @@ export class AdminController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
   @Get('test')
-  async adminTest(@CurrentUser() user: unknown) {
+  adminTest(@CurrentUser() user: unknown) {
     return {
       message: 'Admin route accessed successfully',
       user,

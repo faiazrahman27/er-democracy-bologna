@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/providers/auth-provider';
-import { fetchMyAssessment, saveMyAssessment } from '@/lib/assessments';
-import { isAdminRole } from '@/lib/roles';
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/providers/auth-provider";
+import { fetchMyAssessment, saveMyAssessment } from "@/lib/assessments";
+import { isAdminRole } from "@/lib/roles";
 import {
   AGE_RANGE_OPTIONS,
   ASSESSMENT_COUNTRY,
@@ -16,21 +16,25 @@ import {
   CITY_OPTIONS,
   EXPERIENCE_LEVEL_OPTIONS,
   GENDER_OPTIONS,
+  MAX_YEARS_OF_EXPERIENCE,
   RELATIONSHIP_TO_AREA_OPTIONS,
   STAKEHOLDER_ROLE_OPTIONS,
+  STUDY_LEVEL_OPTIONS,
   type SaveAssessmentPayload,
-} from '@/types/assessment';
+} from "@/types/assessment";
 
 type AssessmentFormState = {
-  ageRange: SaveAssessmentPayload['ageRange'] | '';
-  gender: SaveAssessmentPayload['gender'] | '';
-  city: SaveAssessmentPayload['city'] | '';
-  region: SaveAssessmentPayload['region'];
-  country: SaveAssessmentPayload['country'];
-  stakeholderRole: SaveAssessmentPayload['stakeholderRole'] | '';
-  backgroundCategory: SaveAssessmentPayload['backgroundCategory'] | '';
-  experienceLevel: SaveAssessmentPayload['experienceLevel'] | '';
-  relationshipToArea: SaveAssessmentPayload['relationshipToArea'] | '';
+  ageRange: SaveAssessmentPayload["ageRange"] | "";
+  gender: SaveAssessmentPayload["gender"] | "";
+  city: SaveAssessmentPayload["city"] | "";
+  region: SaveAssessmentPayload["region"];
+  country: SaveAssessmentPayload["country"];
+  stakeholderRole: SaveAssessmentPayload["stakeholderRole"] | "";
+  backgroundCategory: SaveAssessmentPayload["backgroundCategory"] | "";
+  experienceLevel: SaveAssessmentPayload["experienceLevel"] | "";
+  yearsOfExperience: SaveAssessmentPayload["yearsOfExperience"] | "";
+  studyLevel: SaveAssessmentPayload["studyLevel"] | "";
+  relationshipToArea: SaveAssessmentPayload["relationshipToArea"] | "";
   assessmentCompleted: boolean;
 };
 
@@ -38,13 +42,18 @@ function isCompleteAssessmentForm(
   form: AssessmentFormState,
 ): form is SaveAssessmentPayload {
   return (
-    form.ageRange !== '' &&
-    form.gender !== '' &&
-    form.city !== '' &&
-    form.stakeholderRole !== '' &&
-    form.backgroundCategory !== '' &&
-    form.experienceLevel !== '' &&
-    form.relationshipToArea !== ''
+    form.ageRange !== "" &&
+    form.gender !== "" &&
+    form.city !== "" &&
+    form.stakeholderRole !== "" &&
+    form.backgroundCategory !== "" &&
+    form.experienceLevel !== "" &&
+    form.yearsOfExperience !== "" &&
+    Number.isInteger(form.yearsOfExperience) &&
+    form.yearsOfExperience >= 0 &&
+    form.yearsOfExperience <= MAX_YEARS_OF_EXPERIENCE &&
+    form.studyLevel !== "" &&
+    form.relationshipToArea !== ""
   );
 }
 
@@ -53,15 +62,17 @@ export default function AssessmentPage() {
   const { user, token, isLoading } = useAuth();
 
   const [form, setForm] = useState<AssessmentFormState>({
-    ageRange: '',
-    gender: '',
-    city: '',
+    ageRange: "",
+    gender: "",
+    city: "",
     region: ASSESSMENT_REGION,
     country: ASSESSMENT_COUNTRY,
-    stakeholderRole: '',
-    backgroundCategory: '',
-    experienceLevel: '',
-    relationshipToArea: '',
+    stakeholderRole: "",
+    backgroundCategory: "",
+    experienceLevel: "",
+    yearsOfExperience: "",
+    studyLevel: "",
+    relationshipToArea: "",
     assessmentCompleted: false,
   });
 
@@ -73,7 +84,7 @@ export default function AssessmentPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace('/login?redirectTo=/assessment');
+      router.replace("/login?redirectTo=/assessment");
     }
   }, [isLoading, user, router]);
 
@@ -89,22 +100,26 @@ export default function AssessmentPage() {
 
         if (response.assessment) {
           setForm({
-            ageRange: response.assessment.ageRange ?? '',
-            gender: response.assessment.gender ?? '',
-            city: response.assessment.city ?? '',
+            ageRange: response.assessment.ageRange ?? "",
+            gender: response.assessment.gender ?? "",
+            city: response.assessment.city ?? "",
             region: response.assessment.region ?? ASSESSMENT_REGION,
             country: response.assessment.country ?? ASSESSMENT_COUNTRY,
-            stakeholderRole: response.assessment.stakeholderRole ?? '',
-            backgroundCategory: response.assessment.backgroundCategory ?? '',
-            experienceLevel: response.assessment.experienceLevel ?? '',
-            relationshipToArea: response.assessment.relationshipToArea ?? '',
+            stakeholderRole: response.assessment.stakeholderRole ?? "",
+            backgroundCategory: response.assessment.backgroundCategory ?? "",
+            experienceLevel: response.assessment.experienceLevel ?? "",
+            yearsOfExperience: response.assessment.yearsOfExperience ?? "",
+            studyLevel: response.assessment.studyLevel ?? "",
+            relationshipToArea: response.assessment.relationshipToArea ?? "",
             assessmentCompleted: response.assessment.assessmentCompleted,
           });
 
           setSecretUserId(response.assessment.secretUserId);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load assessment');
+        setError(
+          err instanceof Error ? err.message : "Failed to load assessment",
+        );
       } finally {
         setIsPageLoading(false);
       }
@@ -127,12 +142,12 @@ export default function AssessmentPage() {
 
   async function handleSave() {
     if (!token) {
-      setError('You must be signed in');
+      setError("You must be signed in");
       return;
     }
 
     if (!isCompleteAssessmentForm(form)) {
-      setError('Please complete all required assessment fields.');
+      setError("Please complete all required assessment fields.");
       return;
     }
 
@@ -147,9 +162,11 @@ export default function AssessmentPage() {
         country: ASSESSMENT_COUNTRY,
       });
       setSecretUserId(response.assessment.secretUserId);
-      setSuccessMessage('Assessment saved successfully');
+      setSuccessMessage("Assessment saved successfully");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save assessment');
+      setError(
+        err instanceof Error ? err.message : "Failed to save assessment",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -174,7 +191,7 @@ export default function AssessmentPage() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-8">
           <Link
-            href={isAdminRole(user.role) ? '/admin' : '/dashboard'}
+            href={isAdminRole(user.role) ? "/admin" : "/dashboard"}
             className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
           >
             ← Back
@@ -203,23 +220,19 @@ export default function AssessmentPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard
                 label="Profile status"
-                value={form.assessmentCompleted ? 'Completed' : 'Draft'}
+                value={form.assessmentCompleted ? "Completed" : "Draft"}
                 highlight={form.assessmentCompleted}
               />
               <StatCard
                 label="Account type"
-                value={isAdminRole(user.role) ? 'Admin' : 'User'}
+                value={isAdminRole(user.role) ? "Admin" : "User"}
               />
               <StatCard
                 label="Email status"
-                value={user.emailVerified ? 'Verified' : 'Not verified'}
+                value={user.emailVerified ? "Verified" : "Not verified"}
                 muted={!user.emailVerified}
               />
-              <StatCard
-                label="Assessment access"
-                value="Available"
-                muted
-              />
+              <StatCard label="Assessment access" value="Available" muted />
             </div>
           </div>
         </section>
@@ -235,7 +248,9 @@ export default function AssessmentPage() {
 
             {secretUserId ? (
               <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                <span className="font-medium text-slate-900">Secret user ID:</span>{' '}
+                <span className="font-medium text-slate-900">
+                  Secret user ID:
+                </span>{" "}
                 {secretUserId}
               </div>
             ) : null}
@@ -245,52 +260,93 @@ export default function AssessmentPage() {
                 label="Age range"
                 value={form.ageRange}
                 options={AGE_RANGE_OPTIONS}
-                onChange={(value) => updateField('ageRange', value as AssessmentFormState['ageRange'])}
+                onChange={(value) =>
+                  updateField(
+                    "ageRange",
+                    value as AssessmentFormState["ageRange"],
+                  )
+                }
               />
               <SelectField
                 label="Gender"
                 value={form.gender}
                 options={GENDER_OPTIONS}
-                onChange={(value) => updateField('gender', value as AssessmentFormState['gender'])}
+                onChange={(value) =>
+                  updateField("gender", value as AssessmentFormState["gender"])
+                }
               />
               <SelectField
                 label="City"
                 value={form.city}
                 options={CITY_OPTIONS}
-                onChange={(value) => updateField('city', value as AssessmentFormState['city'])}
+                onChange={(value) =>
+                  updateField("city", value as AssessmentFormState["city"])
+                }
               />
-              <ReadOnlyField
-                label="Region"
-                value={ASSESSMENT_REGION_LABEL}
-              />
-              <ReadOnlyField
-                label="Country"
-                value={ASSESSMENT_COUNTRY_LABEL}
-              />
+              <ReadOnlyField label="Region" value={ASSESSMENT_REGION_LABEL} />
+              <ReadOnlyField label="Country" value={ASSESSMENT_COUNTRY_LABEL} />
               <SelectField
                 label="Stakeholder role"
                 value={form.stakeholderRole}
                 options={STAKEHOLDER_ROLE_OPTIONS}
-                onChange={(value) => updateField('stakeholderRole', value as AssessmentFormState['stakeholderRole'])}
+                onChange={(value) =>
+                  updateField(
+                    "stakeholderRole",
+                    value as AssessmentFormState["stakeholderRole"],
+                  )
+                }
               />
               <SelectField
                 label="Background category"
                 value={form.backgroundCategory}
                 options={BACKGROUND_CATEGORY_OPTIONS}
-                onChange={(value) => updateField('backgroundCategory', value as AssessmentFormState['backgroundCategory'])}
+                onChange={(value) =>
+                  updateField(
+                    "backgroundCategory",
+                    value as AssessmentFormState["backgroundCategory"],
+                  )
+                }
               />
               <SelectField
                 label="Experience level"
                 value={form.experienceLevel}
                 options={EXPERIENCE_LEVEL_OPTIONS}
-                onChange={(value) => updateField('experienceLevel', value as AssessmentFormState['experienceLevel'])}
+                onChange={(value) =>
+                  updateField(
+                    "experienceLevel",
+                    value as AssessmentFormState["experienceLevel"],
+                  )
+                }
+              />
+              <NumberField
+                label="Years of experience"
+                value={form.yearsOfExperience}
+                min={0}
+                max={MAX_YEARS_OF_EXPERIENCE}
+                onChange={(value) => updateField("yearsOfExperience", value)}
+              />
+              <SelectField
+                label="Study level"
+                value={form.studyLevel}
+                options={STUDY_LEVEL_OPTIONS}
+                onChange={(value) =>
+                  updateField(
+                    "studyLevel",
+                    value as AssessmentFormState["studyLevel"],
+                  )
+                }
               />
               <div className="md:col-span-2">
                 <SelectField
                   label="Relationship to area"
                   value={form.relationshipToArea}
                   options={RELATIONSHIP_TO_AREA_OPTIONS}
-                  onChange={(value) => updateField('relationshipToArea', value as AssessmentFormState['relationshipToArea'])}
+                  onChange={(value) =>
+                    updateField(
+                      "relationshipToArea",
+                      value as AssessmentFormState["relationshipToArea"],
+                    )
+                  }
                 />
               </div>
             </div>
@@ -301,7 +357,7 @@ export default function AssessmentPage() {
                   type="checkbox"
                   checked={form.assessmentCompleted}
                   onChange={(event) =>
-                    updateField('assessmentCompleted', event.target.checked)
+                    updateField("assessmentCompleted", event.target.checked)
                   }
                   className="mt-0.5"
                 />
@@ -330,7 +386,7 @@ export default function AssessmentPage() {
                 disabled={isSaving}
                 className="rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md disabled:opacity-60"
               >
-                {isSaving ? 'Saving...' : 'Save assessment'}
+                {isSaving ? "Saving..." : "Save assessment"}
               </button>
 
               <Link
@@ -377,10 +433,17 @@ export default function AssessmentPage() {
               </h2>
 
               <div className="mt-5 space-y-4 text-sm leading-7 text-slate-600">
-                <p>Fill in the fields that best describe your current context.</p>
+                <p>
+                  Fill in the fields that best describe your current context.
+                </p>
                 <p>
                   Keep your answers consistent so consultation weighting and
                   analytics grouping remain meaningful.
+                </p>
+                <p>
+                  Years of experience and study level also influence
+                  specialized-weight calculations when the consultation context
+                  is closely aligned with your profile.
                 </p>
                 <p>
                   Only mark the assessment as completed when you are satisfied
@@ -410,10 +473,10 @@ function StatCard({
     <div
       className={`rounded-2xl px-4 py-5 shadow-sm ring-1 ${
         highlight
-          ? 'bg-green-50 ring-green-200'
+          ? "bg-green-50 ring-green-200"
           : muted
-          ? 'bg-slate-100 ring-slate-200'
-          : 'bg-white ring-slate-200'
+            ? "bg-slate-100 ring-slate-200"
+            : "bg-white ring-slate-200"
       }`}
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -421,7 +484,7 @@ function StatCard({
       </p>
       <p
         className={`mt-2 text-xl font-semibold ${
-          highlight ? 'text-green-700' : 'text-slate-900'
+          highlight ? "text-green-700" : "text-slate-900"
         }`}
       >
         {value}
@@ -441,7 +504,7 @@ function SelectField({
   options: readonly { value: string; label: string }[];
   onChange: (value: string) => void;
 }) {
-  const inputId = label.toLowerCase().replace(/\s+/g, '-');
+  const inputId = label.toLowerCase().replace(/\s+/g, "-");
 
   return (
     <div>
@@ -468,14 +531,50 @@ function SelectField({
   );
 }
 
-function ReadOnlyField({
+function NumberField({
   label,
   value,
+  min,
+  max,
+  onChange,
 }: {
   label: string;
-  value: string;
+  value: number | "";
+  min: number;
+  max: number;
+  onChange: (value: number | "") => void;
 }) {
-  const inputId = label.toLowerCase().replace(/\s+/g, '-');
+  const inputId = label.toLowerCase().replace(/\s+/g, "-");
+
+  return (
+    <div>
+      <label
+        htmlFor={inputId}
+        className="mb-2 block text-sm font-medium text-slate-700"
+      >
+        {label}
+      </label>
+      <input
+        id={inputId}
+        type="number"
+        min={min}
+        max={max}
+        step={1}
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value === "" ? "" : Number(event.target.value))
+        }
+        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-green-600"
+      />
+      <p className="mt-2 text-xs text-slate-500">
+        Enter a whole number between {min} and {max}.
+      </p>
+    </div>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  const inputId = label.toLowerCase().replace(/\s+/g, "-");
 
   return (
     <div>
@@ -495,4 +594,3 @@ function ReadOnlyField({
     </div>
   );
 }
-

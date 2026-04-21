@@ -18,6 +18,18 @@ import {
 import { buildBreakdown } from '../common/voting/analytics.util';
 import { formatStoredValueLabel } from '../assessments/assessment-value-labels';
 
+const PUBLICLY_ACCESSIBLE_VOTE_STATUSES = ['PUBLISHED', 'CLOSED'] as const;
+
+type AdminAnalyticsExportOptions = {
+  includeParticipantSheet?: boolean;
+  includeSecretUserId?: boolean;
+  includeSensitiveAssessmentDetails?: boolean;
+};
+
+type AdminParticipantsOptions = {
+  includeSecretUserId?: boolean;
+};
+
 @Injectable()
 export class VotesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -58,6 +70,8 @@ export class VotesService {
       throw new BadRequestException('A vote with this slug already exists');
     }
 
+    this.assertValidPublicationState(dto.status, dto.isPublished);
+
     return this.prisma.vote.create({
       data: {
         slug: normalizedSlug,
@@ -91,6 +105,9 @@ export class VotesService {
             showGenderBreakdown: displaySettings.showGenderBreakdown,
             showExperienceLevelBreakdown:
               displaySettings.showExperienceLevelBreakdown,
+            showYearsOfExperienceBreakdown:
+              displaySettings.showYearsOfExperienceBreakdown,
+            showStudyLevelBreakdown: displaySettings.showStudyLevelBreakdown,
             showRelationshipBreakdown:
               displaySettings.showRelationshipBreakdown,
             showAfterVotingOnly: displaySettings.showAfterVotingOnly,
@@ -107,10 +124,7 @@ export class VotesService {
 
     const votes = await this.prisma.vote.findMany({
       where: {
-        isPublished: true,
-        status: {
-          in: ['PUBLISHED', 'CLOSED'],
-        },
+        ...this.getPubliclyVisibleVoteWhereClause(),
       },
       select: {
         id: true,
@@ -192,6 +206,8 @@ export class VotesService {
             showAgeRangeBreakdown: true,
             showGenderBreakdown: true,
             showExperienceLevelBreakdown: true,
+            showYearsOfExperienceBreakdown: true,
+            showStudyLevelBreakdown: true,
             showRelationshipBreakdown: true,
             showAfterVotingOnly: true,
             showOnlyAfterVoteCloses: true,
@@ -226,10 +242,7 @@ export class VotesService {
     const vote = await this.prisma.vote.findFirst({
       where: {
         slug: normalizedSlug,
-        isPublished: true,
-        status: {
-          in: ['PUBLISHED', 'CLOSED'],
-        },
+        ...this.getPubliclyVisibleVoteWhereClause(),
       },
       select: {
         id: true,
@@ -268,6 +281,8 @@ export class VotesService {
             showAgeRangeBreakdown: true,
             showGenderBreakdown: true,
             showExperienceLevelBreakdown: true,
+            showYearsOfExperienceBreakdown: true,
+            showStudyLevelBreakdown: true,
             showRelationshipBreakdown: true,
             showAfterVotingOnly: true,
             showOnlyAfterVoteCloses: true,
@@ -334,6 +349,7 @@ export class VotesService {
         title: true,
         summary: true,
         methodologySummary: true,
+        status: true,
         startAt: true,
         endAt: true,
         isPublished: true,
@@ -352,6 +368,8 @@ export class VotesService {
             showAgeRangeBreakdown: true,
             showGenderBreakdown: true,
             showExperienceLevelBreakdown: true,
+            showYearsOfExperienceBreakdown: true,
+            showStudyLevelBreakdown: true,
             showRelationshipBreakdown: true,
             showAfterVotingOnly: true,
             showOnlyAfterVoteCloses: true,
@@ -374,6 +392,8 @@ export class VotesService {
       dto.showAgeRangeBreakdown !== undefined ||
       dto.showGenderBreakdown !== undefined ||
       dto.showExperienceLevelBreakdown !== undefined ||
+      dto.showYearsOfExperienceBreakdown !== undefined ||
+      dto.showStudyLevelBreakdown !== undefined ||
       dto.showRelationshipBreakdown !== undefined ||
       dto.showAfterVotingOnly !== undefined ||
       dto.showOnlyAfterVoteCloses !== undefined;
@@ -408,6 +428,13 @@ export class VotesService {
       throw new BadRequestException('endAt must be after startAt');
     }
 
+    const nextStatus = dto.status ?? existingVote.status;
+    const nextIsPublished = dto.isPublished ?? existingVote.isPublished;
+
+    if (dto.status !== undefined || dto.isPublished !== undefined) {
+      this.assertValidPublicationState(nextStatus, nextIsPublished);
+    }
+
     const nextDisplaySettings =
       existingVote.displaySettings && hasDisplaySettingsUpdate
         ? normalizeVisibilityTimingSettings({
@@ -435,6 +462,12 @@ export class VotesService {
             showExperienceLevelBreakdown:
               dto.showExperienceLevelBreakdown ??
               existingVote.displaySettings.showExperienceLevelBreakdown,
+            showYearsOfExperienceBreakdown:
+              dto.showYearsOfExperienceBreakdown ??
+              existingVote.displaySettings.showYearsOfExperienceBreakdown,
+            showStudyLevelBreakdown:
+              dto.showStudyLevelBreakdown ??
+              existingVote.displaySettings.showStudyLevelBreakdown,
             showRelationshipBreakdown:
               dto.showRelationshipBreakdown ??
               existingVote.displaySettings.showRelationshipBreakdown,
@@ -494,6 +527,10 @@ export class VotesService {
                 showGenderBreakdown: nextDisplaySettings.showGenderBreakdown,
                 showExperienceLevelBreakdown:
                   nextDisplaySettings.showExperienceLevelBreakdown,
+                showYearsOfExperienceBreakdown:
+                  nextDisplaySettings.showYearsOfExperienceBreakdown,
+                showStudyLevelBreakdown:
+                  nextDisplaySettings.showStudyLevelBreakdown,
                 showRelationshipBreakdown:
                   nextDisplaySettings.showRelationshipBreakdown,
                 showAfterVotingOnly: nextDisplaySettings.showAfterVotingOnly,
@@ -583,6 +620,8 @@ export class VotesService {
       stakeholderRole: string | null;
       backgroundCategory: string | null;
       experienceLevel: string | null;
+      yearsOfExperience: number | null;
+      studyLevel: string | null;
       relationshipToArea: string | null;
       city: string | null;
       region: string | null;
@@ -597,6 +636,8 @@ export class VotesService {
           stakeholderRole: true,
           backgroundCategory: true,
           experienceLevel: true,
+          yearsOfExperience: true,
+          studyLevel: true,
           relationshipToArea: true,
           city: true,
           region: true,
@@ -645,37 +686,50 @@ export class VotesService {
       );
     }
 
-    return this.prisma.voteSubmission.create({
-      data: {
-        voteId: vote.id,
-        userId,
-        selectedOptionId: dto.selectedOptionId,
-        selfAssessmentScore:
-          vote.voteType === 'SELF_ASSESSMENT'
-            ? (dto.selfAssessmentScore ?? null)
-            : null,
-        weightUsed: weightResult.weightUsed,
-        calculationType: weightResult.calculationType,
-      },
-      select: {
-        id: true,
-        voteId: true,
-        userId: true,
-        selectedOptionId: true,
-        selfAssessmentScore: true,
-        weightUsed: true,
-        calculationType: true,
-        submittedAt: true,
-        createdAt: true,
-      },
-    });
+    try {
+      return await this.prisma.voteSubmission.create({
+        data: {
+          voteId: vote.id,
+          userId,
+          selectedOptionId: dto.selectedOptionId,
+          selfAssessmentScore:
+            vote.voteType === 'SELF_ASSESSMENT'
+              ? (dto.selfAssessmentScore ?? null)
+              : null,
+          weightUsed: weightResult.weightUsed,
+          calculationType: weightResult.calculationType,
+        },
+        select: {
+          id: true,
+          voteId: true,
+          userId: true,
+          selectedOptionId: true,
+          selfAssessmentScore: true,
+          weightUsed: true,
+          calculationType: true,
+          submittedAt: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      if (this.isDuplicateVoteSubmissionError(error)) {
+        throw new ForbiddenException(
+          'You have already voted on this consultation',
+        );
+      }
+
+      throw error;
+    }
   }
 
   async getPublicResults(slug: string, userId?: string) {
     const normalizedSlug = slug.trim().toLowerCase();
 
-    const vote = await this.prisma.vote.findUnique({
-      where: { slug: normalizedSlug },
+    const vote = await this.prisma.vote.findFirst({
+      where: {
+        slug: normalizedSlug,
+        ...this.getPubliclyVisibleVoteWhereClause(),
+      },
       select: {
         id: true,
         slug: true,
@@ -911,8 +965,11 @@ export class VotesService {
   async getPublicAnalytics(slug: string, userId?: string) {
     const normalizedSlug = slug.trim().toLowerCase();
 
-    const vote = await this.prisma.vote.findUnique({
-      where: { slug: normalizedSlug },
+    const vote = await this.prisma.vote.findFirst({
+      where: {
+        slug: normalizedSlug,
+        ...this.getPubliclyVisibleVoteWhereClause(),
+      },
       select: {
         id: true,
         slug: true,
@@ -930,6 +987,8 @@ export class VotesService {
             showAgeRangeBreakdown: true,
             showGenderBreakdown: true,
             showExperienceLevelBreakdown: true,
+            showYearsOfExperienceBreakdown: true,
+            showStudyLevelBreakdown: true,
             showRelationshipBreakdown: true,
           },
         },
@@ -945,6 +1004,8 @@ export class VotesService {
                     stakeholderRole: true,
                     backgroundCategory: true,
                     experienceLevel: true,
+                    yearsOfExperience: true,
+                    studyLevel: true,
                     relationshipToArea: true,
                     city: true,
                     region: true,
@@ -982,6 +1043,8 @@ export class VotesService {
       displaySettings.showAgeRangeBreakdown ||
       displaySettings.showGenderBreakdown ||
       displaySettings.showExperienceLevelBreakdown ||
+      displaySettings.showYearsOfExperienceBreakdown ||
+      displaySettings.showStudyLevelBreakdown ||
       displaySettings.showRelationshipBreakdown;
 
     const visibility = evaluateAnalyticsVisibility({
@@ -1063,6 +1126,22 @@ export class VotesService {
       );
     }
 
+    if (displaySettings.showYearsOfExperienceBreakdown) {
+      analytics.yearsOfExperienceBreakdown = buildBreakdown(
+        vote.submissions.map(
+          (submission) => submission.user.assessment?.yearsOfExperience,
+        ),
+      );
+    }
+
+    if (displaySettings.showStudyLevelBreakdown) {
+      analytics.studyLevelBreakdown = buildBreakdown(
+        vote.submissions.map(
+          (submission) => submission.user.assessment?.studyLevel,
+        ),
+      );
+    }
+
     if (displaySettings.showRelationshipBreakdown) {
       analytics.relationshipToAreaBreakdown = buildBreakdown(
         vote.submissions.map(
@@ -1102,6 +1181,8 @@ export class VotesService {
                     stakeholderRole: true,
                     backgroundCategory: true,
                     experienceLevel: true,
+                    yearsOfExperience: true,
+                    studyLevel: true,
                     relationshipToArea: true,
                     city: true,
                     region: true,
@@ -1167,6 +1248,16 @@ export class VotesService {
             (submission) => submission.user.assessment?.experienceLevel,
           ),
         ),
+        yearsOfExperienceBreakdown: buildBreakdown(
+          vote.submissions.map(
+            (submission) => submission.user.assessment?.yearsOfExperience,
+          ),
+        ),
+        studyLevelBreakdown: buildBreakdown(
+          vote.submissions.map(
+            (submission) => submission.user.assessment?.studyLevel,
+          ),
+        ),
         relationshipToAreaBreakdown: buildBreakdown(
           vote.submissions.map(
             (submission) => submission.user.assessment?.relationshipToArea,
@@ -1176,7 +1267,10 @@ export class VotesService {
     };
   }
 
-  async getAdminParticipants(slug: string) {
+  async getAdminParticipants(
+    slug: string,
+    { includeSecretUserId = false }: AdminParticipantsOptions = {},
+  ) {
     const normalizedSlug = slug.trim().toLowerCase();
 
     const vote = await this.prisma.vote.findUnique({
@@ -1225,7 +1319,11 @@ export class VotesService {
       title: vote.title,
       participants: vote.submissions.map((submission) => ({
         submissionId: submission.id,
-        secretUserId: submission.user.assessment?.secretUserId ?? null,
+        ...(includeSecretUserId
+          ? {
+              secretUserId: submission.user.assessment?.secretUserId ?? null,
+            }
+          : {}),
         selectedOptionId: submission.selectedOptionId,
         selectedOptionText: submission.selectedOption.optionText,
         weightUsed: submission.weightUsed,
@@ -1238,7 +1336,14 @@ export class VotesService {
     };
   }
 
-  async exportAdminAnalyticsExcel(slug: string) {
+  async exportAdminAnalyticsExcel(
+    slug: string,
+    {
+      includeParticipantSheet = false,
+      includeSecretUserId = false,
+      includeSensitiveAssessmentDetails = false,
+    }: AdminAnalyticsExportOptions = {},
+  ) {
     const normalizedSlug = slug.trim().toLowerCase();
 
     const vote = await this.prisma.vote.findUnique({
@@ -1290,6 +1395,8 @@ export class VotesService {
                     stakeholderRole: true,
                     backgroundCategory: true,
                     experienceLevel: true,
+                    yearsOfExperience: true,
+                    studyLevel: true,
                     relationshipToArea: true,
                     city: true,
                     region: true,
@@ -1384,6 +1491,18 @@ export class VotesService {
       ),
     );
 
+    const yearsOfExperienceBreakdown = buildBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.yearsOfExperience,
+      ),
+    );
+
+    const studyLevelBreakdown = buildBreakdown(
+      vote.submissions.map(
+        (submission) => submission.user.assessment?.studyLevel,
+      ),
+    );
+
     const relationshipToAreaBreakdown = buildBreakdown(
       vote.submissions.map(
         (submission) => submission.user.assessment?.relationshipToArea,
@@ -1403,6 +1522,10 @@ export class VotesService {
     const formattedExperienceLevelBreakdown = this.formatBreakdownRowsForExport(
       experienceLevelBreakdown,
     );
+    const formattedYearsOfExperienceBreakdown =
+      this.formatBreakdownRowsForExport(yearsOfExperienceBreakdown);
+    const formattedStudyLevelBreakdown =
+      this.formatBreakdownRowsForExport(studyLevelBreakdown);
     const formattedRelationshipToAreaBreakdown =
       this.formatBreakdownRowsForExport(relationshipToAreaBreakdown);
 
@@ -1494,6 +1617,24 @@ export class VotesService {
     ];
     experienceLevelSheet.addRows(formattedExperienceLevelBreakdown);
 
+    const yearsOfExperienceSheet = workbook.addWorksheet(
+      'Years Of Experience Breakdown',
+    );
+    yearsOfExperienceSheet.columns = [
+      { header: 'Label', key: 'label', width: 36 },
+      { header: 'Count', key: 'count', width: 12 },
+      { header: 'Percentage', key: 'percentage', width: 14 },
+    ];
+    yearsOfExperienceSheet.addRows(formattedYearsOfExperienceBreakdown);
+
+    const studyLevelSheet = workbook.addWorksheet('Study Level Breakdown');
+    studyLevelSheet.columns = [
+      { header: 'Label', key: 'label', width: 36 },
+      { header: 'Count', key: 'count', width: 12 },
+      { header: 'Percentage', key: 'percentage', width: 14 },
+    ];
+    studyLevelSheet.addRows(formattedStudyLevelBreakdown);
+
     const relationshipToAreaSheet = workbook.addWorksheet(
       'Relationship To Area Breakdown',
     );
@@ -1504,62 +1645,6 @@ export class VotesService {
     ];
     relationshipToAreaSheet.addRows(formattedRelationshipToAreaBreakdown);
 
-    const participantsSheet = workbook.addWorksheet('Participants');
-    participantsSheet.columns = [
-      { header: 'Submission ID', key: 'submissionId', width: 28 },
-      { header: 'Secret User ID', key: 'secretUserId', width: 24 },
-      { header: 'Selected Option', key: 'selectedOptionText', width: 36 },
-      { header: 'Weight Used', key: 'weightUsed', width: 14 },
-      { header: 'Calculation Type', key: 'calculationType', width: 18 },
-      {
-        header: 'Self Assessment Score',
-        key: 'selfAssessmentScore',
-        width: 22,
-      },
-      { header: 'Submitted At', key: 'submittedAt', width: 24 },
-      { header: 'Assessment Completed', key: 'assessmentCompleted', width: 20 },
-      { header: 'Age Range', key: 'ageRange', width: 18 },
-      { header: 'Gender', key: 'gender', width: 18 },
-      { header: 'Stakeholder Role', key: 'stakeholderRole', width: 22 },
-      { header: 'Background Category', key: 'backgroundCategory', width: 22 },
-      { header: 'Experience Level', key: 'experienceLevel', width: 20 },
-      { header: 'Relationship To Area', key: 'relationshipToArea', width: 22 },
-      { header: 'City', key: 'city', width: 18 },
-      { header: 'Region', key: 'region', width: 18 },
-      { header: 'Country', key: 'country', width: 18 },
-    ];
-    participantsSheet.addRows(
-      vote.submissions.map((submission) => ({
-        submissionId: submission.id,
-        secretUserId: submission.user.assessment?.secretUserId ?? '',
-        selectedOptionText: submission.selectedOption.optionText,
-        weightUsed: Number(submission.weightUsed),
-        calculationType: formatStoredValueLabel(submission.calculationType),
-        selfAssessmentScore: submission.selfAssessmentScore ?? '',
-        submittedAt: submission.submittedAt.toISOString(),
-        assessmentCompleted: submission.user.assessment?.assessmentCompleted
-          ? 'Yes'
-          : 'No',
-        ageRange: formatStoredValueLabel(submission.user.assessment?.ageRange),
-        gender: formatStoredValueLabel(submission.user.assessment?.gender),
-        stakeholderRole: formatStoredValueLabel(
-          submission.user.assessment?.stakeholderRole,
-        ),
-        backgroundCategory: formatStoredValueLabel(
-          submission.user.assessment?.backgroundCategory,
-        ),
-        experienceLevel: formatStoredValueLabel(
-          submission.user.assessment?.experienceLevel,
-        ),
-        relationshipToArea: formatStoredValueLabel(
-          submission.user.assessment?.relationshipToArea,
-        ),
-        city: formatStoredValueLabel(submission.user.assessment?.city),
-        region: formatStoredValueLabel(submission.user.assessment?.region),
-        country: formatStoredValueLabel(submission.user.assessment?.country),
-      })),
-    );
-
     this.styleWorksheet(summarySheet);
     this.styleWorksheet(resultsSheet);
     this.styleWorksheet(stakeholderSheet);
@@ -1568,8 +1653,126 @@ export class VotesService {
     this.styleWorksheet(ageRangeSheet);
     this.styleWorksheet(genderSheet);
     this.styleWorksheet(experienceLevelSheet);
+    this.styleWorksheet(yearsOfExperienceSheet);
+    this.styleWorksheet(studyLevelSheet);
     this.styleWorksheet(relationshipToAreaSheet);
-    this.styleWorksheet(participantsSheet);
+
+    if (includeParticipantSheet) {
+      const participantsSheet = workbook.addWorksheet('Participants');
+      participantsSheet.columns = [
+        { header: 'Submission ID', key: 'submissionId', width: 28 },
+        ...(includeSecretUserId
+          ? [{ header: 'Secret User ID', key: 'secretUserId', width: 24 }]
+          : []),
+        { header: 'Selected Option', key: 'selectedOptionText', width: 36 },
+        { header: 'Weight Used', key: 'weightUsed', width: 14 },
+        { header: 'Calculation Type', key: 'calculationType', width: 18 },
+        {
+          header: 'Self Assessment Score',
+          key: 'selfAssessmentScore',
+          width: 22,
+        },
+        { header: 'Submitted At', key: 'submittedAt', width: 24 },
+        {
+          header: 'Assessment Completed',
+          key: 'assessmentCompleted',
+          width: 20,
+        },
+        ...(includeSensitiveAssessmentDetails
+          ? [
+              { header: 'Age Range', key: 'ageRange', width: 18 },
+              { header: 'Gender', key: 'gender', width: 18 },
+              {
+                header: 'Stakeholder Role',
+                key: 'stakeholderRole',
+                width: 22,
+              },
+              {
+                header: 'Background Category',
+                key: 'backgroundCategory',
+                width: 22,
+              },
+              {
+                header: 'Experience Level',
+                key: 'experienceLevel',
+                width: 20,
+              },
+              {
+                header: 'Years Of Experience',
+                key: 'yearsOfExperience',
+                width: 22,
+              },
+              {
+                header: 'Study Level',
+                key: 'studyLevel',
+                width: 22,
+              },
+              {
+                header: 'Relationship To Area',
+                key: 'relationshipToArea',
+                width: 22,
+              },
+              { header: 'City', key: 'city', width: 18 },
+              { header: 'Region', key: 'region', width: 18 },
+              { header: 'Country', key: 'country', width: 18 },
+            ]
+          : []),
+      ];
+      participantsSheet.addRows(
+        vote.submissions.map((submission) => ({
+          submissionId: submission.id,
+          ...(includeSecretUserId
+            ? {
+                secretUserId: submission.user.assessment?.secretUserId ?? '',
+              }
+            : {}),
+          selectedOptionText: submission.selectedOption.optionText,
+          weightUsed: Number(submission.weightUsed),
+          calculationType: formatStoredValueLabel(submission.calculationType),
+          selfAssessmentScore: submission.selfAssessmentScore ?? '',
+          submittedAt: submission.submittedAt.toISOString(),
+          assessmentCompleted: submission.user.assessment?.assessmentCompleted
+            ? 'Yes'
+            : 'No',
+          ...(includeSensitiveAssessmentDetails
+            ? {
+                ageRange: formatStoredValueLabel(
+                  submission.user.assessment?.ageRange,
+                ),
+                gender: formatStoredValueLabel(
+                  submission.user.assessment?.gender,
+                ),
+                stakeholderRole: formatStoredValueLabel(
+                  submission.user.assessment?.stakeholderRole,
+                ),
+                backgroundCategory: formatStoredValueLabel(
+                  submission.user.assessment?.backgroundCategory,
+                ),
+                experienceLevel: formatStoredValueLabel(
+                  submission.user.assessment?.experienceLevel,
+                ),
+                yearsOfExperience: formatStoredValueLabel(
+                  submission.user.assessment?.yearsOfExperience,
+                ),
+                studyLevel: formatStoredValueLabel(
+                  submission.user.assessment?.studyLevel,
+                ),
+                relationshipToArea: formatStoredValueLabel(
+                  submission.user.assessment?.relationshipToArea,
+                ),
+                city: formatStoredValueLabel(submission.user.assessment?.city),
+                region: formatStoredValueLabel(
+                  submission.user.assessment?.region,
+                ),
+                country: formatStoredValueLabel(
+                  submission.user.assessment?.country,
+                ),
+              }
+            : {}),
+        })),
+      );
+      this.styleWorksheet(participantsSheet);
+    }
 
     const fileName = `${vote.slug}-analytics.xlsx`;
     const fileBuffer = await workbook.xlsx.writeBuffer();
@@ -1643,6 +1846,8 @@ export class VotesService {
           showAgeRangeBreakdown: true,
           showGenderBreakdown: true,
           showExperienceLevelBreakdown: true,
+          showYearsOfExperienceBreakdown: true,
+          showStudyLevelBreakdown: true,
           showRelationshipBreakdown: true,
           showAfterVotingOnly: true,
           showOnlyAfterVoteCloses: true,
@@ -1671,6 +1876,43 @@ export class VotesService {
     };
   }
 
+  private getPubliclyVisibleVoteWhereClause() {
+    return {
+      isPublished: true,
+      status: {
+        in: [...PUBLICLY_ACCESSIBLE_VOTE_STATUSES],
+      },
+    };
+  }
+
+  private isPubliclyAccessibleVoteStatus(status: string) {
+    return PUBLICLY_ACCESSIBLE_VOTE_STATUSES.includes(
+      status as (typeof PUBLICLY_ACCESSIBLE_VOTE_STATUSES)[number],
+    );
+  }
+
+  private assertValidPublicationState(status: string, isPublished: boolean) {
+    if (isPublished && !this.isPubliclyAccessibleVoteStatus(status)) {
+      throw new BadRequestException(
+        'isPublished can only be true when status is PUBLISHED or CLOSED',
+      );
+    }
+
+    if (!isPublished && this.isPubliclyAccessibleVoteStatus(status)) {
+      throw new BadRequestException(
+        'PUBLISHED and CLOSED consultations must keep isPublished enabled',
+      );
+    }
+  }
+
+  private isDuplicateVoteSubmissionError(error: unknown) {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+
+    return 'code' in error && error.code === 'P2002';
+  }
+
   private getDerivedStatus(
     startAt: Date,
     endAt: Date,
@@ -1683,6 +1925,10 @@ export class VotesService {
 
     if (persistedStatus === 'ARCHIVED') {
       return 'ARCHIVED';
+    }
+
+    if (persistedStatus === 'CLOSED') {
+      return 'PAST';
     }
 
     if (now < startAt) {

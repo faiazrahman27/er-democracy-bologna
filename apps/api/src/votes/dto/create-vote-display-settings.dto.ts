@@ -35,6 +35,12 @@ export class CreateVoteDisplaySettingsDto {
   showExperienceLevelBreakdown!: boolean;
 
   @IsBoolean()
+  showYearsOfExperienceBreakdown!: boolean;
+
+  @IsBoolean()
+  showStudyLevelBreakdown!: boolean;
+
+  @IsBoolean()
   showRelationshipBreakdown!: boolean;
 
   @IsBoolean()

@@ -11,6 +11,8 @@ export type AnalyticsBreakdowns = {
   ageRangeBreakdown: AnalyticsBreakdownItem[];
   genderBreakdown: AnalyticsBreakdownItem[];
   experienceLevelBreakdown: AnalyticsBreakdownItem[];
+  yearsOfExperienceBreakdown: AnalyticsBreakdownItem[];
+  studyLevelBreakdown: AnalyticsBreakdownItem[];
   relationshipToAreaBreakdown: AnalyticsBreakdownItem[];
 };
 

@@ -125,6 +125,8 @@ export class UsersService {
             stakeholderRole: true,
             backgroundCategory: true,
             experienceLevel: true,
+            yearsOfExperience: true,
+            studyLevel: true,
             relationshipToArea: true,
             assessmentCompleted: true,
             completedAt: true,
@@ -201,6 +203,8 @@ export class UsersService {
                 showAgeRangeBreakdown: true,
                 showGenderBreakdown: true,
                 showExperienceLevelBreakdown: true,
+                showYearsOfExperienceBreakdown: true,
+                showStudyLevelBreakdown: true,
                 showRelationshipBreakdown: true,
                 showAfterVotingOnly: true,
                 showOnlyAfterVoteCloses: true,
@@ -279,7 +283,7 @@ export class UsersService {
     };
   }
 
-  async deleteMyAccount(userId: string) {
+  async deactivateMyAccount(userId: string) {
     await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
@@ -290,8 +294,8 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
-      const deletedEmail = `deleted+${userId}@deleted.local`;
-      const deletedPasswordHash = `deleted:${randomBytes(32).toString('hex')}`;
+      const anonymizedEmail = `deleted+${userId}@deleted.local`;
+      const anonymizedPasswordHash = `deleted:${randomBytes(32).toString('hex')}`;
 
       await tx.refreshToken.deleteMany({
         where: { userId },
@@ -310,9 +314,9 @@ export class UsersService {
       await tx.user.update({
         where: { id: userId },
         data: {
-          fullName: 'Deleted User',
-          email: deletedEmail,
-          passwordHash: deletedPasswordHash,
+          fullName: 'Anonymized User',
+          email: anonymizedEmail,
+          passwordHash: anonymizedPasswordHash,
           emailVerified: false,
           isActive: false,
           lastLoginAt: null,
@@ -321,10 +325,25 @@ export class UsersService {
           termsAcceptedAt: null,
         },
       });
+
+      await tx.authAuditLog.create({
+        data: {
+          userId,
+          eventType: 'ACCOUNT_SELF_ANONYMIZED',
+          metadataJson: {
+            anonymizedAt: new Date().toISOString(),
+            retainedParticipationRecords: true,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
     });
 
     return {
-      message: 'Account deleted successfully',
+      message:
+        'Account deactivated and identifying data anonymized successfully',
     };
   }
 }

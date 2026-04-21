@@ -30,7 +30,7 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.usersService.deleteMyAccount(user.id);
+    const result = await this.usersService.deactivateMyAccount(user.id);
 
     clearRefreshTokenCookie(
       response,

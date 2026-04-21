@@ -63,4 +63,4 @@ async function bootstrap() {
   console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
 }
 
-bootstrap();
+void bootstrap();

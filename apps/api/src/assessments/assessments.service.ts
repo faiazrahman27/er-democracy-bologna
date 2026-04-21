@@ -20,6 +20,8 @@ const MY_ASSESSMENT_SELECT = {
   stakeholderRole: true,
   backgroundCategory: true,
   experienceLevel: true,
+  yearsOfExperience: true,
+  studyLevel: true,
   relationshipToArea: true,
   assessmentCompleted: true,
   completedAt: true,
@@ -38,6 +40,8 @@ const PSEUDONYMOUS_ASSESSMENT_SELECT = {
   stakeholderRole: true,
   backgroundCategory: true,
   experienceLevel: true,
+  yearsOfExperience: true,
+  studyLevel: true,
   relationshipToArea: true,
   assessmentCompleted: true,
   completedAt: true,
@@ -65,13 +69,15 @@ export class AssessmentsService {
       select: {
         id: true,
         secretUserId: true,
+        assessmentCompleted: true,
+        completedAt: true,
       },
     });
 
     const normalizedAssessment = this.normalizeAssessmentDto(dto);
 
     const completedAt = normalizedAssessment.assessmentCompleted
-      ? new Date()
+      ? (existing?.completedAt ?? new Date())
       : null;
 
     if (existing) {
@@ -86,6 +92,8 @@ export class AssessmentsService {
           stakeholderRole: normalizedAssessment.stakeholderRole,
           backgroundCategory: normalizedAssessment.backgroundCategory,
           experienceLevel: normalizedAssessment.experienceLevel,
+          yearsOfExperience: normalizedAssessment.yearsOfExperience,
+          studyLevel: normalizedAssessment.studyLevel,
           relationshipToArea: normalizedAssessment.relationshipToArea,
           assessmentCompleted: normalizedAssessment.assessmentCompleted,
           completedAt,
@@ -106,6 +114,8 @@ export class AssessmentsService {
         stakeholderRole: normalizedAssessment.stakeholderRole,
         backgroundCategory: normalizedAssessment.backgroundCategory,
         experienceLevel: normalizedAssessment.experienceLevel,
+        yearsOfExperience: normalizedAssessment.yearsOfExperience,
+        studyLevel: normalizedAssessment.studyLevel,
         relationshipToArea: normalizedAssessment.relationshipToArea,
         assessmentCompleted: normalizedAssessment.assessmentCompleted,
         completedAt,
@@ -114,7 +124,10 @@ export class AssessmentsService {
     });
   }
 
-  async getAssessmentBySecretUserId(secretUserId: string, adminUserId?: string) {
+  async getAssessmentBySecretUserId(
+    secretUserId: string,
+    adminUserId?: string,
+  ) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { secretUserId },
       select: PSEUDONYMOUS_ASSESSMENT_SELECT,
@@ -143,7 +156,9 @@ export class AssessmentsService {
     return assessment;
   }
 
-  private normalizeAssessmentDto(dto: UpsertAssessmentDto): UpsertAssessmentDto {
+  private normalizeAssessmentDto(
+    dto: UpsertAssessmentDto,
+  ): UpsertAssessmentDto {
     return {
       ...dto,
       country: AssessmentCountryDto.ITALY,

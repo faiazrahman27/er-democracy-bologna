@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/providers/auth-provider';
-import { isAdminRole } from '@/lib/roles';
-import { hasPermission, PERMISSIONS } from '@/lib/permissions';
-import { formatEnumLabel } from '@/lib/format';
-import { createAdminVote, uploadAdminVoteCover } from '@/lib/admin-votes';
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/providers/auth-provider";
+import { isAdminRole } from "@/lib/roles";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { formatEnumLabel } from "@/lib/format";
+import { createAdminVote, uploadAdminVoteCover } from "@/lib/admin-votes";
 
 type OptionInput = {
   optionText: string;
@@ -19,51 +19,64 @@ export default function AdminVotesPage() {
   const { user, token, isLoading } = useAuth();
 
   const [voteType, setVoteType] = useState<
-    'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT'
-  >('SELF_ASSESSMENT');
+    "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT"
+  >("SELF_ASSESSMENT");
 
   const [title, setTitle] = useState(
-    'Public Transport Confidence Consultation',
+    "Public Transport Confidence Consultation",
   );
-  const [slug, setSlug] = useState(
-    'public-transport-confidence-april-2026',
-  );
+  const [slug, setSlug] = useState("public-transport-confidence-april-2026");
   const [summary, setSummary] = useState(
-    'Consultation on preferred public transport improvements using confidence-weighted participation.',
+    "Consultation on preferred public transport improvements using confidence-weighted participation.",
   );
   const [methodologySummary, setMethodologySummary] = useState(
-    'Participants select an option and provide a 1 to 10 confidence score. The score influences weight within a limited range.',
+    "Participants select an option and provide a 1 to 10 confidence score. The score influences weight within a limited range.",
   );
-  const [topicCategory, setTopicCategory] = useState('mobility');
+  const [topicCategory, setTopicCategory] = useState("mobility");
   const [status, setStatus] = useState<
-    'DRAFT' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED' | 'CANCELLED'
-  >('PUBLISHED');
-  const [startAt, setStartAt] = useState('2026-04-10T08:00');
-  const [endAt, setEndAt] = useState('2026-04-20T20:00');
+    | "DRAFT"
+    | "REVIEW"
+    | "APPROVED"
+    | "PUBLISHED"
+    | "CLOSED"
+    | "ARCHIVED"
+    | "CANCELLED"
+  >("PUBLISHED");
+  const [startAt, setStartAt] = useState("2026-04-10T08:00");
+  const [endAt, setEndAt] = useState("2026-04-20T20:00");
   const [isPublished, setIsPublished] = useState(true);
 
-  const [coverImageUrl, setCoverImageUrl] = useState('');
-  const [coverImageAlt, setCoverImageAlt] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [coverImageAlt, setCoverImageAlt] = useState("");
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [coverUploadMessage, setCoverUploadMessage] = useState<string | null>(null);
+  const [coverUploadMessage, setCoverUploadMessage] = useState<string | null>(
+    null,
+  );
 
   const [options, setOptions] = useState<OptionInput[]>([
-    { optionText: 'Increase bus frequency during peak hours', displayOrder: 1 },
-    { optionText: 'Improve route reliability and punctuality', displayOrder: 2 },
+    { optionText: "Increase bus frequency during peak hours", displayOrder: 1 },
+    {
+      optionText: "Improve route reliability and punctuality",
+      displayOrder: 2,
+    },
   ]);
 
   const [resultVisibilityMode, setResultVisibilityMode] = useState<
-    'HIDE_ALL' | 'SHOW_RAW_ONLY' | 'SHOW_WEIGHTED_ONLY' | 'SHOW_BOTH'
-  >('SHOW_BOTH');
+    "HIDE_ALL" | "SHOW_RAW_ONLY" | "SHOW_WEIGHTED_ONLY" | "SHOW_BOTH"
+  >("SHOW_BOTH");
   const [showParticipationStats, setShowParticipationStats] = useState(true);
-  const [showStakeholderBreakdown, setShowStakeholderBreakdown] = useState(false);
+  const [showStakeholderBreakdown, setShowStakeholderBreakdown] =
+    useState(false);
   const [showBackgroundBreakdown, setShowBackgroundBreakdown] = useState(false);
   const [showLocationBreakdown, setShowLocationBreakdown] = useState(false);
   const [showAgeRangeBreakdown, setShowAgeRangeBreakdown] = useState(false);
   const [showGenderBreakdown, setShowGenderBreakdown] = useState(false);
   const [showExperienceLevelBreakdown, setShowExperienceLevelBreakdown] =
     useState(false);
+  const [showYearsOfExperienceBreakdown, setShowYearsOfExperienceBreakdown] =
+    useState(false);
+  const [showStudyLevelBreakdown, setShowStudyLevelBreakdown] = useState(false);
   const [showRelationshipBreakdown, setShowRelationshipBreakdown] =
     useState(false);
   const [showAfterVotingOnly, setShowAfterVotingOnly] = useState(false);
@@ -78,12 +91,12 @@ export default function AdminVotesPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace('/login?redirectTo=/admin/votes');
+      router.replace("/login?redirectTo=/admin/votes");
       return;
     }
 
     if (!isLoading && user && !isAdminRole(user.role)) {
-      router.replace('/dashboard');
+      router.replace("/dashboard");
     }
   }, [isLoading, user, router]);
 
@@ -110,7 +123,7 @@ export default function AdminVotesPage() {
     setOptions((current) => [
       ...current,
       {
-        optionText: '',
+        optionText: "",
         displayOrder: current.length + 1,
       },
     ]);
@@ -147,12 +160,12 @@ export default function AdminVotesPage() {
 
   async function handleUploadCoverImage() {
     if (!token) {
-      setError('You must be signed in');
+      setError("You must be signed in");
       return;
     }
 
     if (!selectedCoverFile) {
-      setError('Please choose an image file first');
+      setError("Please choose an image file first");
       return;
     }
 
@@ -162,18 +175,22 @@ export default function AdminVotesPage() {
     setIsUploadingCover(true);
 
     try {
-      const response = await uploadAdminVoteCover(token, selectedCoverFile, slug);
+      const response = await uploadAdminVoteCover(
+        token,
+        selectedCoverFile,
+        slug,
+      );
 
       setCoverImageUrl(response.file.publicUrl);
 
       if (!coverImageAlt.trim()) {
-        setCoverImageAlt(title.trim() || 'Consultation cover image');
+        setCoverImageAlt(title.trim() || "Consultation cover image");
       }
 
-      setCoverUploadMessage('Cover image uploaded successfully');
+      setCoverUploadMessage("Cover image uploaded successfully");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to upload cover image',
+        err instanceof Error ? err.message : "Failed to upload cover image",
       );
     } finally {
       setIsUploadingCover(false);
@@ -182,37 +199,39 @@ export default function AdminVotesPage() {
 
   async function handleCreateVote() {
     if (!token) {
-      setError('You must be signed in');
+      setError("You must be signed in");
       return;
     }
 
     if (!title.trim()) {
-      setError('Title is required');
+      setError("Title is required");
       return;
     }
 
     if (!slug.trim()) {
-      setError('Slug is required');
+      setError("Slug is required");
       return;
     }
 
     if (!summary.trim()) {
-      setError('Summary is required');
+      setError("Summary is required");
       return;
     }
 
     if (!topicCategory.trim()) {
-      setError('Topic category is required');
+      setError("Topic category is required");
       return;
     }
 
     if (normalizedOptions.some((option) => !option.optionText)) {
-      setError('All options must have text');
+      setError("All options must have text");
       return;
     }
 
     if (selectedCoverFile && !coverImageUrl) {
-      setError('Please upload the selected cover image before creating the consultation');
+      setError(
+        "Please upload the selected cover image before creating the consultation",
+      );
       return;
     }
 
@@ -244,6 +263,8 @@ export default function AdminVotesPage() {
           showAgeRangeBreakdown,
           showGenderBreakdown,
           showExperienceLevelBreakdown,
+          showYearsOfExperienceBreakdown,
+          showStudyLevelBreakdown,
           showRelationshipBreakdown,
           showAfterVotingOnly: normalizedShowAfterVotingOnly,
           showOnlyAfterVoteCloses,
@@ -254,14 +275,16 @@ export default function AdminVotesPage() {
         `${response.message} Open /consultations/${response.vote.slug} to test it.`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create vote');
+      setError(err instanceof Error ? err.message : "Failed to create vote");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   if (isLoading) {
-    return <main className="min-h-screen bg-slate-50 px-6 py-12">Loading...</main>;
+    return (
+      <main className="min-h-screen bg-slate-50 px-6 py-12">Loading...</main>
+    );
   }
 
   if (!user || !isAdminRole(user.role)) {
@@ -302,14 +325,20 @@ export default function AdminVotesPage() {
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             <Field label="Title" value={title} onChange={setTitle} />
             <Field label="Slug" value={slug} onChange={setSlug} />
-            <Field label="Topic category" value={topicCategory} onChange={setTopicCategory} />
+            <Field
+              label="Topic category"
+              value={topicCategory}
+              onChange={setTopicCategory}
+            />
             <SelectField
               label="Vote type"
               value={voteType}
               onChange={(value) =>
-                setVoteType(value as 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT')
+                setVoteType(
+                  value as "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT",
+                )
               }
-              options={['GENERAL', 'SPECIALIZED', 'SELF_ASSESSMENT']}
+              options={["GENERAL", "SPECIALIZED", "SELF_ASSESSMENT"]}
             />
             <div className="md:col-span-2">
               <Field label="Summary" value={summary} onChange={setSummary} />
@@ -327,23 +356,23 @@ export default function AdminVotesPage() {
               onChange={(value) =>
                 setStatus(
                   value as
-                    | 'DRAFT'
-                    | 'REVIEW'
-                    | 'APPROVED'
-                    | 'PUBLISHED'
-                    | 'CLOSED'
-                    | 'ARCHIVED'
-                    | 'CANCELLED',
+                    | "DRAFT"
+                    | "REVIEW"
+                    | "APPROVED"
+                    | "PUBLISHED"
+                    | "CLOSED"
+                    | "ARCHIVED"
+                    | "CANCELLED",
                 )
               }
               options={[
-                'DRAFT',
-                'REVIEW',
-                'APPROVED',
-                'PUBLISHED',
-                'CLOSED',
-                'ARCHIVED',
-                'CANCELLED',
+                "DRAFT",
+                "REVIEW",
+                "APPROVED",
+                "PUBLISHED",
+                "CLOSED",
+                "ARCHIVED",
+                "CANCELLED",
               ]}
             />
             <div>
@@ -405,25 +434,31 @@ export default function AdminVotesPage() {
                 disabled={isUploadingCover || !selectedCoverFile}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-60"
               >
-                {isUploadingCover ? 'Uploading...' : 'Upload cover image'}
+                {isUploadingCover ? "Uploading..." : "Upload cover image"}
               </button>
 
               {coverUploadMessage ? (
-                <span className="text-sm text-green-700">{coverUploadMessage}</span>
+                <span className="text-sm text-green-700">
+                  {coverUploadMessage}
+                </span>
               ) : null}
             </div>
 
             {coverImageUrl ? (
               <div className="mt-5 max-w-md">
-                <p className="mb-2 text-sm font-medium text-slate-700">Preview</p>
+                <p className="mb-2 text-sm font-medium text-slate-700">
+                  Preview
+                </p>
                 <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                   <img
                     src={coverImageUrl}
-                    alt={coverImageAlt || 'Consultation cover preview'}
+                    alt={coverImageAlt || "Consultation cover preview"}
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <p className="mt-2 break-all text-xs text-slate-500">{coverImageUrl}</p>
+                <p className="mt-2 break-all text-xs text-slate-500">
+                  {coverImageUrl}
+                </p>
               </div>
             ) : null}
           </div>
@@ -458,7 +493,9 @@ export default function AdminVotesPage() {
                   <input
                     type="text"
                     value={option.optionText}
-                    onChange={(event) => updateOption(index, event.target.value)}
+                    onChange={(event) =>
+                      updateOption(index, event.target.value)
+                    }
                     placeholder={`Option ${index + 1}`}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2"
                   />
@@ -485,17 +522,17 @@ export default function AdminVotesPage() {
                 onChange={(value) =>
                   setResultVisibilityMode(
                     value as
-                      | 'HIDE_ALL'
-                      | 'SHOW_RAW_ONLY'
-                      | 'SHOW_WEIGHTED_ONLY'
-                      | 'SHOW_BOTH',
+                      | "HIDE_ALL"
+                      | "SHOW_RAW_ONLY"
+                      | "SHOW_WEIGHTED_ONLY"
+                      | "SHOW_BOTH",
                   )
                 }
                 options={[
-                  'HIDE_ALL',
-                  'SHOW_RAW_ONLY',
-                  'SHOW_WEIGHTED_ONLY',
-                  'SHOW_BOTH',
+                  "HIDE_ALL",
+                  "SHOW_RAW_ONLY",
+                  "SHOW_WEIGHTED_ONLY",
+                  "SHOW_BOTH",
                 ]}
               />
               <CheckboxField
@@ -534,6 +571,16 @@ export default function AdminVotesPage() {
                 onChange={setShowExperienceLevelBreakdown}
               />
               <CheckboxField
+                label="Show years of experience breakdown"
+                checked={showYearsOfExperienceBreakdown}
+                onChange={setShowYearsOfExperienceBreakdown}
+              />
+              <CheckboxField
+                label="Show study level breakdown"
+                checked={showStudyLevelBreakdown}
+                onChange={setShowStudyLevelBreakdown}
+              />
+              <CheckboxField
                 label="Show relationship to area breakdown"
                 checked={showRelationshipBreakdown}
                 onChange={setShowRelationshipBreakdown}
@@ -570,7 +617,7 @@ export default function AdminVotesPage() {
               disabled={isSubmitting || isUploadingCover}
               className="rounded-lg bg-slate-900 px-5 py-3 text-sm font-medium text-white disabled:opacity-60"
             >
-              {isSubmitting ? 'Creating...' : 'Create consultation'}
+              {isSubmitting ? "Creating..." : "Create consultation"}
             </button>
           </div>
         </div>
@@ -649,8 +696,8 @@ function CheckboxField({
     <label
       className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
         disabled
-          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500'
-          : 'border-slate-200 bg-slate-50 text-slate-700'
+          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500"
+          : "border-slate-200 bg-slate-50 text-slate-700"
       }`}
     >
       <input

@@ -11,6 +11,34 @@ type ResendVerificationResponse = {
   message: string;
 };
 
+function sanitizeRedirectTo(redirectTo: string | null): string | null {
+  if (!redirectTo) {
+    return null;
+  }
+
+  const normalizedRedirect = redirectTo.trim();
+
+  if (
+    !normalizedRedirect.startsWith('/') ||
+    normalizedRedirect.startsWith('//') ||
+    normalizedRedirect.includes('\\')
+  ) {
+    return null;
+  }
+
+  try {
+    const safeUrl = new URL(normalizedRedirect, 'https://local.er-democracy');
+
+    if (safeUrl.origin !== 'https://local.er-democracy') {
+      return null;
+    }
+
+    return `${safeUrl.pathname}${safeUrl.search}${safeUrl.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export default function LoginPage() {
   return (
     <Suspense
@@ -137,7 +165,10 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const { login, user, isLoading } = useAuth();
 
-  const redirectTo = searchParams.get('redirectTo');
+  const redirectTo = useMemo(
+    () => sanitizeRedirectTo(searchParams.get('redirectTo')),
+    [searchParams],
+  );
   const verified = searchParams.get('verified');
   const emailFromQuery = searchParams.get('email') ?? '';
 

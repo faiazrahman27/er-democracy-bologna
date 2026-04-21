@@ -39,7 +39,9 @@ export class RefreshTokenService {
   }
 
   async createPlainRefreshToken(userId: string): Promise<string> {
-    const refreshSecret = this.configService.get<string>('REFRESH_TOKEN_SECRET');
+    const refreshSecret = this.configService.get<string>(
+      'REFRESH_TOKEN_SECRET',
+    );
 
     if (!refreshSecret) {
       throw new Error('REFRESH_TOKEN_SECRET is not set');
@@ -60,7 +62,9 @@ export class RefreshTokenService {
       ignoreExpiration?: boolean;
     },
   ): Promise<RefreshTokenPayload> {
-    const refreshSecret = this.configService.get<string>('REFRESH_TOKEN_SECRET');
+    const refreshSecret = this.configService.get<string>(
+      'REFRESH_TOKEN_SECRET',
+    );
 
     if (!refreshSecret) {
       throw new Error('REFRESH_TOKEN_SECRET is not set');
@@ -132,7 +136,6 @@ export class RefreshTokenService {
       orderBy: {
         createdAt: 'desc',
       },
-      take: 10,
       select: {
         id: true,
         userId: true,

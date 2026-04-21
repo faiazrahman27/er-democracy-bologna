@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,74 +14,74 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts';
-import { useAuth } from '@/providers/auth-provider';
+} from "recharts";
+import { useAuth } from "@/providers/auth-provider";
 import {
   exportAdminAnalyticsExcel,
   fetchAdminAnalytics,
   fetchAdminParticipants,
   fetchAdminResults,
   fetchAdminVoteBySlug,
-} from '@/lib/admin-votes';
-import { isAdminRole } from '@/lib/roles';
-import { hasPermission, PERMISSIONS } from '@/lib/permissions';
-import { formatDateTime, formatEnumLabel } from '@/lib/format';
-import { formatWeight } from '@/lib/admin-format';
+} from "@/lib/admin-votes";
+import { isAdminRole } from "@/lib/roles";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { formatWeight } from "@/lib/admin-format";
 import type {
   AdminAnalyticsResponse,
   AdminParticipantsResponse,
   AdminResultsResponse,
   AdminVoteListItem,
-} from '@/lib/admin-votes';
-import type { AnalyticsBreakdownItem } from '@/types/analytics';
+} from "@/lib/admin-votes";
+import type { AnalyticsBreakdownItem } from "@/types/analytics";
 
 const PIE_CHART_COLORS = [
-  '#2563eb',
-  '#f97316',
-  '#16a34a',
-  '#dc2626',
-  '#7c3aed',
-  '#0891b2',
-  '#ca8a04',
-  '#db2777',
-  '#4f46e5',
-  '#0f766e',
-  '#ea580c',
-  '#65a30d',
+  "#2563eb",
+  "#f97316",
+  "#16a34a",
+  "#dc2626",
+  "#7c3aed",
+  "#0891b2",
+  "#ca8a04",
+  "#db2777",
+  "#4f46e5",
+  "#0f766e",
+  "#ea580c",
+  "#65a30d",
 ];
 
 const RAW_OPTION_COLORS = [
-  '#2563eb',
-  '#dc2626',
-  '#16a34a',
-  '#d97706',
-  '#7c3aed',
-  '#0f766e',
-  '#c2410c',
-  '#be185d',
-  '#4f46e5',
-  '#65a30d',
-  '#0891b2',
-  '#854d0e',
+  "#2563eb",
+  "#dc2626",
+  "#16a34a",
+  "#d97706",
+  "#7c3aed",
+  "#0f766e",
+  "#c2410c",
+  "#be185d",
+  "#4f46e5",
+  "#65a30d",
+  "#0891b2",
+  "#854d0e",
 ];
 
 const WEIGHTED_OPTION_COLORS = [
-  '#1d4ed8',
-  '#b91c1c',
-  '#15803d',
-  '#b45309',
-  '#6d28d9',
-  '#0f766e',
-  '#ea580c',
-  '#db2777',
-  '#4338ca',
-  '#4d7c0f',
-  '#0e7490',
-  '#92400e',
+  "#1d4ed8",
+  "#b91c1c",
+  "#15803d",
+  "#b45309",
+  "#6d28d9",
+  "#0f766e",
+  "#ea580c",
+  "#db2777",
+  "#4338ca",
+  "#4d7c0f",
+  "#0e7490",
+  "#92400e",
 ];
 
-const RAW_SERIES_LEGEND_COLOR = '#1d4ed8';
-const WEIGHTED_SERIES_LEGEND_COLOR = '#b45309';
+const RAW_SERIES_LEGEND_COLOR = "#1d4ed8";
+const WEIGHTED_SERIES_LEGEND_COLOR = "#b45309";
 
 export default function AdminConsultationDetailPage() {
   const router = useRouter();
@@ -89,13 +89,15 @@ export default function AdminConsultationDetailPage() {
   const { user, token, isLoading } = useAuth();
 
   const [vote, setVote] = useState<AdminVoteListItem | null>(null);
-  const [results, setResults] = useState<AdminResultsResponse['results'] | null>(
-    null,
-  );
-  const [analytics, setAnalytics] =
-    useState<AdminAnalyticsResponse['analytics'] | null>(null);
-  const [participants, setParticipants] =
-    useState<AdminParticipantsResponse['participants'] | null>(null);
+  const [results, setResults] = useState<
+    AdminResultsResponse["results"] | null
+  >(null);
+  const [analytics, setAnalytics] = useState<
+    AdminAnalyticsResponse["analytics"] | null
+  >(null);
+  const [participants, setParticipants] = useState<
+    AdminParticipantsResponse["participants"] | null
+  >(null);
 
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export default function AdminConsultationDetailPage() {
     }
 
     if (!isLoading && user && !isAdminRole(user.role)) {
-      router.replace('/dashboard');
+      router.replace("/dashboard");
     }
   }, [isLoading, user, router, params.slug]);
 
@@ -153,7 +155,7 @@ export default function AdminConsultationDetailPage() {
         await Promise.all(requests);
       } catch (err) {
         setPageError(
-          err instanceof Error ? err.message : 'Failed to load consultation',
+          err instanceof Error ? err.message : "Failed to load consultation",
         );
       } finally {
         setPageLoading(false);
@@ -242,6 +244,16 @@ export default function AdminConsultationDetailPage() {
     return formatBreakdownItems(analytics?.breakdowns.experienceLevelBreakdown);
   }, [analytics]);
 
+  const yearsOfExperienceChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analytics?.breakdowns.yearsOfExperienceBreakdown,
+    );
+  }, [analytics]);
+
+  const studyLevelChartData = useMemo(() => {
+    return formatBreakdownItems(analytics?.breakdowns.studyLevelBreakdown);
+  }, [analytics]);
+
   const relationshipToAreaChartData = useMemo(() => {
     return formatBreakdownItems(
       analytics?.breakdowns.relationshipToAreaBreakdown,
@@ -286,7 +298,7 @@ export default function AdminConsultationDetailPage() {
           </Link>
 
           <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {pageError ?? 'Consultation not found'}
+            {pageError ?? "Consultation not found"}
           </div>
         </div>
       </main>
@@ -316,7 +328,7 @@ export default function AdminConsultationDetailPage() {
 
   async function handleExportExcel() {
     if (!token) {
-      setExportError('You must be signed in');
+      setExportError("You must be signed in");
       return;
     }
 
@@ -330,7 +342,7 @@ export default function AdminConsultationDetailPage() {
       );
 
       const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
+      const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = fileName;
       document.body.appendChild(anchor);
@@ -341,7 +353,7 @@ export default function AdminConsultationDetailPage() {
       setExportError(
         err instanceof Error
           ? err.message
-          : 'Failed to export analytics Excel file',
+          : "Failed to export analytics Excel file",
       );
     } finally {
       setIsExporting(false);
@@ -380,8 +392,8 @@ export default function AdminConsultationDetailPage() {
                   />
                 ) : null}
                 <StatusBadge
-                  label={vote.isPublished ? 'Published' : 'Unpublished'}
-                  tone={vote.isPublished ? 'success' : 'warning'}
+                  label={vote.isPublished ? "Published" : "Unpublished"}
+                  tone={vote.isPublished ? "success" : "warning"}
                 />
               </div>
 
@@ -402,7 +414,7 @@ export default function AdminConsultationDetailPage() {
                   disabled={isExporting}
                   className="rounded-xl border border-emerald-300 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-md disabled:opacity-60"
                 >
-                  {isExporting ? 'Exporting...' : 'Export Excel'}
+                  {isExporting ? "Exporting..." : "Export Excel"}
                 </button>
               ) : null}
 
@@ -462,10 +474,10 @@ export default function AdminConsultationDetailPage() {
                     What participants are voting on
                   </h2>
                 </div>
-                {typeof vote.submissionCount === 'number' ? (
+                {typeof vote.submissionCount === "number" ? (
                   <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-                    {vote.submissionCount}{' '}
-                    {vote.submissionCount === 1 ? 'submission' : 'submissions'}
+                    {vote.submissionCount}{" "}
+                    {vote.submissionCount === 1 ? "submission" : "submissions"}
                   </div>
                 ) : null}
               </div>
@@ -482,7 +494,9 @@ export default function AdminConsultationDetailPage() {
                           className="h-3 w-3 rounded-full"
                           style={{
                             backgroundColor:
-                              RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+                              RAW_OPTION_COLORS[
+                                index % RAW_OPTION_COLORS.length
+                              ],
                           }}
                           aria-hidden="true"
                         />
@@ -529,24 +543,26 @@ export default function AdminConsultationDetailPage() {
               <InfoCard
                 title="Timing"
                 rows={[
-                  ['Starts', formatDateTime(vote.startAt)],
-                  ['Ends', formatDateTime(vote.endAt)],
-                  ['Updated', formatDateTime(vote.updatedAt)],
+                  ["Starts", formatDateTime(vote.startAt)],
+                  ["Ends", formatDateTime(vote.endAt)],
+                  ["Updated", formatDateTime(vote.updatedAt)],
                 ]}
               />
               <InfoCard
                 title="Publication"
                 rows={[
-                  ['Published', vote.isPublished ? 'Yes' : 'No'],
+                  ["Published", vote.isPublished ? "Yes" : "No"],
                   [
-                    'Published at',
+                    "Published at",
                     vote.publishedAt
                       ? formatDateTime(vote.publishedAt)
-                      : 'Not published',
+                      : "Not published",
                   ],
                   [
-                    'Locked at',
-                    vote.lockedAt ? formatDateTime(vote.lockedAt) : 'Not locked',
+                    "Locked at",
+                    vote.lockedAt
+                      ? formatDateTime(vote.lockedAt)
+                      : "Not locked",
                   ],
                 ]}
               />
@@ -560,80 +576,102 @@ export default function AdminConsultationDetailPage() {
                 <div className="mt-4 grid min-w-0 gap-3">
                   <VisibilityRow
                     label="Result visibility"
-                    value={formatEnumLabel(vote.displaySettings.resultVisibilityMode)}
+                    value={formatEnumLabel(
+                      vote.displaySettings.resultVisibilityMode,
+                    )}
                   />
                   <VisibilityRow
                     label="Participation stats"
                     value={
                       vote.displaySettings.showParticipationStats
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="Stakeholder breakdown"
                     value={
                       vote.displaySettings.showStakeholderBreakdown
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="Background breakdown"
                     value={
                       vote.displaySettings.showBackgroundBreakdown
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="Location breakdown"
                     value={
                       vote.displaySettings.showLocationBreakdown
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="Age range breakdown"
                     value={
                       vote.displaySettings.showAgeRangeBreakdown
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="Gender breakdown"
                     value={
                       vote.displaySettings.showGenderBreakdown
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="Experience level breakdown"
                     value={
                       vote.displaySettings.showExperienceLevelBreakdown
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
+                    }
+                  />
+                  <VisibilityRow
+                    label="Years of experience breakdown"
+                    value={
+                      vote.displaySettings.showYearsOfExperienceBreakdown
+                        ? "Shown"
+                        : "Hidden"
+                    }
+                  />
+                  <VisibilityRow
+                    label="Study level breakdown"
+                    value={
+                      vote.displaySettings.showStudyLevelBreakdown
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="Relationship to area breakdown"
                     value={
                       vote.displaySettings.showRelationshipBreakdown
-                        ? 'Shown'
-                        : 'Hidden'
+                        ? "Shown"
+                        : "Hidden"
                     }
                   />
                   <VisibilityRow
                     label="After voting only"
-                    value={vote.displaySettings.showAfterVotingOnly ? 'Yes' : 'No'}
+                    value={
+                      vote.displaySettings.showAfterVotingOnly ? "Yes" : "No"
+                    }
                   />
                   <VisibilityRow
                     label="Only after close"
                     value={
-                      vote.displaySettings.showOnlyAfterVoteCloses ? 'Yes' : 'No'
+                      vote.displaySettings.showOnlyAfterVoteCloses
+                        ? "Yes"
+                        : "No"
                     }
                   />
                 </div>
@@ -650,11 +688,11 @@ export default function AdminConsultationDetailPage() {
                 <div className="mt-4 grid min-w-0 gap-3">
                   <VisibilityRow
                     label="Image URL"
-                    value={vote.coverImageUrl ?? 'Not provided'}
+                    value={vote.coverImageUrl ?? "Not provided"}
                   />
                   <VisibilityRow
                     label="Alt text"
-                    value={vote.coverImageAlt ?? 'Not provided'}
+                    value={vote.coverImageAlt ?? "Not provided"}
                   />
                 </div>
               </div>
@@ -724,16 +762,16 @@ export default function AdminConsultationDetailPage() {
                               dataKey="name"
                               interval={0}
                               height={50}
-                              tick={{ fill: '#475569', fontSize: 12 }}
+                              tick={{ fill: "#475569", fontSize: 12 }}
                             />
-                            <YAxis tick={{ fill: '#475569', fontSize: 12 }} />
+                            <YAxis tick={{ fill: "#475569", fontSize: 12 }} />
                             <Tooltip
                               formatter={(value, name, entry) => {
                                 const label =
-                                  name === 'rawVotes'
-                                    ? 'Raw votes'
-                                    : name === 'weightedVotes'
-                                      ? 'Weighted votes'
+                                  name === "rawVotes"
+                                    ? "Raw votes"
+                                    : name === "weightedVotes"
+                                      ? "Weighted votes"
                                       : String(name);
 
                                 return [
@@ -743,9 +781,9 @@ export default function AdminConsultationDetailPage() {
                               }}
                               contentStyle={{
                                 borderRadius: 12,
-                                border: '1px solid #e2e8f0',
+                                border: "1px solid #e2e8f0",
                                 boxShadow:
-                                  '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                                  "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
                               }}
                             />
                             <Bar
@@ -846,7 +884,9 @@ export default function AdminConsultationDetailPage() {
                               className="h-3 w-3 rounded-full"
                               style={{
                                 backgroundColor:
-                                  RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+                                  RAW_OPTION_COLORS[
+                                    index % RAW_OPTION_COLORS.length
+                                  ],
                               }}
                               aria-hidden="true"
                             />
@@ -878,14 +918,16 @@ export default function AdminConsultationDetailPage() {
                               className="h-3 w-3 rounded-full"
                               style={{
                                 backgroundColor:
-                                  RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+                                  RAW_OPTION_COLORS[
+                                    index % RAW_OPTION_COLORS.length
+                                  ],
                               }}
                               aria-hidden="true"
                             />
                             <span>
                               <span className="font-medium text-slate-900">
                                 Raw:
-                              </span>{' '}
+                              </span>{" "}
                               {option.rawCount} ({option.rawPercentage}%)
                             </span>
                           </span>
@@ -904,8 +946,9 @@ export default function AdminConsultationDetailPage() {
                             <span>
                               <span className="font-medium text-slate-900">
                                 Weighted:
-                              </span>{' '}
-                              {option.weightedCount} ({option.weightedPercentage}%)
+                              </span>{" "}
+                              {option.weightedCount} (
+                              {option.weightedPercentage}%)
                             </span>
                           </span>
                         </div>
@@ -978,6 +1021,16 @@ export default function AdminConsultationDetailPage() {
                       items={experienceLevelChartData}
                     />
                     <BreakdownChartCard
+                      title="Years of experience breakdown"
+                      description="Shows participation by years of experience."
+                      items={yearsOfExperienceChartData}
+                    />
+                    <BreakdownChartCard
+                      title="Study level breakdown"
+                      description="Shows participation by study level."
+                      items={studyLevelChartData}
+                    />
+                    <BreakdownChartCard
                       title="Relationship to area breakdown"
                       description="Shows how participants relate to the consultation area."
                       items={relationshipToAreaChartData}
@@ -1006,19 +1059,21 @@ export default function AdminConsultationDetailPage() {
               {participants ? (
                 <div className="mt-4 space-y-3">
                   {participants.participants.length === 0 ? (
-                    <p className="text-sm text-slate-600">No participants yet.</p>
+                    <p className="text-sm text-slate-600">
+                      No participants yet.
+                    </p>
                   ) : (
                     participants.participants.map((participant) => (
                       <div
                         key={participant.submissionId}
                         className="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200"
                       >
-                        <p className="break-words">
-                          <span className="font-medium text-slate-900">
-                            Secret ID:
-                          </span>{' '}
-                          {participant.secretUserId ? (
-                            canLookupAssessment ? (
+                        {canLookupAssessment ? (
+                          <p className="break-words">
+                            <span className="font-medium text-slate-900">
+                              Secret ID:
+                            </span>{" "}
+                            {participant.secretUserId ? (
                               <Link
                                 href={`/admin/assessments/${participant.secretUserId}`}
                                 className="break-all font-mono text-blue-600 underline hover:text-blue-800"
@@ -1026,41 +1081,41 @@ export default function AdminConsultationDetailPage() {
                                 {participant.secretUserId}
                               </Link>
                             ) : (
-                              <span className="break-all font-mono">
-                                {participant.secretUserId}
-                              </span>
-                            )
-                          ) : (
-                            'Not available'
-                          )}
-                        </p>
+                              "Not available"
+                            )}
+                          </p>
+                        ) : null}
                         <p className="mt-1 break-words">
-                          <span className="font-medium text-slate-900">Option:</span>{' '}
+                          <span className="font-medium text-slate-900">
+                            Option:
+                          </span>{" "}
                           {participant.selectedOptionText}
                         </p>
                         <p className="mt-1">
-                          <span className="font-medium text-slate-900">Weight:</span>{' '}
+                          <span className="font-medium text-slate-900">
+                            Weight:
+                          </span>{" "}
                           {formatWeight(participant.weightUsed)}
                         </p>
                         <p className="mt-1">
                           <span className="font-medium text-slate-900">
                             Calculation:
-                          </span>{' '}
+                          </span>{" "}
                           {formatEnumLabel(participant.calculationType)}
                         </p>
                         {participant.selfAssessmentScore !== null ? (
                           <p className="mt-1">
                             <span className="font-medium text-slate-900">
                               Self score:
-                            </span>{' '}
+                            </span>{" "}
                             {participant.selfAssessmentScore}
                           </p>
                         ) : null}
                         <p className="mt-1">
                           <span className="font-medium text-slate-900">
                             Assessment complete:
-                          </span>{' '}
-                          {participant.hasCompletedAssessment ? 'Yes' : 'No'}
+                          </span>{" "}
+                          {participant.hasCompletedAssessment ? "Yes" : "No"}
                         </p>
                       </div>
                     ))
@@ -1119,13 +1174,7 @@ function InfoCard({
   );
 }
 
-function VisibilityRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function VisibilityRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1150,7 +1199,7 @@ function StatCard({
   return (
     <div
       className={`rounded-2xl px-4 py-4 shadow-sm ring-1 ${
-        highlight ? 'bg-green-50 ring-green-200' : 'bg-slate-50 ring-slate-200'
+        highlight ? "bg-green-50 ring-green-200" : "bg-slate-50 ring-slate-200"
       }`}
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1158,7 +1207,7 @@ function StatCard({
       </p>
       <p
         className={`mt-2 text-2xl font-semibold ${
-          highlight ? 'text-green-700' : 'text-slate-900'
+          highlight ? "text-green-700" : "text-slate-900"
         }`}
       >
         {value}
@@ -1169,21 +1218,21 @@ function StatCard({
 
 function StatusBadge({
   label,
-  tone = 'default',
+  tone = "default",
 }: {
   label: string;
-  tone?: 'default' | 'muted' | 'success' | 'warning' | 'danger';
+  tone?: "default" | "muted" | "success" | "warning" | "danger";
 }) {
   const toneClass =
-    tone === 'success'
-      ? 'bg-emerald-100 text-emerald-700'
-      : tone === 'warning'
-        ? 'bg-amber-100 text-amber-700'
-        : tone === 'danger'
-          ? 'bg-red-100 text-red-700'
-          : tone === 'muted'
-            ? 'bg-slate-200 text-slate-600'
-            : 'bg-slate-100 text-slate-700';
+    tone === "success"
+      ? "bg-emerald-100 text-emerald-700"
+      : tone === "warning"
+        ? "bg-amber-100 text-amber-700"
+        : tone === "danger"
+          ? "bg-red-100 text-red-700"
+          : tone === "muted"
+            ? "bg-slate-200 text-slate-600"
+            : "bg-slate-100 text-slate-700";
 
   return <span className={`rounded-full px-3 py-1 ${toneClass}`}>{label}</span>;
 }
@@ -1198,13 +1247,7 @@ function ColorDot({ color }: { color: string }) {
   );
 }
 
-function SeriesLegendChip({
-  color,
-  label,
-}: {
-  color: string;
-  label: string;
-}) {
+function SeriesLegendChip({ color, label }: { color: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
       <ColorDot color={color} />
@@ -1316,9 +1359,9 @@ function OptionResultPieCard({
                 ]}
                 contentStyle={{
                   borderRadius: 12,
-                  border: '1px solid #e2e8f0',
+                  border: "1px solid #e2e8f0",
                   boxShadow:
-                    '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                    "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
                 }}
               />
             </PieChart>
@@ -1426,11 +1469,7 @@ function BreakdownChartCard({
   );
 }
 
-function BreakdownLegendList({
-  items,
-}: {
-  items: BreakdownChartLegendItem[];
-}) {
+function BreakdownLegendList({ items }: { items: BreakdownChartLegendItem[] }) {
   if (items.length === 0) {
     return null;
   }
@@ -1466,37 +1505,37 @@ function BreakdownLegendList({
 }
 
 function deriveStatusTone(
-  status: AdminVoteListItem['derivedStatus'],
-): 'success' | 'warning' | 'muted' | 'danger' {
-  if (status === 'ONGOING') {
-    return 'success';
+  status: AdminVoteListItem["derivedStatus"],
+): "success" | "warning" | "muted" | "danger" {
+  if (status === "ONGOING") {
+    return "success";
   }
 
-  if (status === 'UPCOMING') {
-    return 'warning';
+  if (status === "UPCOMING") {
+    return "warning";
   }
 
-  if (status === 'CANCELLED') {
-    return 'danger';
+  if (status === "CANCELLED") {
+    return "danger";
   }
 
-  return 'muted';
+  return "muted";
 }
 
 function deriveWorkflowTone(
-  status: AdminVoteListItem['status'],
-): 'success' | 'warning' | 'muted' | 'danger' {
-  if (status === 'PUBLISHED' || status === 'APPROVED') {
-    return 'success';
+  status: AdminVoteListItem["status"],
+): "success" | "warning" | "muted" | "danger" {
+  if (status === "PUBLISHED" || status === "APPROVED") {
+    return "success";
   }
 
-  if (status === 'REVIEW' || status === 'DRAFT') {
-    return 'warning';
+  if (status === "REVIEW" || status === "DRAFT") {
+    return "warning";
   }
 
-  if (status === 'CANCELLED') {
-    return 'danger';
+  if (status === "CANCELLED") {
+    return "danger";
   }
 
-  return 'muted';
+  return "muted";
 }

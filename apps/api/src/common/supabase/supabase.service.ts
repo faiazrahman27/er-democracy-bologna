@@ -4,12 +4,12 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 
 @Injectable()
 export class SupabaseService {
-  private readonly client: SupabaseClient;
+  private readonly client: ReturnType<typeof createClient>;
   private readonly bucketName: string;
   private readonly maxFileSizeBytes: number;
   private readonly allowedMimeTypes: Set<string>;
@@ -19,7 +19,9 @@ export class SupabaseService {
     const supabaseServiceRoleKey = this.configService.get<string>(
       'SUPABASE_SERVICE_ROLE_KEY',
     );
-    const bucketName = this.configService.get<string>('SUPABASE_STORAGE_BUCKET');
+    const bucketName = this.configService.get<string>(
+      'SUPABASE_STORAGE_BUCKET',
+    );
 
     if (!supabaseUrl || !supabaseServiceRoleKey || !bucketName) {
       throw new InternalServerErrorException(

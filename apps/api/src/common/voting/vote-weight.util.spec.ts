@@ -5,6 +5,8 @@ describe('calculateVoteWeight', () => {
     stakeholderRole: 'UNIVERSITY_STUDENT',
     backgroundCategory: 'EDUCATION',
     experienceLevel: 'EXPERT',
+    yearsOfExperience: 6,
+    studyLevel: 'BACHELOR_DEGREE',
     relationshipToArea: 'RESIDENT',
     city: 'BOLOGNA',
     region: 'EMILIA_ROMAGNA',
@@ -24,17 +26,32 @@ describe('calculateVoteWeight', () => {
     });
   });
 
-  it('keeps SELF_ASSESSMENT weighting unchanged', () => {
-    expect(
-      calculateVoteWeight({
-        voteType: 'SELF_ASSESSMENT',
-        topicCategory: 'education',
-        selfAssessmentScore: 7,
-      }),
-    ).toEqual({
-      weightUsed: 0.7,
-      calculationType: 'SELF_ASSESSMENT',
-    });
+  it('maps SELF_ASSESSMENT scores onto the upgraded 0.5-2 scale', () => {
+    const expectedWeights = [
+      [1, 0.5],
+      [2, 0.625],
+      [3, 0.75],
+      [4, 0.875],
+      [5, 1],
+      [6, 1.2],
+      [7, 1.4],
+      [8, 1.6],
+      [9, 1.8],
+      [10, 2],
+    ] as const;
+
+    for (const [selfAssessmentScore, weightUsed] of expectedWeights) {
+      expect(
+        calculateVoteWeight({
+          voteType: 'SELF_ASSESSMENT',
+          topicCategory: 'education',
+          selfAssessmentScore,
+        }),
+      ).toEqual({
+        weightUsed,
+        calculationType: 'SELF_ASSESSMENT',
+      });
+    }
   });
 
   it('prioritizes title alignment over weaker category-only support', () => {
@@ -100,6 +117,124 @@ describe('calculateVoteWeight', () => {
     expect(unrelatedGenericExpert.weightUsed).toBeLessThan(1);
   });
 
+  it('infers university-student relevance from campus-life terms even without an explicit student label', () => {
+    const campusResident = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'higher education',
+      title: 'Campus housing, lecture halls, and exam scheduling in Bologna',
+      summary:
+        'Consultation on dormitories, laboratory spaces, and university timetables',
+      methodologySummary: 'Campus operations review and timetable workshops',
+      assessment: baseAssessment,
+    });
+
+    const unrelatedBusinessOwner = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'higher education',
+      title: 'Campus housing, lecture halls, and exam scheduling in Bologna',
+      summary:
+        'Consultation on dormitories, laboratory spaces, and university timetables',
+      methodologySummary: 'Campus operations review and timetable workshops',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'BUSINESS_OWNER',
+        backgroundCategory: 'BUSINESS_AND_MANAGEMENT',
+        relationshipToArea: 'NON_RESIDENT',
+      },
+    });
+
+    expect(campusResident.weightUsed).toBeGreaterThan(1.2);
+    expect(campusResident.weightUsed).toBeGreaterThan(
+      unrelatedBusinessOwner.weightUsed + 0.2,
+    );
+  });
+
+  it('recognizes Italian urban-planning terminology when matching specialized assessments', () => {
+    const planner = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'territorio',
+      title: 'Rigenerazione urbana e mobilita di quartiere a Bologna',
+      summary:
+        'Consultazione su spazio pubblico, pianificazione territoriale e accesso ai servizi locali',
+      methodologySummary:
+        'Workshop su urbanistica, quartieri e infrastrutture di prossimita',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'ACADEMIC',
+        backgroundCategory: 'ARCHITECTURE_AND_URBAN_PLANNING',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 10,
+        studyLevel: 'MASTER_DEGREE',
+      },
+    });
+
+    const unrelatedLegalProfile = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'territorio',
+      title: 'Rigenerazione urbana e mobilita di quartiere a Bologna',
+      summary:
+        'Consultazione su spazio pubblico, pianificazione territoriale e accesso ai servizi locali',
+      methodologySummary:
+        'Workshop su urbanistica, quartieri e infrastrutture di prossimita',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'LEGAL_PROFESSIONAL',
+        backgroundCategory: 'LAW',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 10,
+        studyLevel: 'MASTER_DEGREE',
+      },
+    });
+
+    expect(planner.weightUsed).toBeGreaterThan(1.25);
+    expect(planner.weightUsed).toBeGreaterThan(
+      unrelatedLegalProfile.weightUsed + 0.22,
+    );
+  });
+
+  it('recognizes civic-governance terminology for public-administration profiles', () => {
+    const civicAdmin = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'governo locale',
+      title: 'Bilancio partecipativo e servizi comunali digitali',
+      summary:
+        'Consultazione del comune su procedure amministrative, sportelli pubblici e accesso civico',
+      methodologySummary:
+        'Revisione dei processi amministrativi e partecipazione cittadina',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'CIVIL_SERVANT',
+        backgroundCategory: 'PUBLIC_ADMINISTRATION',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 14,
+        studyLevel: 'MASTER_DEGREE',
+      },
+    });
+
+    const unrelatedCreative = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'governo locale',
+      title: 'Bilancio partecipativo e servizi comunali digitali',
+      summary:
+        'Consultazione del comune su procedure amministrative, sportelli pubblici e accesso civico',
+      methodologySummary:
+        'Revisione dei processi amministrativi e partecipazione cittadina',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'CREATIVE_PROFESSIONAL',
+        backgroundCategory: 'ARTS_AND_DESIGN',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 14,
+        studyLevel: 'MASTER_DEGREE',
+      },
+    });
+
+    expect(civicAdmin.weightUsed).toBeGreaterThan(1.2);
+    expect(civicAdmin.weightUsed).toBeGreaterThan(
+      unrelatedCreative.weightUsed + 0.24,
+    );
+  });
+
   it('keeps genuinely irrelevant specialized participants below baseline without over-penalizing', () => {
     const irrelevantGenericExpert = calculateVoteWeight({
       voteType: 'SPECIALIZED',
@@ -116,8 +251,132 @@ describe('calculateVoteWeight', () => {
     });
 
     expect(irrelevantGenericExpert.calculationType).toBe('SPECIALIZED');
-    expect(irrelevantGenericExpert.weightUsed).toBeGreaterThanOrEqual(0.6);
+    expect(irrelevantGenericExpert.weightUsed).toBeGreaterThanOrEqual(0.5);
     expect(irrelevantGenericExpert.weightUsed).toBeLessThan(1);
+  });
+
+  it('uses years of experience to create granular separation inside relevant specialized matches', () => {
+    const earlyCareerPlanner = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'urban planning',
+      title: 'Urban planning and Bologna neighborhood design strategy',
+      summary:
+        'Consultation on architecture, planning, and local design priorities',
+      methodologySummary:
+        'Built-environment evidence review and civic workshops',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'ACADEMIC',
+        backgroundCategory: 'ARCHITECTURE_AND_URBAN_PLANNING',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 2,
+        studyLevel: 'MASTER_DEGREE',
+      },
+    });
+
+    const veteranPlanner = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'urban planning',
+      title: 'Urban planning and Bologna neighborhood design strategy',
+      summary:
+        'Consultation on architecture, planning, and local design priorities',
+      methodologySummary:
+        'Built-environment evidence review and civic workshops',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'ACADEMIC',
+        backgroundCategory: 'ARCHITECTURE_AND_URBAN_PLANNING',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 18,
+        studyLevel: 'MASTER_DEGREE',
+      },
+    });
+
+    expect(veteranPlanner.weightUsed).toBeGreaterThan(
+      earlyCareerPlanner.weightUsed + 0.02,
+    );
+    expect(veteranPlanner.weightUsed).toBeLessThanOrEqual(2);
+  });
+
+  it('keeps study level modest on broad consultations but relevant on field-specific ones', () => {
+    const fieldSpecificDoctorate = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'technology',
+      title:
+        'Digital learning systems and software architecture for university operations',
+      summary:
+        'Consultation on technical platforms, data services, and engineering decisions',
+      methodologySummary:
+        'Technical architecture review and evidence synthesis',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'ACADEMIC',
+        backgroundCategory: 'SOFTWARE_ENGINEERING',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 8,
+        studyLevel: 'DOCTORATE',
+      },
+    });
+
+    const fieldSpecificSecondary = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'technology',
+      title:
+        'Digital learning systems and software architecture for university operations',
+      summary:
+        'Consultation on technical platforms, data services, and engineering decisions',
+      methodologySummary:
+        'Technical architecture review and evidence synthesis',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'ACADEMIC',
+        backgroundCategory: 'SOFTWARE_ENGINEERING',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 8,
+        studyLevel: 'SECONDARY_EDUCATION',
+      },
+    });
+
+    const broadDoctorate = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University student life and community support',
+      summary:
+        'Consultation on campus wellbeing, facilities, and student services',
+      methodologySummary: 'General participation workshops',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'ACADEMIC',
+        backgroundCategory: 'SOFTWARE_ENGINEERING',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 8,
+        studyLevel: 'DOCTORATE',
+      },
+    });
+
+    const broadSecondary = calculateVoteWeight({
+      voteType: 'SPECIALIZED',
+      topicCategory: 'education',
+      title: 'University student life and community support',
+      summary:
+        'Consultation on campus wellbeing, facilities, and student services',
+      methodologySummary: 'General participation workshops',
+      assessment: {
+        ...baseAssessment,
+        stakeholderRole: 'ACADEMIC',
+        backgroundCategory: 'SOFTWARE_ENGINEERING',
+        experienceLevel: 'ADVANCED',
+        yearsOfExperience: 8,
+        studyLevel: 'SECONDARY_EDUCATION',
+      },
+    });
+
+    expect(fieldSpecificDoctorate.weightUsed).toBeGreaterThan(
+      fieldSpecificSecondary.weightUsed + 0.01,
+    );
+    expect(
+      Math.abs(broadDoctorate.weightUsed - broadSecondary.weightUsed),
+    ).toBeLessThanOrEqual(0.03);
   });
 
   it('does not let experience rescue weakly relevant specialized matches', () => {

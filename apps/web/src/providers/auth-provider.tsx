@@ -40,11 +40,6 @@ type LogoutResponse = {
   message: string;
 };
 
-type MeResponse = {
-  message: string;
-  user: AuthUser;
-};
-
 type AuthContextValue = {
   user: AuthUser | null;
   token: string | null;

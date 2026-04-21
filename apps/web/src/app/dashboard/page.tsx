@@ -12,7 +12,7 @@ type ExportMyDataResponse = {
   data: unknown;
 };
 
-type DeleteMyAccountResponse = {
+type DeactivateMyAccountResponse = {
   message: string;
 };
 
@@ -125,9 +125,9 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleDeleteMyAccount() {
+  async function handleDeactivateMyAccount() {
     const confirmed = window.confirm(
-      'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      'Are you sure you want to deactivate your account? This will remove your access and anonymize identifying data that can be removed.',
     );
 
     if (!confirmed) {
@@ -135,12 +135,12 @@ export default function DashboardPage() {
     }
 
     const secondConfirmation = window.prompt(
-      'To confirm permanent deletion, type DELETE below.',
+      'To confirm account deactivation and anonymization, type DEACTIVATE below.',
     );
 
-    if (secondConfirmation !== 'DELETE') {
+    if (secondConfirmation !== 'DEACTIVATE') {
       setAccountActionError(
-        'Account deletion was cancelled because confirmation did not match.',
+        'Account deactivation was cancelled because confirmation did not match.',
       );
       return;
     }
@@ -155,20 +155,26 @@ export default function DashboardPage() {
         return;
       }
 
-      const response = await apiRequest<DeleteMyAccountResponse>('/users/me', {
-        method: 'DELETE',
-        token,
-      });
+      const response = await apiRequest<DeactivateMyAccountResponse>(
+        '/users/me',
+        {
+          method: 'DELETE',
+          token,
+        },
+      );
 
       setAccountActionMessage(
-        response.message || 'Your account has been permanently deleted.',
+        response.message ||
+          'Your account has been deactivated and identifying data anonymized.',
       );
 
       await logout();
       router.replace('/register');
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'Failed to delete your account';
+        err instanceof Error
+          ? err.message
+          : 'Failed to deactivate your account';
 
       if (isAuthenticationError(message)) {
         await redirectToLoginAfterAuthFailure();
@@ -380,9 +386,11 @@ export default function DashboardPage() {
             </h2>
 
             <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-              You can export a copy of your personal data or permanently delete
-              your account. Deleting your account will remove your access and
-              cannot be undone.
+              You can export a copy of your personal data or deactivate your
+              account. Deactivation removes your access, deletes login
+              credentials and tokens, and anonymizes identifying fields while
+              retaining participation records that are required for consultation
+              integrity.
             </p>
 
             {accountActionMessage ? (
@@ -405,13 +413,13 @@ export default function DashboardPage() {
               </button>
 
               <button
-                onClick={handleDeleteMyAccount}
+                onClick={handleDeactivateMyAccount}
                 disabled={isDeletingAccount || isExportingData || isLoggingOut}
                 className="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:opacity-60"
               >
                 {isDeletingAccount
-                  ? 'Deleting account...'
-                  : 'Delete my account'}
+                  ? 'Deactivating account...'
+                  : 'Deactivate account'}
               </button>
             </div>
 

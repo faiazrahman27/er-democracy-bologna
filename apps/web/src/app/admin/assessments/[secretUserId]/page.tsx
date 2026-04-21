@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/providers/auth-provider';
-import { fetchAssessmentBySecretUserId } from '@/lib/assessments-admin';
-import { isAdminRole } from '@/lib/roles';
-import { hasPermission, PERMISSIONS } from '@/lib/permissions';
-import { formatDateTime, formatEnumLabel } from '@/lib/format';
-import type { Assessment } from '@/types/assessment';
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/providers/auth-provider";
+import { fetchAssessmentBySecretUserId } from "@/lib/assessments-admin";
+import { isAdminRole } from "@/lib/roles";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import type { Assessment } from "@/types/assessment";
 
-type AdminAssessmentRecord = Omit<Assessment, 'userId'>;
+type AdminAssessmentRecord = Omit<Assessment, "userId">;
 
 export default function AdminAssessmentDetailPage() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function AdminAssessmentDetailPage() {
     }
 
     if (!isLoading && user && !isAdminRole(user.role)) {
-      router.replace('/dashboard');
+      router.replace("/dashboard");
     }
   }, [isLoading, user, router, params.secretUserId]);
 
@@ -52,7 +52,7 @@ export default function AdminAssessmentDetailPage() {
         setAssessment(response.assessment);
       } catch (err) {
         setPageError(
-          err instanceof Error ? err.message : 'Failed to load assessment',
+          err instanceof Error ? err.message : "Failed to load assessment",
         );
       } finally {
         setPageLoading(false);
@@ -175,7 +175,7 @@ export default function AdminAssessmentDetailPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard
                 label="Assessment status"
-                value={assessment.assessmentCompleted ? 'Completed' : 'Draft'}
+                value={assessment.assessmentCompleted ? "Completed" : "Draft"}
                 highlight={assessment.assessmentCompleted}
               />
               <StatCard
@@ -183,7 +183,7 @@ export default function AdminAssessmentDetailPage() {
                 value={
                   assessment.completedAt
                     ? formatDateTime(assessment.completedAt)
-                    : 'Not completed'
+                    : "Not completed"
                 }
                 muted={!assessment.completedAt}
               />
@@ -205,26 +205,26 @@ export default function AdminAssessmentDetailPage() {
               title="Assessment status"
               rows={[
                 [
-                  'Assessment completed',
-                  assessment.assessmentCompleted ? 'Yes' : 'No',
+                  "Assessment completed",
+                  assessment.assessmentCompleted ? "Yes" : "No",
                 ],
                 [
-                  'Completed at',
+                  "Completed at",
                   assessment.completedAt
                     ? formatDateTime(assessment.completedAt)
-                    : 'Not completed',
+                    : "Not completed",
                 ],
-                ['Created at', formatDateTime(assessment.createdAt)],
-                ['Updated at', formatDateTime(assessment.updatedAt)],
+                ["Created at", formatDateTime(assessment.createdAt)],
+                ["Updated at", formatDateTime(assessment.updatedAt)],
               ]}
             />
 
             <InfoCard
               title="Location profile"
               rows={[
-                ['Country', formatAssessmentEnumValue(assessment.country)],
-                ['Region', formatAssessmentEnumValue(assessment.region)],
-                ['City', formatAssessmentEnumValue(assessment.city)],
+                ["Country", formatAssessmentEnumValue(assessment.country)],
+                ["Region", formatAssessmentEnumValue(assessment.region)],
+                ["City", formatAssessmentEnumValue(assessment.city)],
               ]}
             />
           </div>
@@ -235,15 +235,23 @@ export default function AdminAssessmentDetailPage() {
             <InfoCard
               title="Participant profile"
               rows={[
-                ['Age range', formatAssessmentEnumValue(assessment.ageRange)],
-                ['Gender', formatAssessmentEnumValue(assessment.gender)],
+                ["Age range", formatAssessmentEnumValue(assessment.ageRange)],
+                ["Gender", formatAssessmentEnumValue(assessment.gender)],
                 [
-                  'Stakeholder role',
+                  "Stakeholder role",
                   formatAssessmentEnumValue(assessment.stakeholderRole),
                 ],
                 [
-                  'Background category',
+                  "Background category",
                   formatAssessmentEnumValue(assessment.backgroundCategory),
+                ],
+                [
+                  "Years of experience",
+                  formatAssessmentEnumValue(assessment.yearsOfExperience),
+                ],
+                [
+                  "Study level",
+                  formatAssessmentEnumValue(assessment.studyLevel),
                 ],
               ]}
             />
@@ -252,11 +260,11 @@ export default function AdminAssessmentDetailPage() {
               title="Experience and relationship"
               rows={[
                 [
-                  'Experience level',
+                  "Experience level",
                   formatAssessmentEnumValue(assessment.experienceLevel),
                 ],
                 [
-                  'Relationship to area',
+                  "Relationship to area",
                   formatAssessmentEnumValue(assessment.relationshipToArea),
                 ],
               ]}
@@ -320,9 +328,9 @@ export default function AdminAssessmentDetailPage() {
   );
 }
 
-function formatAssessmentEnumValue(value: string | null) {
-  if (!value) {
-    return 'Not provided';
+function formatAssessmentEnumValue(value: string | number | null) {
+  if (value === null || value === "") {
+    return "Not provided";
   }
 
   return formatEnumLabel(value);
@@ -343,10 +351,10 @@ function StatCard({
     <div
       className={`rounded-2xl px-4 py-5 shadow-sm ring-1 ${
         highlight
-          ? 'bg-green-50 ring-green-200'
+          ? "bg-green-50 ring-green-200"
           : muted
-          ? 'bg-slate-100 ring-slate-200'
-          : 'bg-white ring-slate-200'
+            ? "bg-slate-100 ring-slate-200"
+            : "bg-white ring-slate-200"
       }`}
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -354,7 +362,7 @@ function StatCard({
       </p>
       <p
         className={`mt-2 text-base font-semibold ${
-          highlight ? 'text-green-700' : 'text-slate-900'
+          highlight ? "text-green-700" : "text-slate-900"
         }`}
       >
         {value}

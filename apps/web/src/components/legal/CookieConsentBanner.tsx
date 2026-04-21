@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 
 const COOKIE_KEY = 'cookie_banner_acknowledged';
 
@@ -9,15 +9,19 @@ export default function CookieConsentBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    let nextVisibility = true;
+
     try {
       const stored = localStorage.getItem(COOKIE_KEY);
 
-      if (!stored) {
-        setIsVisible(true);
-      }
+      nextVisibility = !stored;
     } catch {
-      setIsVisible(true);
+      nextVisibility = true;
     }
+
+    startTransition(() => {
+      setIsVisible(nextVisibility);
+    });
   }, []);
 
   function handleAcknowledge() {

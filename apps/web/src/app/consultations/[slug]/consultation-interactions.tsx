@@ -77,6 +77,16 @@ const WEIGHTED_OPTION_COLORS = [
 const RAW_SERIES_LEGEND_COLOR = "#1d4ed8";
 const WEIGHTED_SERIES_LEGEND_COLOR = "#b45309";
 
+function formatWeightValue(value: string | number) {
+  const numeric = typeof value === "number" ? value : Number(value);
+
+  if (Number.isNaN(numeric)) {
+    return String(value);
+  }
+
+  return numeric.toFixed(4);
+}
+
 export function ConsultationInteractions({ vote }: Props) {
   const router = useRouter();
   const { user, token, isLoading } = useAuth();
@@ -122,6 +132,8 @@ export function ConsultationInteractions({ vote }: Props) {
     vote.displaySettings?.showAgeRangeBreakdown ||
     vote.displaySettings?.showGenderBreakdown ||
     vote.displaySettings?.showExperienceLevelBreakdown ||
+    vote.displaySettings?.showYearsOfExperienceBreakdown ||
+    vote.displaySettings?.showStudyLevelBreakdown ||
     vote.displaySettings?.showRelationshipBreakdown,
   );
 
@@ -208,6 +220,18 @@ export function ConsultationInteractions({ vote }: Props) {
     );
   }, [analyticsState.data]);
 
+  const yearsOfExperienceChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.yearsOfExperienceBreakdown,
+    );
+  }, [analyticsState.data]);
+
+  const studyLevelChartData = useMemo(() => {
+    return formatBreakdownItems(
+      analyticsState.data?.analytics?.analytics?.studyLevelBreakdown,
+    );
+  }, [analyticsState.data]);
+
   const relationshipToAreaChartData = useMemo(() => {
     return formatBreakdownItems(
       analyticsState.data?.analytics?.analytics?.relationshipToAreaBreakdown,
@@ -278,7 +302,7 @@ export function ConsultationInteractions({ vote }: Props) {
       });
 
       setSubmissionMessage(
-        `${response.message} Weight used: ${response.submission.weightUsed}.`,
+        `${response.message} Weight used: ${formatWeightValue(response.submission.weightUsed)}.`,
       );
 
       const [results, analytics] = await Promise.all([
@@ -327,6 +351,8 @@ export function ConsultationInteractions({ vote }: Props) {
     ageRangeChartData.length > 0 ||
     genderChartData.length > 0 ||
     experienceLevelChartData.length > 0 ||
+    yearsOfExperienceChartData.length > 0 ||
+    studyLevelChartData.length > 0 ||
     relationshipToAreaChartData.length > 0;
 
   const resultsUnavailableMessage = getResultsUnavailableMessage({
@@ -530,8 +556,9 @@ export function ConsultationInteractions({ vote }: Props) {
                 </div>
 
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Choose a value from 1 to 10. This affects weighting for this
-                  consultation type.
+                  Choose a value from 1 to 10. A score of 1 uses weight 0.5, a
+                  score of 5 uses weight 1.0, and a score of 10 uses weight
+                  2.0.
                 </p>
 
                 <input
@@ -997,6 +1024,16 @@ export function ConsultationInteractions({ vote }: Props) {
                 items={experienceLevelChartData}
               />
               <BreakdownChartCard
+                title="Participants by years of experience"
+                description="Public participant share by years of experience."
+                items={yearsOfExperienceChartData}
+              />
+              <BreakdownChartCard
+                title="Participants by study level"
+                description="Public participant share by study level."
+                items={studyLevelChartData}
+              />
+              <BreakdownChartCard
                 title="Participants by relationship to the area"
                 description="Public participant share by relationship to the area."
                 items={relationshipToAreaChartData}
@@ -1037,6 +1074,18 @@ export function ConsultationInteractions({ vote }: Props) {
               title="Experience level details"
               description="Each row shows the public count and share for an experience level."
               items={experienceLevelChartData}
+            />
+
+            <BreakdownBlock
+              title="Years of experience details"
+              description="Each row shows the public count and share for years of experience."
+              items={yearsOfExperienceChartData}
+            />
+
+            <BreakdownBlock
+              title="Study level details"
+              description="Each row shows the public count and share for a study level."
+              items={studyLevelChartData}
             />
 
             <BreakdownBlock
@@ -1181,13 +1230,7 @@ function ColorDot({ color }: { color: string }) {
   );
 }
 
-function SeriesLegendChip({
-  color,
-  label,
-}: {
-  color: string;
-  label: string;
-}) {
+function SeriesLegendChip({ color, label }: { color: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
       <ColorDot color={color} />

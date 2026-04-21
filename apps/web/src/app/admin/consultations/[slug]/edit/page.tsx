@@ -1,41 +1,41 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/providers/auth-provider';
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/providers/auth-provider";
 import {
   fetchAdminVoteBySlug,
   updateAdminVote,
   uploadAdminVoteCover,
-} from '@/lib/admin-votes';
-import { isAdminRole } from '@/lib/roles';
-import { hasPermission, PERMISSIONS } from '@/lib/permissions';
-import { formatEnumLabel } from '@/lib/format';
+} from "@/lib/admin-votes";
+import { isAdminRole } from "@/lib/roles";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { formatEnumLabel } from "@/lib/format";
 
 export default function AdminEditConsultationPage() {
   const router = useRouter();
   const params = useParams<{ slug: string }>();
   const { user, token, isLoading } = useAuth();
 
-  const [title, setTitle] = useState('');
-  const [summary, setSummary] = useState('');
-  const [methodologySummary, setMethodologySummary] = useState('');
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
+  const [methodologySummary, setMethodologySummary] = useState("");
   const [status, setStatus] = useState<
-    | 'DRAFT'
-    | 'REVIEW'
-    | 'APPROVED'
-    | 'PUBLISHED'
-    | 'CLOSED'
-    | 'ARCHIVED'
-    | 'CANCELLED'
-  >('PUBLISHED');
-  const [startAt, setStartAt] = useState('');
-  const [endAt, setEndAt] = useState('');
+    | "DRAFT"
+    | "REVIEW"
+    | "APPROVED"
+    | "PUBLISHED"
+    | "CLOSED"
+    | "ARCHIVED"
+    | "CANCELLED"
+  >("PUBLISHED");
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
   const [isPublished, setIsPublished] = useState(false);
 
-  const [coverImageUrl, setCoverImageUrl] = useState('');
-  const [coverImageAlt, setCoverImageAlt] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [coverImageAlt, setCoverImageAlt] = useState("");
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [coverUploadMessage, setCoverUploadMessage] = useState<string | null>(
@@ -43,8 +43,8 @@ export default function AdminEditConsultationPage() {
   );
 
   const [resultVisibilityMode, setResultVisibilityMode] = useState<
-    'HIDE_ALL' | 'SHOW_RAW_ONLY' | 'SHOW_WEIGHTED_ONLY' | 'SHOW_BOTH'
-  >('HIDE_ALL');
+    "HIDE_ALL" | "SHOW_RAW_ONLY" | "SHOW_WEIGHTED_ONLY" | "SHOW_BOTH"
+  >("HIDE_ALL");
   const [showParticipationStats, setShowParticipationStats] = useState(false);
   const [showStakeholderBreakdown, setShowStakeholderBreakdown] =
     useState(false);
@@ -54,6 +54,9 @@ export default function AdminEditConsultationPage() {
   const [showGenderBreakdown, setShowGenderBreakdown] = useState(false);
   const [showExperienceLevelBreakdown, setShowExperienceLevelBreakdown] =
     useState(false);
+  const [showYearsOfExperienceBreakdown, setShowYearsOfExperienceBreakdown] =
+    useState(false);
+  const [showStudyLevelBreakdown, setShowStudyLevelBreakdown] = useState(false);
   const [showRelationshipBreakdown, setShowRelationshipBreakdown] =
     useState(false);
   const [showAfterVotingOnly, setShowAfterVotingOnly] = useState(false);
@@ -68,12 +71,14 @@ export default function AdminEditConsultationPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace(`/login?redirectTo=/admin/consultations/${params.slug}/edit`);
+      router.replace(
+        `/login?redirectTo=/admin/consultations/${params.slug}/edit`,
+      );
       return;
     }
 
     if (!isLoading && user && !isAdminRole(user.role)) {
-      router.replace('/dashboard');
+      router.replace("/dashboard");
     }
   }, [isLoading, user, router, params.slug]);
 
@@ -90,25 +95,25 @@ export default function AdminEditConsultationPage() {
 
         setTitle(vote.title);
         setSummary(vote.summary);
-        setMethodologySummary(vote.methodologySummary ?? '');
+        setMethodologySummary(vote.methodologySummary ?? "");
         setStatus(
           vote.status as
-            | 'DRAFT'
-            | 'REVIEW'
-            | 'APPROVED'
-            | 'PUBLISHED'
-            | 'CLOSED'
-            | 'ARCHIVED'
-            | 'CANCELLED',
+            | "DRAFT"
+            | "REVIEW"
+            | "APPROVED"
+            | "PUBLISHED"
+            | "CLOSED"
+            | "ARCHIVED"
+            | "CANCELLED",
         );
         setStartAt(toDateTimeLocal(vote.startAt));
         setEndAt(toDateTimeLocal(vote.endAt));
         setIsPublished(vote.isPublished);
-        setCoverImageUrl(vote.coverImageUrl ?? '');
-        setCoverImageAlt(vote.coverImageAlt ?? '');
+        setCoverImageUrl(vote.coverImageUrl ?? "");
+        setCoverImageAlt(vote.coverImageAlt ?? "");
 
         setResultVisibilityMode(
-          vote.displaySettings?.resultVisibilityMode ?? 'HIDE_ALL',
+          vote.displaySettings?.resultVisibilityMode ?? "HIDE_ALL",
         );
         setShowParticipationStats(
           vote.displaySettings?.showParticipationStats ?? false,
@@ -131,6 +136,12 @@ export default function AdminEditConsultationPage() {
         setShowExperienceLevelBreakdown(
           vote.displaySettings?.showExperienceLevelBreakdown ?? false,
         );
+        setShowYearsOfExperienceBreakdown(
+          vote.displaySettings?.showYearsOfExperienceBreakdown ?? false,
+        );
+        setShowStudyLevelBreakdown(
+          vote.displaySettings?.showStudyLevelBreakdown ?? false,
+        );
         setShowRelationshipBreakdown(
           vote.displaySettings?.showRelationshipBreakdown ?? false,
         );
@@ -147,7 +158,7 @@ export default function AdminEditConsultationPage() {
         setHasSubmissions((vote.submissionCount ?? 0) > 0);
       } catch (err) {
         setPageError(
-          err instanceof Error ? err.message : 'Failed to load consultation',
+          err instanceof Error ? err.message : "Failed to load consultation",
         );
       } finally {
         setPageLoading(false);
@@ -194,12 +205,12 @@ export default function AdminEditConsultationPage() {
 
   async function handleUploadCoverImage() {
     if (!token) {
-      setPageError('You must be signed in');
+      setPageError("You must be signed in");
       return;
     }
 
     if (!selectedCoverFile) {
-      setPageError('Please choose an image file first');
+      setPageError("Please choose an image file first");
       return;
     }
 
@@ -218,27 +229,27 @@ export default function AdminEditConsultationPage() {
       setCoverImageUrl(response.file.publicUrl);
 
       if (!coverImageAlt.trim()) {
-        setCoverImageAlt(title.trim() || 'Consultation cover image');
+        setCoverImageAlt(title.trim() || "Consultation cover image");
       }
 
-      setCoverUploadMessage('Cover image uploaded successfully');
+      setCoverUploadMessage("Cover image uploaded successfully");
     } catch (err) {
       setPageError(
-        err instanceof Error ? err.message : 'Failed to upload cover image',
+        err instanceof Error ? err.message : "Failed to upload cover image",
       );
     } finally {
       setIsUploadingCover(false);
     }
   }
 
- async function handleSave() {
+  async function handleSave() {
     if (!token) {
-      setPageError('You must be signed in');
+      setPageError("You must be signed in");
       return;
     }
 
     if (selectedCoverFile && !coverImageUrl) {
-      setPageError('Please upload the selected cover image before saving');
+      setPageError("Please upload the selected cover image before saving");
       return;
     }
 
@@ -262,6 +273,8 @@ export default function AdminEditConsultationPage() {
             showAgeRangeBreakdown,
             showGenderBreakdown,
             showExperienceLevelBreakdown,
+            showYearsOfExperienceBreakdown,
+            showStudyLevelBreakdown,
             showRelationshipBreakdown,
             showAfterVotingOnly: normalizedShowAfterVotingOnly,
             showOnlyAfterVoteCloses,
@@ -284,6 +297,8 @@ export default function AdminEditConsultationPage() {
             showAgeRangeBreakdown,
             showGenderBreakdown,
             showExperienceLevelBreakdown,
+            showYearsOfExperienceBreakdown,
+            showStudyLevelBreakdown,
             showRelationshipBreakdown,
             showAfterVotingOnly: normalizedShowAfterVotingOnly,
             showOnlyAfterVoteCloses,
@@ -291,12 +306,12 @@ export default function AdminEditConsultationPage() {
 
       await updateAdminVote(token, params.slug, payload);
 
-      setSuccessMessage('Consultation updated successfully');
+      setSuccessMessage("Consultation updated successfully");
       setSelectedCoverFile(null);
       setCoverUploadMessage(null);
     } catch (err) {
       setPageError(
-        err instanceof Error ? err.message : 'Failed to update consultation',
+        err instanceof Error ? err.message : "Failed to update consultation",
       );
     } finally {
       setIsSaving(false);
@@ -308,7 +323,9 @@ export default function AdminEditConsultationPage() {
       <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
         <div className="mx-auto max-w-6xl">
           <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm text-slate-600">Loading consultation editor...</p>
+            <p className="text-sm text-slate-600">
+              Loading consultation editor...
+            </p>
           </div>
         </div>
       </main>
@@ -353,24 +370,23 @@ export default function AdminEditConsultationPage() {
                 Edit Consultation
               </h1>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                Update consultation settings, publication state, workflow status,
-                schedule, and public visibility rules.
+                Update consultation settings, publication state, workflow
+                status, schedule, and public visibility rules.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <StatusPill
-                label={isPublished ? 'Published' : 'Unpublished'}
-                tone={isPublished ? 'success' : 'warning'}
+                label={isPublished ? "Published" : "Unpublished"}
+                tone={isPublished ? "success" : "warning"}
               />
               <StatusPill
-                label={hasSubmissions ? 'Has submissions' : 'No submissions yet'}
-                tone={hasSubmissions ? 'default' : 'muted'}
+                label={
+                  hasSubmissions ? "Has submissions" : "No submissions yet"
+                }
+                tone={hasSubmissions ? "default" : "muted"}
               />
-              <StatusPill
-                label={status}
-                tone={deriveWorkflowTone(status)}
-              />
+              <StatusPill label={status} tone={deriveWorkflowTone(status)} />
             </div>
           </div>
         </section>
@@ -420,23 +436,23 @@ export default function AdminEditConsultationPage() {
                     onChange={(value) =>
                       setStatus(
                         value as
-                          | 'DRAFT'
-                          | 'REVIEW'
-                          | 'APPROVED'
-                          | 'PUBLISHED'
-                          | 'CLOSED'
-                          | 'ARCHIVED'
-                          | 'CANCELLED',
+                          | "DRAFT"
+                          | "REVIEW"
+                          | "APPROVED"
+                          | "PUBLISHED"
+                          | "CLOSED"
+                          | "ARCHIVED"
+                          | "CANCELLED",
                       )
                     }
                     options={[
-                      'DRAFT',
-                      'REVIEW',
-                      'APPROVED',
-                      'PUBLISHED',
-                      'CLOSED',
-                      'ARCHIVED',
-                      'CANCELLED',
+                      "DRAFT",
+                      "REVIEW",
+                      "APPROVED",
+                      "PUBLISHED",
+                      "CLOSED",
+                      "ARCHIVED",
+                      "CANCELLED",
                     ]}
                   />
 
@@ -526,21 +542,25 @@ export default function AdminEditConsultationPage() {
                     disabled={isUploadingCover || !selectedCoverFile}
                     className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60"
                   >
-                    {isUploadingCover ? 'Uploading...' : 'Upload cover image'}
+                    {isUploadingCover ? "Uploading..." : "Upload cover image"}
                   </button>
 
                   {coverUploadMessage ? (
-                    <span className="text-sm text-green-700">{coverUploadMessage}</span>
+                    <span className="text-sm text-green-700">
+                      {coverUploadMessage}
+                    </span>
                   ) : null}
                 </div>
 
                 {coverImageUrl ? (
                   <div className="mt-5 max-w-md">
-                    <p className="mb-2 text-sm font-medium text-slate-700">Preview</p>
+                    <p className="mb-2 text-sm font-medium text-slate-700">
+                      Preview
+                    </p>
                     <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
                       <img
                         src={coverImageUrl}
-                        alt={coverImageAlt || 'Consultation cover preview'}
+                        alt={coverImageAlt || "Consultation cover preview"}
                         className="h-full w-full object-cover"
                       />
                     </div>
@@ -559,7 +579,8 @@ export default function AdminEditConsultationPage() {
                 <div className="mb-5">
                   <h2 className="text-lg font-semibold">Publication</h2>
                   <p className="mt-2 text-sm text-slate-600">
-                    This controls whether the consultation is publicly visible.
+                    A consultation is public only when this flag is enabled and
+                    the workflow status is Published or Closed.
                   </p>
                 </div>
 
@@ -573,11 +594,11 @@ export default function AdminEditConsultationPage() {
                     />
                     <div>
                       <p className="font-medium text-slate-900">
-                        Published and publicly visible
+                        Enable public visibility
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        When enabled, eligible users can access the consultation
-                        from the public side.
+                        Draft, Review, and Approved consultations remain hidden
+                        even if this box is checked.
                       </p>
                     </div>
                   </label>
@@ -601,17 +622,17 @@ export default function AdminEditConsultationPage() {
                     onChange={(value) =>
                       setResultVisibilityMode(
                         value as
-                          | 'HIDE_ALL'
-                          | 'SHOW_RAW_ONLY'
-                          | 'SHOW_WEIGHTED_ONLY'
-                          | 'SHOW_BOTH',
+                          | "HIDE_ALL"
+                          | "SHOW_RAW_ONLY"
+                          | "SHOW_WEIGHTED_ONLY"
+                          | "SHOW_BOTH",
                       )
                     }
                     options={[
-                      'HIDE_ALL',
-                      'SHOW_RAW_ONLY',
-                      'SHOW_WEIGHTED_ONLY',
-                      'SHOW_BOTH',
+                      "HIDE_ALL",
+                      "SHOW_RAW_ONLY",
+                      "SHOW_WEIGHTED_ONLY",
+                      "SHOW_BOTH",
                     ]}
                   />
 
@@ -659,6 +680,18 @@ export default function AdminEditConsultationPage() {
                       onChange={setShowExperienceLevelBreakdown}
                     />
                     <CheckboxField
+                      label="Show years of experience breakdown"
+                      description="Allow public years-of-experience analytics."
+                      checked={showYearsOfExperienceBreakdown}
+                      onChange={setShowYearsOfExperienceBreakdown}
+                    />
+                    <CheckboxField
+                      label="Show study level breakdown"
+                      description="Allow public study-level analytics."
+                      checked={showStudyLevelBreakdown}
+                      onChange={setShowStudyLevelBreakdown}
+                    />
+                    <CheckboxField
                       label="Show relationship to area breakdown"
                       description="Allow public relationship-to-area analytics."
                       checked={showRelationshipBreakdown}
@@ -668,8 +701,8 @@ export default function AdminEditConsultationPage() {
                       label="Show after voting only"
                       description={
                         showOnlyAfterVoteCloses
-                          ? 'Disabled while close-only visibility is enabled.'
-                          : 'Hide results and analytics until the user submits a vote.'
+                          ? "Disabled while close-only visibility is enabled."
+                          : "Hide results and analytics until the user submits a vote."
                       }
                       checked={normalizedShowAfterVotingOnly}
                       onChange={handleShowAfterVotingOnlyChange}
@@ -696,13 +729,13 @@ export default function AdminEditConsultationPage() {
                 <div className="space-y-3">
                   <PolicyItem
                     label="Title, summary, methodology"
-                    value={coreFieldsLocked ? 'Locked' : 'Editable'}
-                    tone={coreFieldsLocked ? 'warning' : 'success'}
+                    value={coreFieldsLocked ? "Locked" : "Editable"}
+                    tone={coreFieldsLocked ? "warning" : "success"}
                   />
                   <PolicyItem
                     label="Start date"
-                    value={coreFieldsLocked ? 'Locked' : 'Editable'}
-                    tone={coreFieldsLocked ? 'warning' : 'success'}
+                    value={coreFieldsLocked ? "Locked" : "Editable"}
+                    tone={coreFieldsLocked ? "warning" : "success"}
                   />
                   <PolicyItem
                     label="End date"
@@ -740,7 +773,7 @@ export default function AdminEditConsultationPage() {
               disabled={isSaving || isUploadingCover}
               className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
-              {isSaving ? 'Saving...' : 'Save changes'}
+              {isSaving ? "Saving..." : "Save changes"}
             </button>
 
             <Link
@@ -758,7 +791,7 @@ export default function AdminEditConsultationPage() {
 
 function toDateTimeLocal(value: string) {
   const date = new Date(value);
-  const pad = (num: number) => String(num).padStart(2, '0');
+  const pad = (num: number) => String(num).padStart(2, "0");
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
     date.getDate(),
@@ -896,8 +929,8 @@ function CheckboxField({
     <label
       className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-sm ${
         disabled
-          ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500'
-          : 'border-slate-200 bg-slate-50 text-slate-700'
+          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500"
+          : "border-slate-200 bg-slate-50 text-slate-700"
       }`}
     >
       <input
@@ -910,14 +943,14 @@ function CheckboxField({
       <div>
         <p
           className={`font-medium ${
-            disabled ? 'text-slate-500' : 'text-slate-900'
+            disabled ? "text-slate-500" : "text-slate-900"
           }`}
         >
           {label}
         </p>
         <p
           className={`mt-1 text-sm leading-6 ${
-            disabled ? 'text-slate-500' : 'text-slate-600'
+            disabled ? "text-slate-500" : "text-slate-600"
           }`}
         >
           {description}
@@ -934,19 +967,21 @@ function PolicyItem({
 }: {
   label: string;
   value: string;
-  tone: 'success' | 'warning' | 'default';
+  tone: "success" | "warning" | "default";
 }) {
   const toneClass =
-    tone === 'success'
-      ? 'bg-emerald-100 text-emerald-700'
-      : tone === 'warning'
-        ? 'bg-amber-100 text-amber-700'
-        : 'bg-slate-100 text-slate-700';
+    tone === "success"
+      ? "bg-emerald-100 text-emerald-700"
+      : tone === "warning"
+        ? "bg-amber-100 text-amber-700"
+        : "bg-slate-100 text-slate-700";
 
   return (
     <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
       <span className="text-sm text-slate-700">{label}</span>
-      <span className={`rounded-full px-3 py-1 text-xs font-medium ${toneClass}`}>
+      <span
+        className={`rounded-full px-3 py-1 text-xs font-medium ${toneClass}`}
+      >
         {value}
       </span>
     </div>
@@ -958,18 +993,18 @@ function StatusPill({
   tone,
 }: {
   label: string;
-  tone: 'success' | 'warning' | 'danger' | 'muted' | 'default';
+  tone: "success" | "warning" | "danger" | "muted" | "default";
 }) {
   const toneClass =
-    tone === 'success'
-      ? 'bg-emerald-100 text-emerald-700'
-      : tone === 'warning'
-        ? 'bg-amber-100 text-amber-700'
-        : tone === 'danger'
-          ? 'bg-red-100 text-red-700'
-          : tone === 'muted'
-            ? 'bg-slate-100 text-slate-700'
-            : 'bg-white text-slate-900 ring-1 ring-slate-200';
+    tone === "success"
+      ? "bg-emerald-100 text-emerald-700"
+      : tone === "warning"
+        ? "bg-amber-100 text-amber-700"
+        : tone === "danger"
+          ? "bg-red-100 text-red-700"
+          : tone === "muted"
+            ? "bg-slate-100 text-slate-700"
+            : "bg-white text-slate-900 ring-1 ring-slate-200";
 
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-medium ${toneClass}`}>
@@ -980,29 +1015,29 @@ function StatusPill({
 
 function deriveWorkflowTone(
   status:
-    | 'DRAFT'
-    | 'REVIEW'
-    | 'APPROVED'
-    | 'PUBLISHED'
-    | 'CLOSED'
-    | 'ARCHIVED'
-    | 'CANCELLED',
-): 'success' | 'warning' | 'danger' | 'muted' | 'default' {
-  if (status === 'PUBLISHED' || status === 'APPROVED') {
-    return 'success';
+    | "DRAFT"
+    | "REVIEW"
+    | "APPROVED"
+    | "PUBLISHED"
+    | "CLOSED"
+    | "ARCHIVED"
+    | "CANCELLED",
+): "success" | "warning" | "danger" | "muted" | "default" {
+  if (status === "PUBLISHED" || status === "APPROVED") {
+    return "success";
   }
 
-  if (status === 'DRAFT' || status === 'REVIEW') {
-    return 'warning';
+  if (status === "DRAFT" || status === "REVIEW") {
+    return "warning";
   }
 
-  if (status === 'CANCELLED') {
-    return 'danger';
+  if (status === "CANCELLED") {
+    return "danger";
   }
 
-  if (status === 'ARCHIVED' || status === 'CLOSED') {
-    return 'muted';
+  if (status === "ARCHIVED" || status === "CLOSED") {
+    return "muted";
   }
 
-  return 'default';
+  return "default";
 }

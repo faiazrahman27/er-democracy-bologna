@@ -1,21 +1,21 @@
-import { apiRequest } from '@/lib/api';
-import type { AnalyticsBreakdowns } from '@/types/analytics';
+import { apiRequest } from "@/lib/api";
+import type { AnalyticsBreakdowns } from "@/types/analytics";
 
 export type AdminCreateVotePayload = {
   slug: string;
   title: string;
   summary: string;
   methodologySummary?: string;
-  voteType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
+  voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
   topicCategory: string;
   status:
-    | 'DRAFT'
-    | 'REVIEW'
-    | 'APPROVED'
-    | 'PUBLISHED'
-    | 'CLOSED'
-    | 'ARCHIVED'
-    | 'CANCELLED';
+    | "DRAFT"
+    | "REVIEW"
+    | "APPROVED"
+    | "PUBLISHED"
+    | "CLOSED"
+    | "ARCHIVED"
+    | "CANCELLED";
   coverImageUrl?: string;
   coverImageAlt?: string;
   startAt: string;
@@ -27,10 +27,10 @@ export type AdminCreateVotePayload = {
   }>;
   displaySettings: {
     resultVisibilityMode:
-      | 'HIDE_ALL'
-      | 'SHOW_RAW_ONLY'
-      | 'SHOW_WEIGHTED_ONLY'
-      | 'SHOW_BOTH';
+      | "HIDE_ALL"
+      | "SHOW_RAW_ONLY"
+      | "SHOW_WEIGHTED_ONLY"
+      | "SHOW_BOTH";
     showParticipationStats: boolean;
     showStakeholderBreakdown: boolean;
     showBackgroundBreakdown: boolean;
@@ -38,6 +38,8 @@ export type AdminCreateVotePayload = {
     showAgeRangeBreakdown: boolean;
     showGenderBreakdown: boolean;
     showExperienceLevelBreakdown: boolean;
+    showYearsOfExperienceBreakdown: boolean;
+    showStudyLevelBreakdown: boolean;
     showRelationshipBreakdown: boolean;
     showAfterVotingOnly: boolean;
     showOnlyAfterVoteCloses: boolean;
@@ -49,23 +51,23 @@ export type AdminUpdateVotePayload = {
   summary?: string;
   methodologySummary?: string;
   status?:
-    | 'DRAFT'
-    | 'REVIEW'
-    | 'APPROVED'
-    | 'PUBLISHED'
-    | 'CLOSED'
-    | 'ARCHIVED'
-    | 'CANCELLED';
+    | "DRAFT"
+    | "REVIEW"
+    | "APPROVED"
+    | "PUBLISHED"
+    | "CLOSED"
+    | "ARCHIVED"
+    | "CANCELLED";
   coverImageUrl?: string;
   coverImageAlt?: string;
   startAt?: string;
   endAt?: string;
   isPublished?: boolean;
   resultVisibilityMode?:
-    | 'HIDE_ALL'
-    | 'SHOW_RAW_ONLY'
-    | 'SHOW_WEIGHTED_ONLY'
-    | 'SHOW_BOTH';
+    | "HIDE_ALL"
+    | "SHOW_RAW_ONLY"
+    | "SHOW_WEIGHTED_ONLY"
+    | "SHOW_BOTH";
   showParticipationStats?: boolean;
   showStakeholderBreakdown?: boolean;
   showBackgroundBreakdown?: boolean;
@@ -73,6 +75,8 @@ export type AdminUpdateVotePayload = {
   showAgeRangeBreakdown?: boolean;
   showGenderBreakdown?: boolean;
   showExperienceLevelBreakdown?: boolean;
+  showYearsOfExperienceBreakdown?: boolean;
+  showStudyLevelBreakdown?: boolean;
   showRelationshipBreakdown?: boolean;
   showAfterVotingOnly?: boolean;
   showOnlyAfterVoteCloses?: boolean;
@@ -84,7 +88,7 @@ export type AdminCreateVoteResponse = {
     id: string;
     slug: string;
     title: string;
-    voteType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
+    voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
     status: string;
     isPublished: boolean;
   };
@@ -96,7 +100,7 @@ export type AdminVoteListItem = {
   title: string;
   summary: string;
   methodologySummary: string | null;
-  voteType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
+  voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
   topicCategory: string;
   status: string;
   coverImageUrl: string | null;
@@ -109,7 +113,7 @@ export type AdminVoteListItem = {
   createdByAdminId: string;
   createdAt: string;
   updatedAt: string;
-  derivedStatus?: 'UPCOMING' | 'ONGOING' | 'PAST' | 'CANCELLED' | 'ARCHIVED';
+  derivedStatus?: "UPCOMING" | "ONGOING" | "PAST" | "CANCELLED" | "ARCHIVED";
   submissionCount?: number;
   options?: Array<{
     id: string;
@@ -120,10 +124,10 @@ export type AdminVoteListItem = {
   displaySettings?: {
     id?: string;
     resultVisibilityMode:
-      | 'HIDE_ALL'
-      | 'SHOW_RAW_ONLY'
-      | 'SHOW_WEIGHTED_ONLY'
-      | 'SHOW_BOTH';
+      | "HIDE_ALL"
+      | "SHOW_RAW_ONLY"
+      | "SHOW_WEIGHTED_ONLY"
+      | "SHOW_BOTH";
     showParticipationStats: boolean;
     showStakeholderBreakdown: boolean;
     showBackgroundBreakdown: boolean;
@@ -131,6 +135,8 @@ export type AdminVoteListItem = {
     showAgeRangeBreakdown: boolean;
     showGenderBreakdown: boolean;
     showExperienceLevelBreakdown: boolean;
+    showYearsOfExperienceBreakdown: boolean;
+    showStudyLevelBreakdown: boolean;
     showRelationshipBreakdown: boolean;
     showAfterVotingOnly: boolean;
     showOnlyAfterVoteCloses: boolean;
@@ -192,11 +198,11 @@ export type AdminParticipantsResponse = {
     title: string;
     participants: Array<{
       submissionId: string;
-      secretUserId: string | null;
+      secretUserId?: string | null;
       selectedOptionId: string;
       selectedOptionText: string;
       weightUsed: string | number;
-      calculationType: 'GENERAL' | 'SPECIALIZED' | 'SELF_ASSESSMENT';
+      calculationType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
       selfAssessmentScore: number | null;
       submittedAt: string;
       hasCompletedAssessment: boolean;
@@ -220,8 +226,8 @@ export async function createAdminVote(
   token: string,
   payload: AdminCreateVotePayload,
 ) {
-  return apiRequest<AdminCreateVoteResponse>('/votes', {
-    method: 'POST',
+  return apiRequest<AdminCreateVoteResponse>("/votes", {
+    method: "POST",
     token,
     body: payload,
   });
@@ -233,36 +239,36 @@ export async function updateAdminVote(
   payload: AdminUpdateVotePayload,
 ) {
   return apiRequest<AdminVoteDetailResponse>(`/votes/${slug}`, {
-    method: 'PATCH',
+    method: "PATCH",
     token,
     body: payload,
   });
 }
 
 export async function fetchAdminVotes(token: string) {
-  return apiRequest<AdminVotesResponse>('/votes/admin', {
-    method: 'GET',
+  return apiRequest<AdminVotesResponse>("/votes/admin", {
+    method: "GET",
     token,
   });
 }
 
 export async function fetchAdminVoteBySlug(token: string, slug: string) {
   return apiRequest<AdminVoteDetailResponse>(`/votes/admin/${slug}`, {
-    method: 'GET',
+    method: "GET",
     token,
   });
 }
 
 export async function fetchAdminResults(token: string, slug: string) {
   return apiRequest<AdminResultsResponse>(`/votes/admin/${slug}/results`, {
-    method: 'GET',
+    method: "GET",
     token,
   });
 }
 
 export async function fetchAdminAnalytics(token: string, slug: string) {
   return apiRequest<AdminAnalyticsResponse>(`/votes/admin/${slug}/analytics`, {
-    method: 'GET',
+    method: "GET",
     token,
   });
 }
@@ -271,7 +277,7 @@ export async function fetchAdminParticipants(token: string, slug: string) {
   return apiRequest<AdminParticipantsResponse>(
     `/votes/admin/${slug}/participants`,
     {
-      method: 'GET',
+      method: "GET",
       token,
     },
   );
@@ -285,18 +291,18 @@ export async function uploadAdminVoteCover(
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   if (!apiBaseUrl) {
-    throw new Error('NEXT_PUBLIC_API_URL is not configured');
+    throw new Error("NEXT_PUBLIC_API_URL is not configured");
   }
 
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
 
   if (slug && slug.trim()) {
-    formData.append('slug', slug.trim());
+    formData.append("slug", slug.trim());
   }
 
   const response = await fetch(`${apiBaseUrl}/votes/admin/upload-cover`, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -304,7 +310,7 @@ export async function uploadAdminVoteCover(
   });
 
   if (!response.ok) {
-    let message = 'Failed to upload vote cover image';
+    let message = "Failed to upload vote cover image";
 
     try {
       const errorData = (await response.json()) as {
@@ -312,8 +318,8 @@ export async function uploadAdminVoteCover(
       };
 
       if (Array.isArray(errorData?.message)) {
-        message = errorData.message.join(', ');
-      } else if (typeof errorData?.message === 'string') {
+        message = errorData.message.join(", ");
+      } else if (typeof errorData?.message === "string") {
         message = errorData.message;
       }
     } catch {
@@ -326,25 +332,22 @@ export async function uploadAdminVoteCover(
   return (await response.json()) as AdminUploadVoteCoverResponse;
 }
 
-export async function exportAdminAnalyticsExcel(
-  token: string,
-  slug: string,
-) {
+export async function exportAdminAnalyticsExcel(token: string, slug: string) {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   if (!apiBaseUrl) {
-    throw new Error('NEXT_PUBLIC_API_URL is not configured');
+    throw new Error("NEXT_PUBLIC_API_URL is not configured");
   }
 
   const response = await fetch(`${apiBaseUrl}/votes/admin/${slug}/export`, {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    let message = 'Failed to export analytics Excel file';
+    let message = "Failed to export analytics Excel file";
 
     try {
       const errorData = (await response.json()) as { message?: string };
@@ -360,7 +363,7 @@ export async function exportAdminAnalyticsExcel(
 
   const blob = await response.blob();
 
-  const disposition = response.headers.get('content-disposition');
+  const disposition = response.headers.get("content-disposition");
   const fileNameMatch = disposition?.match(/filename="(.+)"/);
   const fileName = fileNameMatch?.[1] ?? `${slug}-analytics.xlsx`;
 

@@ -85,6 +85,14 @@ export class UpdateVoteDto {
 
   @IsOptional()
   @IsBoolean()
+  showYearsOfExperienceBreakdown?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  showStudyLevelBreakdown?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   showRelationshipBreakdown?: boolean;
 
   @IsOptional()

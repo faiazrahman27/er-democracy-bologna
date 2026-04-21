@@ -10,8 +10,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import { ArticlesService } from './articles.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -22,6 +20,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { SupabaseService } from '../common/supabase/supabase.service';
+import { ImageUploadInterceptor } from '../common/upload/image-upload.interceptor';
 
 type AuthUser = {
   id: string;
@@ -39,15 +38,7 @@ export class ArticlesController {
   @RequirePermissions(PERMISSIONS.MEDIA_UPLOAD)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('admin/upload-cover')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 2 * 1024 * 1024,
-        files: 1,
-      },
-    }),
-  )
+  @UseInterceptors(ImageUploadInterceptor('file'))
   async uploadArticleCoverImage(
     @UploadedFile() file: Express.Multer.File,
     @Body('slug') slug?: string,

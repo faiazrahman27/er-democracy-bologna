@@ -37,7 +37,10 @@ export class AssessmentsController {
   ) {
     return {
       message: 'Assessment saved successfully',
-      assessment: await this.assessmentsService.upsertMyAssessment(user.id, dto),
+      assessment: await this.assessmentsService.upsertMyAssessment(
+        user.id,
+        dto,
+      ),
     };
   }
 

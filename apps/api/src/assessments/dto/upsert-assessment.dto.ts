@@ -1,8 +1,12 @@
 import {
+  IsInt,
   IsBoolean,
   IsEnum,
   IsNotEmpty,
+  Max,
+  Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum AssessmentAgeRangeDto {
   AGE_18_24 = 'AGE_18_24',
@@ -138,11 +142,25 @@ export enum AssessmentExperienceLevelDto {
   EXPERT = 'EXPERT',
 }
 
+export enum AssessmentStudyLevelDto {
+  NO_FORMAL_STUDY = 'NO_FORMAL_STUDY',
+  SECONDARY_EDUCATION = 'SECONDARY_EDUCATION',
+  VOCATIONAL_CERTIFICATION = 'VOCATIONAL_CERTIFICATION',
+  BACHELOR_DEGREE = 'BACHELOR_DEGREE',
+  MASTER_DEGREE = 'MASTER_DEGREE',
+  DOCTORATE = 'DOCTORATE',
+  POST_DOCTORATE = 'POST_DOCTORATE',
+  OTHER = 'OTHER',
+  PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY',
+}
+
 export enum AssessmentRelationshipToAreaDto {
   RESIDENT = 'RESIDENT',
   NON_RESIDENT = 'NON_RESIDENT',
   VISITOR = 'VISITOR',
 }
+
+export const ASSESSMENT_MAX_YEARS_OF_EXPERIENCE = 60;
 
 export class UpsertAssessmentDto {
   @IsEnum(AssessmentAgeRangeDto)
@@ -168,6 +186,15 @@ export class UpsertAssessmentDto {
 
   @IsEnum(AssessmentExperienceLevelDto)
   experienceLevel!: AssessmentExperienceLevelDto;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(ASSESSMENT_MAX_YEARS_OF_EXPERIENCE)
+  yearsOfExperience!: number;
+
+  @IsEnum(AssessmentStudyLevelDto)
+  studyLevel!: AssessmentStudyLevelDto;
 
   @IsEnum(AssessmentRelationshipToAreaDto)
   relationshipToArea!: AssessmentRelationshipToAreaDto;

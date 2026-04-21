@@ -32,9 +32,13 @@ export class AuditService {
         targetType: input.targetType,
         targetId: input.targetId,
         beforeJson:
-          input.beforeJson !== undefined ? (input.beforeJson as object) : undefined,
+          input.beforeJson !== undefined
+            ? (input.beforeJson as object)
+            : undefined,
         afterJson:
-          input.afterJson !== undefined ? (input.afterJson as object) : undefined,
+          input.afterJson !== undefined
+            ? (input.afterJson as object)
+            : undefined,
         reason: input.reason,
       },
       select: {

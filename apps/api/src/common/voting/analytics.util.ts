@@ -21,9 +21,17 @@ const BREAKDOWN_LABEL_ORDER: Record<string, number> = {
   ADVANCED: 22,
   EXPERT: 23,
 
-  RESIDENT: 30,
-  NON_RESIDENT: 31,
-  VISITOR: 32,
+  NO_FORMAL_STUDY: 30,
+  SECONDARY_EDUCATION: 31,
+  VOCATIONAL_CERTIFICATION: 32,
+  BACHELOR_DEGREE: 33,
+  MASTER_DEGREE: 34,
+  DOCTORATE: 35,
+  POST_DOCTORATE: 36,
+
+  RESIDENT: 40,
+  NON_RESIDENT: 41,
+  VISITOR: 42,
 
   PREFER_NOT_TO_SAY: 90,
   OTHER: 91,
@@ -32,8 +40,12 @@ const BREAKDOWN_LABEL_ORDER: Record<string, number> = {
   Unknown: 92,
 };
 
-function normalizeLabel(value?: string | null): string {
-  const trimmed = (value ?? '').trim();
+function normalizeLabel(value?: string | number | null): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(Math.trunc(value));
+  }
+
+  const trimmed = String(value ?? '').trim();
 
   if (!trimmed) {
     return 'Unknown';
@@ -66,6 +78,21 @@ function sortBreakdownItems(a: BreakdownItem, b: BreakdownItem): number {
     return 1;
   }
 
+  const aNumeric = /^\d+$/.test(a.label) ? Number(a.label) : Number.NaN;
+  const bNumeric = /^\d+$/.test(b.label) ? Number(b.label) : Number.NaN;
+
+  if (Number.isFinite(aNumeric) && Number.isFinite(bNumeric)) {
+    return aNumeric - bNumeric;
+  }
+
+  if (Number.isFinite(aNumeric)) {
+    return -1;
+  }
+
+  if (Number.isFinite(bNumeric)) {
+    return 1;
+  }
+
   return b.count - a.count || a.label.localeCompare(b.label);
 }
 
@@ -92,7 +119,7 @@ function buildFromNormalizedLabels(labels: string[]): BreakdownItem[] {
 }
 
 export function buildBreakdown(
-  values: Array<string | null | undefined>,
+  values: Array<string | number | null | undefined>,
 ): BreakdownItem[] {
   const labels = values.map((value) => normalizeLabel(value));
   return buildFromNormalizedLabels(labels);

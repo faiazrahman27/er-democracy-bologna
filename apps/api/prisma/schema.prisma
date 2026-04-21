@@ -140,6 +140,8 @@ model Assessment {
   stakeholderRole     String?   @db.VarChar(100)
   backgroundCategory  String?   @db.VarChar(100)
   experienceLevel     String?   @db.VarChar(100)
+  yearsOfExperience   Int?
+  studyLevel          String?   @db.VarChar(100)
   relationshipToArea  String?   @db.VarChar(100)
   assessmentCompleted Boolean   @default(false)
   completedAt         DateTime?
@@ -153,6 +155,8 @@ model Assessment {
   @@index([stakeholderRole])
   @@index([backgroundCategory])
   @@index([experienceLevel])
+  @@index([yearsOfExperience])
+  @@index([studyLevel])
   @@index([country])
   @@index([region])
   @@index([city])
@@ -219,10 +223,12 @@ model VoteDisplaySettings {
   showLocationBreakdown    Boolean @default(false)
 
   // ✅ NEW FIELDS
-  showAgeRangeBreakdown        Boolean @default(false)
-  showGenderBreakdown          Boolean @default(false)
-  showExperienceLevelBreakdown Boolean @default(false)
-  showRelationshipBreakdown    Boolean @default(false)
+  showAgeRangeBreakdown          Boolean @default(false)
+  showGenderBreakdown            Boolean @default(false)
+  showExperienceLevelBreakdown   Boolean @default(false)
+  showYearsOfExperienceBreakdown Boolean @default(false)
+  showStudyLevelBreakdown        Boolean @default(false)
+  showRelationshipBreakdown      Boolean @default(false)
 
   showAfterVotingOnly     Boolean @default(false)
   showOnlyAfterVoteCloses Boolean @default(false)

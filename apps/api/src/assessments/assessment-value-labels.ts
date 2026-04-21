@@ -96,17 +96,36 @@ const STORED_VALUE_LABELS: Record<string, string> = {
   INTERMEDIATE: 'Intermediate',
   ADVANCED: 'Advanced',
   EXPERT: 'Expert',
+  NO_FORMAL_STUDY: 'No formal study',
+  SECONDARY_EDUCATION: 'Secondary education',
+  VOCATIONAL_CERTIFICATION: 'Vocational certification',
+  BACHELOR_DEGREE: "Bachelor's degree",
+  MASTER_DEGREE: "Master's degree",
+  DOCTORATE: 'Doctorate',
+  POST_DOCTORATE: 'Post-doctorate',
   RESIDENT: 'Resident',
   NON_RESIDENT: 'Non-resident',
   VISITOR: 'Visitor',
   SELF_ASSESSMENT: 'Self-assessment',
 };
 
-export function formatStoredValueLabel(value?: string | null): string {
-  const trimmed = value?.trim();
+function formatYearsOfExperienceLabel(years: number): string {
+  return `${years} ${years === 1 ? 'year' : 'years'}`;
+}
+
+export function formatStoredValueLabel(value?: string | number | null): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return formatYearsOfExperienceLabel(value);
+  }
+
+  const trimmed = String(value ?? '').trim();
 
   if (!trimmed) {
     return '';
+  }
+
+  if (/^\d+$/.test(trimmed)) {
+    return formatYearsOfExperienceLabel(Number(trimmed));
   }
 
   const exactLabel = STORED_VALUE_LABELS[trimmed];

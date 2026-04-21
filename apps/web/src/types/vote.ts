@@ -56,6 +56,8 @@ export type PublicVoteDetail = {
     showAgeRangeBreakdown: boolean;
     showGenderBreakdown: boolean;
     showExperienceLevelBreakdown: boolean;
+    showYearsOfExperienceBreakdown: boolean;
+    showStudyLevelBreakdown: boolean;
     showRelationshipBreakdown: boolean;
     showAfterVotingOnly: boolean;
     showOnlyAfterVoteCloses: boolean;

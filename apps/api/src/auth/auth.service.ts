@@ -180,8 +180,9 @@ export class AuthService {
       role: user.role,
     });
 
-    const refreshToken =
-      await this.refreshTokenService.createPlainRefreshToken(user.id);
+    const refreshToken = await this.refreshTokenService.createPlainRefreshToken(
+      user.id,
+    );
     await this.refreshTokenService.storeRefreshToken(user.id, refreshToken);
 
     await this.logAuthEventSafely({
@@ -211,15 +212,16 @@ export class AuthService {
     };
   }
 
-  async refreshAccessTokenFromRefreshToken(refreshToken: string) {
-    this.refreshTokenService.assertRefreshTokenPresent(refreshToken);
+  async refreshAccessTokenFromRefreshToken(refreshToken?: string | null) {
+    const presentRefreshToken =
+      this.refreshTokenService.assertRefreshTokenPresent(refreshToken);
 
     const verifiedToken =
-      await this.refreshTokenService.verifyRefreshToken(refreshToken);
+      await this.refreshTokenService.verifyRefreshToken(presentRefreshToken);
     const userId = verifiedToken.sub;
     const tokenRecord = await this.refreshTokenService.findValidTokenRecord(
       userId,
-      refreshToken,
+      presentRefreshToken,
     );
 
     if (!tokenRecord) {
@@ -614,9 +616,7 @@ export class AuthService {
     }
 
     if (!frontendUrl) {
-      throw new InternalServerErrorException(
-        'FRONTEND_URL is not configured',
-      );
+      throw new InternalServerErrorException('FRONTEND_URL is not configured');
     }
 
     const resend = new Resend(resendApiKey);
@@ -678,9 +678,7 @@ export class AuthService {
     }
 
     if (!frontendUrl) {
-      throw new InternalServerErrorException(
-        'FRONTEND_URL is not configured',
-      );
+      throw new InternalServerErrorException('FRONTEND_URL is not configured');
     }
 
     const resend = new Resend(resendApiKey);
