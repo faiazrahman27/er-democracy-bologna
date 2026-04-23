@@ -9,6 +9,12 @@ import {
   updateAdminVote,
   uploadAdminVoteCover,
 } from "@/lib/admin-votes";
+import {
+  WeightedQuestionsEditor,
+  buildWeightedQuestionPayload,
+  normalizeWeightedQuestionDrafts,
+  type WeightedQuestionDraft,
+} from "@/components/admin/WeightedQuestionsEditor";
 import { isAdminRole } from "@/lib/roles";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { formatEnumLabel } from "@/lib/format";
@@ -30,6 +36,9 @@ export default function AdminEditConsultationPage() {
     | "ARCHIVED"
     | "CANCELLED"
   >("PUBLISHED");
+  const [voteType, setVoteType] = useState<
+    "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT"
+  >("GENERAL");
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
   const [isPublished, setIsPublished] = useState(false);
@@ -61,6 +70,9 @@ export default function AdminEditConsultationPage() {
     useState(false);
   const [showAfterVotingOnly, setShowAfterVotingOnly] = useState(false);
   const [showOnlyAfterVoteCloses, setShowOnlyAfterVoteCloses] = useState(false);
+  const [weightedQuestions, setWeightedQuestions] = useState<
+    WeightedQuestionDraft[]
+  >([]);
 
   const [hasSubmissions, setHasSubmissions] = useState(false);
 
@@ -96,6 +108,9 @@ export default function AdminEditConsultationPage() {
         setTitle(vote.title);
         setSummary(vote.summary);
         setMethodologySummary(vote.methodologySummary ?? "");
+        setVoteType(
+          vote.voteType as "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT",
+        );
         setStatus(
           vote.status as
             | "DRAFT"
@@ -156,6 +171,7 @@ export default function AdminEditConsultationPage() {
         setShowOnlyAfterVoteCloses(closeOnlyEnabled);
 
         setHasSubmissions((vote.submissionCount ?? 0) > 0);
+        setWeightedQuestions(normalizeWeightedQuestionDrafts(vote.weightedQuestions));
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to load consultation",
@@ -258,6 +274,11 @@ export default function AdminEditConsultationPage() {
     setSuccessMessage(null);
 
     try {
+      const weightedQuestionPayload =
+        voteType === "SPECIALIZED" && !coreFieldsLocked
+          ? buildWeightedQuestionPayload(weightedQuestions)
+          : undefined;
+
       const payload = coreFieldsLocked
         ? {
             status,
@@ -302,6 +323,7 @@ export default function AdminEditConsultationPage() {
             showRelationshipBreakdown,
             showAfterVotingOnly: normalizedShowAfterVotingOnly,
             showOnlyAfterVoteCloses,
+            weightedQuestions: weightedQuestionPayload,
           };
 
       await updateAdminVote(token, params.slug, payload);
@@ -604,6 +626,27 @@ export default function AdminEditConsultationPage() {
                   </label>
                 </div>
               </section>
+
+              {voteType === "SPECIALIZED" ? (
+                <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
+                  <div className="mb-5">
+                    <h2 className="text-lg font-semibold">
+                      Specialized weighted questions
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Configure additional specialized-only questions whose
+                      selected answers adjust the final specialized vote weight.
+                      These questions lock once submissions exist.
+                    </p>
+                  </div>
+
+                  <WeightedQuestionsEditor
+                    value={weightedQuestions}
+                    onChange={setWeightedQuestions}
+                    disabled={coreFieldsLocked}
+                  />
+                </section>
+              ) : null}
             </div>
 
             <div className="space-y-6">

@@ -93,6 +93,9 @@ export function ConsultationInteractions({ vote }: Props) {
 
   const [selectedOptionId, setSelectedOptionId] = useState<string>("");
   const [selfAssessmentScore, setSelfAssessmentScore] = useState<number>(5);
+  const [weightedQuestionSelections, setWeightedQuestionSelections] = useState<
+    Record<string, string>
+  >({});
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(
     null,
   );
@@ -121,6 +124,8 @@ export function ConsultationInteractions({ vote }: Props) {
 
   const requiresAssessment = vote.voteType === "SPECIALIZED";
   const requiresSelfAssessmentScore = vote.voteType === "SELF_ASSESSMENT";
+  const specializedWeightedQuestions =
+    vote.voteType === "SPECIALIZED" ? vote.weightedQuestions : [];
   const canAttemptVote = vote.derivedStatus === "ONGOING";
   const resultVisibilityMode =
     vote.displaySettings?.resultVisibilityMode ?? "HIDE_ALL";
@@ -280,6 +285,10 @@ export function ConsultationInteractions({ vote }: Props) {
     void loadPanels();
   }, [vote.slug, token]);
 
+  useEffect(() => {
+    setWeightedQuestionSelections({});
+  }, [vote.id]);
+
   async function handleSubmitVote() {
     if (!token) {
       router.push(`/login?redirectTo=/consultations/${vote.slug}`);
@@ -291,6 +300,17 @@ export function ConsultationInteractions({ vote }: Props) {
       return;
     }
 
+    if (
+      specializedWeightedQuestions.some(
+        (question) => !weightedQuestionSelections[question.id],
+      )
+    ) {
+      setSubmissionError(
+        "Please answer all specialized weighted questions before submitting.",
+      );
+      return;
+    }
+
     setSubmissionError(null);
     setSubmissionMessage(null);
     setIsSubmitting(true);
@@ -299,6 +319,16 @@ export function ConsultationInteractions({ vote }: Props) {
       const response = await submitVote(vote.slug, token, {
         selectedOptionId,
         ...(requiresSelfAssessmentScore ? { selfAssessmentScore } : {}),
+        ...(specializedWeightedQuestions.length > 0
+          ? {
+              weightedQuestionAnswers: specializedWeightedQuestions.map(
+                (question) => ({
+                  questionId: question.id,
+                  optionId: weightedQuestionSelections[question.id],
+                }),
+              ),
+            }
+          : {}),
       });
 
       setSubmissionMessage(
@@ -542,6 +572,79 @@ export function ConsultationInteractions({ vote }: Props) {
                 This consultation requires a completed assessment profile before
                 you can participate.
               </NoticeBox>
+            ) : null}
+
+            {specializedWeightedQuestions.length > 0 ? (
+              <div className="mt-6 rounded-2xl bg-white px-5 py-5 shadow-sm ring-1 ring-slate-200">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Specialized weighting questions
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Answer each question to complete your specialized vote.
+                    These answers adjust the final specialized weight before it
+                    is stored.
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-5">
+                  {specializedWeightedQuestions.map((question) => (
+                    <div
+                      key={question.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        Question {question.displayOrder}
+                      </p>
+                      <p className="mt-2 text-base font-medium leading-7 text-slate-900">
+                        {question.prompt}
+                      </p>
+
+                      <div className="mt-4 grid gap-3">
+                        {question.answerOptions.map((answerOption) => {
+                          const isSelected =
+                            weightedQuestionSelections[question.id] ===
+                            answerOption.id;
+
+                          return (
+                            <label
+                              key={answerOption.id}
+                              className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition ${
+                                isSelected
+                                  ? "border-green-300 bg-green-50"
+                                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`weighted-question-${question.id}`}
+                                value={answerOption.id}
+                                checked={isSelected}
+                                disabled={!canAttemptVote}
+                                onChange={() =>
+                                  setWeightedQuestionSelections((current) => ({
+                                    ...current,
+                                    [question.id]: answerOption.id,
+                                  }))
+                                }
+                                className="mt-1"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                                  Answer {answerOption.displayOrder}
+                                </p>
+                                <p className="mt-1 text-sm leading-6 text-slate-800">
+                                  {answerOption.optionText}
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : null}
 
             {requiresSelfAssessmentScore ? (

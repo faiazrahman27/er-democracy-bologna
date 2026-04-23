@@ -4,20 +4,21 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
-import { fetchAssessmentBySecretUserId } from "@/lib/assessments-admin";
+import {
+  fetchAssessmentBySecretUserId,
+  type AdminAssessmentSecretInspection,
+} from "@/lib/assessments-admin";
 import { isAdminRole } from "@/lib/roles";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { formatDateTime, formatEnumLabel } from "@/lib/format";
-import type { Assessment } from "@/types/assessment";
-
-type AdminAssessmentRecord = Omit<Assessment, "userId">;
+import { formatWeight } from "@/lib/admin-format";
 
 export default function AdminAssessmentDetailPage() {
   const router = useRouter();
   const params = useParams<{ secretUserId: string }>();
   const { user, token, isLoading } = useAuth();
 
-  const [assessment, setAssessment] = useState<AdminAssessmentRecord | null>(
+  const [assessment, setAssessment] = useState<AdminAssessmentSecretInspection | null>(
     null,
   );
   const [pageLoading, setPageLoading] = useState(true);
@@ -323,6 +324,120 @@ export default function AdminAssessmentDetailPage() {
             </div>
           </div>
         </section>
+
+        <section className="border-t border-slate-200 pt-10">
+          <div className="mb-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Specialized vote inspection
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+              Stored weighted-question answers
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+              These records show how weighted-question answers adjusted final
+              specialized vote weights for this pseudonymous participant.
+            </p>
+          </div>
+
+          {assessment.specializedVoteSubmissions.length === 0 ? (
+            <div className="rounded-2xl bg-white px-4 py-4 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
+              No specialized vote submissions with weighted questions were found
+              for this secret user ID.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {assessment.specializedVoteSubmissions.map((submission) => (
+                <div
+                  key={submission.submissionId}
+                  className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Specialized submission
+                      </p>
+                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">
+                        <Link
+                          href={`/admin/consultations/${submission.vote.slug}`}
+                          className="hover:text-slate-700"
+                        >
+                          {submission.vote.title}
+                        </Link>
+                      </h3>
+                      <p className="mt-2 text-sm text-slate-600">
+                        Submitted {formatDateTime(submission.submittedAt)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200">
+                      <p>
+                        <span className="font-medium text-slate-900">
+                          Final weight:
+                        </span>{" "}
+                        {formatWeight(submission.weightUsed)}
+                      </p>
+                      {submission.specializedBaseWeightUsed !== null ? (
+                        <p className="mt-1">
+                          <span className="font-medium text-slate-900">
+                            Base weight:
+                          </span>{" "}
+                          {formatWeight(submission.specializedBaseWeightUsed)}
+                        </p>
+                      ) : null}
+                      {submission.specializedQuestionModifierTotal !== null ? (
+                        <p className="mt-1">
+                          <span className="font-medium text-slate-900">
+                            Modifier total:
+                          </span>{" "}
+                          {formatSignedWeight(
+                            submission.specializedQuestionModifierTotal,
+                          )}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
+                    <p className="text-sm text-slate-700">
+                      <span className="font-medium text-slate-900">
+                        Selected consultation option:
+                      </span>{" "}
+                      {submission.selectedOptionText}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {submission.weightedQuestionAnswers.map((answer) => (
+                      <div
+                        key={`${submission.submissionId}-${answer.questionId}`}
+                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          Question {answer.questionDisplayOrder}
+                        </p>
+                        <p className="mt-2 text-sm font-medium leading-7 text-slate-900">
+                          {answer.questionPrompt}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-700">
+                          <span className="font-medium text-slate-900">
+                            Selected answer:
+                          </span>{" "}
+                          {answer.selectedOptionText}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-700">
+                          <span className="font-medium text-slate-900">
+                            Modifier:
+                          </span>{" "}
+                          {formatSignedWeight(answer.modifierUsed)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
@@ -334,6 +449,16 @@ function formatAssessmentEnumValue(value: string | number | null) {
   }
 
   return formatEnumLabel(value);
+}
+
+function formatSignedWeight(value: string | number) {
+  const numeric = typeof value === "number" ? value : Number(value);
+
+  if (Number.isNaN(numeric)) {
+    return String(value);
+  }
+
+  return `${numeric >= 0 ? "+" : ""}${numeric.toFixed(4)}`;
 }
 
 function StatCard({

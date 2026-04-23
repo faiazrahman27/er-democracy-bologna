@@ -1097,6 +1097,32 @@ export default function AdminConsultationDetailPage() {
                           </span>{" "}
                           {formatWeight(participant.weightUsed)}
                         </p>
+                        {canLookupAssessment &&
+                        participant.specializedBaseWeightUsed !== null &&
+                        typeof participant.specializedBaseWeightUsed !==
+                          "undefined" ? (
+                          <p className="mt-1">
+                            <span className="font-medium text-slate-900">
+                              Specialized base weight:
+                            </span>{" "}
+                            {formatWeight(
+                              participant.specializedBaseWeightUsed,
+                            )}
+                          </p>
+                        ) : null}
+                        {canLookupAssessment &&
+                        participant.specializedQuestionModifierTotal !== null &&
+                        typeof participant.specializedQuestionModifierTotal !==
+                          "undefined" ? (
+                          <p className="mt-1">
+                            <span className="font-medium text-slate-900">
+                              Question modifier total:
+                            </span>{" "}
+                            {formatSignedWeight(
+                              participant.specializedQuestionModifierTotal,
+                            )}
+                          </p>
+                        ) : null}
                         <p className="mt-1">
                           <span className="font-medium text-slate-900">
                             Calculation:
@@ -1117,6 +1143,44 @@ export default function AdminConsultationDetailPage() {
                           </span>{" "}
                           {participant.hasCompletedAssessment ? "Yes" : "No"}
                         </p>
+                        {canLookupAssessment &&
+                        participant.weightedQuestionAnswers &&
+                        participant.weightedQuestionAnswers.length > 0 ? (
+                          <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                              Weighted question answers
+                            </p>
+                            <div className="mt-3 space-y-3">
+                              {participant.weightedQuestionAnswers.map(
+                                (answer) => (
+                                  <div
+                                    key={`${participant.submissionId}-${answer.questionId}`}
+                                    className="rounded-2xl bg-slate-50 px-3 py-3 ring-1 ring-slate-200"
+                                  >
+                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                                      Question {answer.questionDisplayOrder}
+                                    </p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                      {answer.questionPrompt}
+                                    </p>
+                                    <p className="mt-2 text-sm text-slate-700">
+                                      <span className="font-medium text-slate-900">
+                                        Selected answer:
+                                      </span>{" "}
+                                      {answer.selectedOptionText}
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-700">
+                                      <span className="font-medium text-slate-900">
+                                        Modifier:
+                                      </span>{" "}
+                                      {formatSignedWeight(answer.modifierUsed)}
+                                    </p>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     ))
                   )}
@@ -1141,6 +1205,16 @@ function formatBreakdownItems(
     ...item,
     label: formatEnumLabel(item.label),
   }));
+}
+
+function formatSignedWeight(value: string | number) {
+  const numeric = typeof value === "number" ? value : Number(value);
+
+  if (Number.isNaN(numeric)) {
+    return String(value);
+  }
+
+  return `${numeric >= 0 ? "+" : ""}${numeric.toFixed(4)}`;
 }
 
 function InfoCard({

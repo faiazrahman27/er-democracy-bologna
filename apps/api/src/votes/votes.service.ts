@@ -5,10 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import ExcelJS from 'exceljs';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVoteDto } from './dto/create-vote.dto';
 import { UpdateVoteDto } from './dto/update-vote.dto';
 import { SubmitVoteDto } from './dto/submit-vote.dto';
+import { CreateVoteWeightedQuestionDto } from './dto/create-vote-weighted-question.dto';
 import { calculateVoteWeight } from '../common/voting/vote-weight.util';
 import {
   evaluateAnalyticsVisibility,
@@ -19,6 +21,9 @@ import { buildBreakdown } from '../common/voting/analytics.util';
 import { formatStoredValueLabel } from '../assessments/assessment-value-labels';
 
 const PUBLICLY_ACCESSIBLE_VOTE_STATUSES = ['PUBLISHED', 'CLOSED'] as const;
+const MIN_SPECIALIZED_FINAL_WEIGHT = 0.5;
+const MAX_SPECIALIZED_FINAL_WEIGHT = 2.0;
+const MAX_WEIGHTED_QUESTION_MODIFIER_DECIMAL_PLACES = 4;
 
 type AdminAnalyticsExportOptions = {
   includeParticipantSheet?: boolean;
@@ -30,6 +35,26 @@ type AdminParticipantsOptions = {
   includeSecretUserId?: boolean;
 };
 
+type NormalizedWeightedQuestionConfig = {
+  prompt: string;
+  displayOrder: number;
+  answerOptions: Array<{
+    optionText: string;
+    modifier: number;
+    displayOrder: number;
+  }>;
+};
+
+type ResolvedWeightedQuestionAnswer = {
+  questionId: string;
+  optionId: string;
+  questionPrompt: string;
+  questionDisplayOrder: number;
+  selectedOptionText: string;
+  optionDisplayOrder: number;
+  modifierUsed: number;
+};
+
 @Injectable()
 export class VotesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -39,6 +64,10 @@ export class VotesService {
     const endAt = new Date(dto.endAt);
     const displaySettings = normalizeVisibilityTimingSettings(
       dto.displaySettings,
+    );
+    const weightedQuestions = this.normalizeWeightedQuestions(
+      dto.voteType,
+      dto.weightedQuestions,
     );
 
     if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
@@ -94,6 +123,22 @@ export class VotesService {
             displayOrder: option.displayOrder,
           })),
         },
+        weightedQuestions:
+          weightedQuestions.length > 0
+            ? {
+                create: weightedQuestions.map((question) => ({
+                  prompt: question.prompt,
+                  displayOrder: question.displayOrder,
+                  answerOptions: {
+                    create: question.answerOptions.map((option) => ({
+                      optionText: option.optionText,
+                      modifier: option.modifier,
+                      displayOrder: option.displayOrder,
+                    })),
+                  },
+                })),
+              }
+            : undefined,
         displaySettings: {
           create: {
             resultVisibilityMode: displaySettings.resultVisibilityMode,
@@ -271,6 +316,26 @@ export class VotesService {
             displayOrder: 'asc',
           },
         },
+        weightedQuestions: {
+          select: {
+            id: true,
+            prompt: true,
+            displayOrder: true,
+            answerOptions: {
+              select: {
+                id: true,
+                optionText: true,
+                displayOrder: true,
+              },
+              orderBy: {
+                displayOrder: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            displayOrder: 'asc',
+          },
+        },
         displaySettings: {
           select: {
             resultVisibilityMode: true,
@@ -346,6 +411,7 @@ export class VotesService {
       where: { slug: normalizedSlug },
       select: {
         id: true,
+        voteType: true,
         title: true,
         summary: true,
         methodologySummary: true,
@@ -403,7 +469,8 @@ export class VotesService {
         dto.title !== undefined ||
         dto.summary !== undefined ||
         dto.methodologySummary !== undefined ||
-        dto.startAt !== undefined;
+        dto.startAt !== undefined ||
+        dto.weightedQuestions !== undefined;
 
       if (attemptedCoreChanges) {
         throw new ForbiddenException(
@@ -480,6 +547,14 @@ export class VotesService {
           })
         : null;
 
+    const nextWeightedQuestions =
+      dto.weightedQuestions !== undefined
+        ? this.normalizeWeightedQuestions(
+            existingVote.voteType,
+            dto.weightedQuestions,
+          )
+        : null;
+
     return this.prisma.vote.update({
       where: { slug: normalizedSlug },
       data: {
@@ -510,6 +585,27 @@ export class VotesService {
               ? null
               : undefined,
         lockedAt: hasSubmissions ? new Date() : undefined,
+        weightedQuestions:
+          nextWeightedQuestions !== null
+            ? {
+                deleteMany: {},
+                ...(nextWeightedQuestions.length > 0
+                  ? {
+                      create: nextWeightedQuestions.map((question) => ({
+                        prompt: question.prompt,
+                        displayOrder: question.displayOrder,
+                        answerOptions: {
+                          create: question.answerOptions.map((option) => ({
+                            optionText: option.optionText,
+                            modifier: option.modifier,
+                            displayOrder: option.displayOrder,
+                          })),
+                        },
+                      })),
+                    }
+                  : {}),
+              }
+            : undefined,
         displaySettings: nextDisplaySettings
           ? {
               update: {
@@ -563,6 +659,27 @@ export class VotesService {
         options: {
           select: {
             id: true,
+          },
+        },
+        weightedQuestions: {
+          select: {
+            id: true,
+            prompt: true,
+            displayOrder: true,
+            answerOptions: {
+              select: {
+                id: true,
+                optionText: true,
+                modifier: true,
+                displayOrder: true,
+              },
+              orderBy: {
+                displayOrder: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            displayOrder: 'asc',
           },
         },
       },
@@ -667,6 +784,15 @@ export class VotesService {
       }
     }
 
+    if (
+      vote.voteType !== 'SPECIALIZED' &&
+      dto.weightedQuestionAnswers !== undefined
+    ) {
+      throw new BadRequestException(
+        'Weighted question answers are only allowed for specialized votes',
+      );
+    }
+
     let weightResult;
     try {
       weightResult = calculateVoteWeight({
@@ -686,6 +812,32 @@ export class VotesService {
       );
     }
 
+    const resolvedWeightedQuestionAnswers =
+      vote.voteType === 'SPECIALIZED'
+        ? this.resolveWeightedQuestionAnswers(
+            vote.weightedQuestions,
+            dto.weightedQuestionAnswers,
+          )
+        : [];
+
+    const specializedBaseWeightUsed =
+      vote.voteType === 'SPECIALIZED' ? weightResult.weightUsed : null;
+    const specializedQuestionModifierTotal =
+      vote.voteType === 'SPECIALIZED'
+        ? this.roundWeight(
+            resolvedWeightedQuestionAnswers.reduce(
+              (sum, answer) => sum + answer.modifierUsed,
+              0,
+            ),
+          )
+        : null;
+    const finalWeightUsed =
+      vote.voteType === 'SPECIALIZED'
+        ? this.clampSpecializedFinalWeight(
+            weightResult.weightUsed + (specializedQuestionModifierTotal ?? 0),
+          )
+        : weightResult.weightUsed;
+
     try {
       return await this.prisma.voteSubmission.create({
         data: {
@@ -696,8 +848,20 @@ export class VotesService {
             vote.voteType === 'SELF_ASSESSMENT'
               ? (dto.selfAssessmentScore ?? null)
               : null,
-          weightUsed: weightResult.weightUsed,
+          specializedBaseWeightUsed,
+          specializedQuestionModifierTotal,
+          weightUsed: finalWeightUsed,
           calculationType: weightResult.calculationType,
+          weightedQuestionAnswers:
+            resolvedWeightedQuestionAnswers.length > 0
+              ? {
+                  create: resolvedWeightedQuestionAnswers.map((answer) => ({
+                    questionId: answer.questionId,
+                    optionId: answer.optionId,
+                    modifierUsed: answer.modifierUsed,
+                  })),
+                }
+              : undefined,
         },
         select: {
           id: true,
@@ -712,6 +876,12 @@ export class VotesService {
         },
       });
     } catch (error) {
+      if (this.isWeightedQuestionAnswerIntegrityError(error)) {
+        throw new BadRequestException(
+          'Weighted question answers failed integrity checks',
+        );
+      }
+
       if (this.isDuplicateVoteSubmissionError(error)) {
         throw new ForbiddenException(
           'You have already voted on this consultation',
@@ -1286,10 +1456,31 @@ export class VotesService {
           select: {
             id: true,
             selectedOptionId: true,
+            specializedBaseWeightUsed: true,
+            specializedQuestionModifierTotal: true,
             weightUsed: true,
             calculationType: true,
             selfAssessmentScore: true,
             submittedAt: true,
+            weightedQuestionAnswers: {
+              select: {
+                questionId: true,
+                optionId: true,
+                modifierUsed: true,
+                weightedQuestion: {
+                  select: {
+                    prompt: true,
+                    displayOrder: true,
+                  },
+                },
+                selectedAnswerOption: {
+                  select: {
+                    optionText: true,
+                    displayOrder: true,
+                  },
+                },
+              },
+            },
             user: {
               select: {
                 assessment: {
@@ -1332,6 +1523,28 @@ export class VotesService {
         submittedAt: submission.submittedAt,
         hasCompletedAssessment:
           submission.user.assessment?.assessmentCompleted ?? false,
+        ...(includeSecretUserId
+          ? {
+              specializedBaseWeightUsed:
+                submission.specializedBaseWeightUsed ?? null,
+              specializedQuestionModifierTotal:
+                submission.specializedQuestionModifierTotal ?? null,
+              weightedQuestionAnswers: submission.weightedQuestionAnswers
+                .map((answer) => ({
+                  questionId: answer.questionId,
+                  questionPrompt: answer.weightedQuestion.prompt,
+                  questionDisplayOrder: answer.weightedQuestion.displayOrder,
+                  selectedOptionId: answer.optionId,
+                  selectedOptionText: answer.selectedAnswerOption.optionText,
+                  optionDisplayOrder: answer.selectedAnswerOption.displayOrder,
+                  modifierUsed: answer.modifierUsed,
+                }))
+                .sort(
+                  (left, right) =>
+                    left.questionDisplayOrder - right.questionDisplayOrder,
+                ),
+            }
+          : {}),
       })),
     };
   }
@@ -1804,6 +2017,211 @@ export class VotesService {
     });
   }
 
+  private normalizeWeightedQuestions(
+    voteType: string,
+    weightedQuestions: CreateVoteWeightedQuestionDto[] | undefined,
+  ): NormalizedWeightedQuestionConfig[] {
+    const questions = weightedQuestions ?? [];
+
+    if (voteType !== 'SPECIALIZED') {
+      if (weightedQuestions !== undefined) {
+        throw new BadRequestException(
+          'Weighted questions are only supported for specialized votes',
+        );
+      }
+
+      return [];
+    }
+
+    const uniqueDisplayOrders = new Set(
+      questions.map((question) => question.displayOrder),
+    );
+
+    if (uniqueDisplayOrders.size !== questions.length) {
+      throw new BadRequestException(
+        'Weighted question displayOrder values must be unique',
+      );
+    }
+
+    return questions
+      .map((question) => {
+        const prompt = question.prompt?.trim();
+
+        if (!prompt) {
+          throw new BadRequestException(
+            'Weighted question prompts cannot be empty',
+          );
+        }
+
+        if (!Array.isArray(question.answerOptions) || question.answerOptions.length < 2) {
+          throw new BadRequestException(
+            'Weighted questions must include at least two answer options',
+          );
+        }
+
+        const uniqueOptionDisplayOrders = new Set(
+          question.answerOptions.map((option) => option.displayOrder),
+        );
+
+        if (uniqueOptionDisplayOrders.size !== question.answerOptions.length) {
+          throw new BadRequestException(
+            'Weighted question option displayOrder values must be unique',
+          );
+        }
+
+        return {
+          prompt,
+          displayOrder: question.displayOrder,
+          answerOptions: question.answerOptions
+            .map((option) => {
+              const optionText = option.optionText?.trim();
+
+              if (!optionText) {
+                throw new BadRequestException(
+                  'Weighted question answer options cannot be empty',
+                );
+              }
+
+              return {
+                optionText,
+                modifier: this.normalizeModifierValue(option.modifier),
+                displayOrder: option.displayOrder,
+              };
+            })
+            .sort((left, right) => left.displayOrder - right.displayOrder),
+        };
+      })
+      .sort((left, right) => left.displayOrder - right.displayOrder);
+  }
+
+  private resolveWeightedQuestionAnswers(
+    weightedQuestions: Array<{
+      id: string;
+      prompt: string;
+      displayOrder: number;
+      answerOptions: Array<{
+        id: string;
+        optionText: string;
+        modifier: unknown;
+        displayOrder: number;
+      }>;
+    }>,
+    submittedAnswers: SubmitVoteDto['weightedQuestionAnswers'],
+  ): ResolvedWeightedQuestionAnswer[] {
+    if (weightedQuestions.length === 0) {
+      if ((submittedAnswers?.length ?? 0) > 0) {
+        throw new BadRequestException(
+          'This specialized vote does not have weighted questions',
+        );
+      }
+
+      return [];
+    }
+
+    if (!submittedAnswers || submittedAnswers.length !== weightedQuestions.length) {
+      throw new BadRequestException('All weighted questions must be answered');
+    }
+
+    const uniqueSubmittedQuestionIds = new Set(
+      submittedAnswers.map((answer) => answer.questionId),
+    );
+
+    if (uniqueSubmittedQuestionIds.size !== submittedAnswers.length) {
+      throw new BadRequestException(
+        'Each weighted question can only be answered once',
+      );
+    }
+
+    const submittedAnswersByQuestionId = new Map(
+      submittedAnswers.map((answer) => [answer.questionId, answer]),
+    );
+
+    for (const submittedAnswer of submittedAnswers) {
+      if (!weightedQuestions.some((question) => question.id === submittedAnswer.questionId)) {
+        throw new BadRequestException(
+          'Weighted question does not belong to this vote',
+        );
+      }
+    }
+
+    return weightedQuestions.map((question) => {
+      const submittedAnswer = submittedAnswersByQuestionId.get(question.id);
+
+      if (!submittedAnswer) {
+        throw new BadRequestException('All weighted questions must be answered');
+      }
+
+      const selectedOption = question.answerOptions.find(
+        (option) => option.id === submittedAnswer.optionId,
+      );
+
+      if (!selectedOption) {
+        throw new BadRequestException(
+          'Weighted question answer option does not belong to its question',
+        );
+      }
+
+      return {
+        questionId: question.id,
+        optionId: selectedOption.id,
+        questionPrompt: question.prompt,
+        questionDisplayOrder: question.displayOrder,
+        selectedOptionText: selectedOption.optionText,
+        optionDisplayOrder: selectedOption.displayOrder,
+        modifierUsed: this.normalizeModifierValue(selectedOption.modifier),
+      };
+    });
+  }
+
+  private normalizeModifierValue(value: unknown): number {
+    const normalizedStringValue =
+      typeof value === 'string' ? value.trim() : value;
+
+    if (normalizedStringValue === '') {
+      throw new BadRequestException(
+        'Weighted question modifiers must be valid decimals',
+      );
+    }
+
+    let decimalValue: Prisma.Decimal;
+
+    try {
+      decimalValue =
+        normalizedStringValue instanceof Prisma.Decimal
+          ? normalizedStringValue
+          : new Prisma.Decimal(normalizedStringValue as string | number);
+    } catch {
+      throw new BadRequestException(
+        'Weighted question modifiers must be valid decimals',
+      );
+    }
+
+    if (
+      !decimalValue.isFinite() ||
+      decimalValue.decimalPlaces() >
+        MAX_WEIGHTED_QUESTION_MODIFIER_DECIMAL_PLACES
+    ) {
+      throw new BadRequestException(
+        'Weighted question modifiers must be valid decimals',
+      );
+    }
+
+    return this.roundWeight(decimalValue.toNumber());
+  }
+
+  private roundWeight(value: number) {
+    return Number(value.toFixed(4));
+  }
+
+  private clampSpecializedFinalWeight(value: number) {
+    return this.roundWeight(
+      Math.min(
+        Math.max(value, MIN_SPECIALIZED_FINAL_WEIGHT),
+        MAX_SPECIALIZED_FINAL_WEIGHT,
+      ),
+    );
+  }
+
   private fullVoteSelect() {
     return {
       id: true,
@@ -1830,6 +2248,31 @@ export class VotesService {
           optionText: true,
           displayOrder: true,
           createdAt: true,
+        },
+        orderBy: {
+          displayOrder: 'asc' as const,
+        },
+      },
+      weightedQuestions: {
+        select: {
+          id: true,
+          prompt: true,
+          displayOrder: true,
+          createdAt: true,
+          updatedAt: true,
+          answerOptions: {
+            select: {
+              id: true,
+              optionText: true,
+              modifier: true,
+              displayOrder: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+            orderBy: {
+              displayOrder: 'asc' as const,
+            },
+          },
         },
         orderBy: {
           displayOrder: 'asc' as const,
@@ -1906,11 +2349,68 @@ export class VotesService {
   }
 
   private isDuplicateVoteSubmissionError(error: unknown) {
-    if (typeof error !== 'object' || error === null) {
+    if (
+      typeof error !== 'object' ||
+      error === null ||
+      !('code' in error) ||
+      error.code !== 'P2002'
+    ) {
       return false;
     }
 
-    return 'code' in error && error.code === 'P2002';
+    const target = this.getPrismaErrorTarget(error);
+
+    if (target.length === 0) {
+      return false;
+    }
+
+    return (
+      target.includes('VoteSubmission_voteId_userId_key') ||
+      (target.includes('voteId') && target.includes('userId'))
+    );
+  }
+
+  private isWeightedQuestionAnswerIntegrityError(error: unknown) {
+    if (typeof error !== 'object' || error === null || !('code' in error)) {
+      return false;
+    }
+
+    if (error.code === 'P2003') {
+      return true;
+    }
+
+    if (error.code !== 'P2002') {
+      return false;
+    }
+
+    const target = this.getPrismaErrorTarget(error);
+
+    return target.includes(
+      'VoteSubmissionWeightedAnswer_voteSubmissionId_questionId_key',
+    );
+  }
+
+  private getPrismaErrorTarget(error: unknown) {
+    if (typeof error !== 'object' || error === null || !('meta' in error)) {
+      return [];
+    }
+
+    const meta =
+      typeof error.meta === 'object' && error.meta !== null ? error.meta : null;
+    const target =
+      meta && 'target' in meta ? (meta.target as string | string[] | undefined) : undefined;
+
+    if (typeof target === 'string') {
+      return [target];
+    }
+
+    if (Array.isArray(target)) {
+      return target.filter(
+        (value): value is string => typeof value === 'string',
+      );
+    }
+
+    return [];
   }
 
   private getDerivedStatus(

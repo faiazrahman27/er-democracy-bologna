@@ -6,6 +6,10 @@ import type {
 export type SubmitVotePayload = {
   selectedOptionId: string;
   selfAssessmentScore?: number;
+  weightedQuestionAnswers?: Array<{
+    questionId: string;
+    optionId: string;
+  }>;
 };
 
 export type SubmitVoteResponse = {

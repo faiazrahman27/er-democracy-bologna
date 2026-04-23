@@ -1,13 +1,18 @@
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
   IsOptional,
   IsString,
   MaxLength,
+  ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { VoteStatusDto } from './create-vote.dto';
 import { ResultVisibilityModeDto } from './create-vote-display-settings.dto';
+import { CreateVoteWeightedQuestionDto } from './create-vote-weighted-question.dto';
 
 export class UpdateVoteDto {
   @IsOptional()
@@ -102,4 +107,10 @@ export class UpdateVoteDto {
   @IsOptional()
   @IsBoolean()
   showOnlyAfterVoteCloses?: boolean;
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateVoteWeightedQuestionDto)
+  weightedQuestions?: CreateVoteWeightedQuestionDto[];
 }

@@ -1,6 +1,24 @@
 import { apiRequest } from "@/lib/api";
 import type { AnalyticsBreakdowns } from "@/types/analytics";
 
+export type AdminVoteWeightedQuestionOption = {
+  id?: string;
+  optionText: string;
+  modifier: number | string;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type AdminVoteWeightedQuestion = {
+  id?: string;
+  prompt: string;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+  answerOptions: AdminVoteWeightedQuestionOption[];
+};
+
 export type AdminCreateVotePayload = {
   slug: string;
   title: string;
@@ -25,6 +43,7 @@ export type AdminCreateVotePayload = {
     optionText: string;
     displayOrder: number;
   }>;
+  weightedQuestions?: AdminVoteWeightedQuestion[];
   displaySettings: {
     resultVisibilityMode:
       | "HIDE_ALL"
@@ -80,6 +99,7 @@ export type AdminUpdateVotePayload = {
   showRelationshipBreakdown?: boolean;
   showAfterVotingOnly?: boolean;
   showOnlyAfterVoteCloses?: boolean;
+  weightedQuestions?: AdminVoteWeightedQuestion[];
 };
 
 export type AdminCreateVoteResponse = {
@@ -121,6 +141,7 @@ export type AdminVoteListItem = {
     displayOrder: number;
     createdAt?: string;
   }>;
+  weightedQuestions?: AdminVoteWeightedQuestion[];
   displaySettings?: {
     id?: string;
     resultVisibilityMode:
@@ -201,11 +222,22 @@ export type AdminParticipantsResponse = {
       secretUserId?: string | null;
       selectedOptionId: string;
       selectedOptionText: string;
+      specializedBaseWeightUsed?: string | number | null;
+      specializedQuestionModifierTotal?: string | number | null;
       weightUsed: string | number;
       calculationType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
       selfAssessmentScore: number | null;
       submittedAt: string;
       hasCompletedAssessment: boolean;
+      weightedQuestionAnswers?: Array<{
+        questionId: string;
+        questionPrompt: string;
+        questionDisplayOrder: number;
+        selectedOptionId: string;
+        selectedOptionText: string;
+        optionDisplayOrder: number;
+        modifierUsed: string | number;
+      }>;
     }>;
   };
 };

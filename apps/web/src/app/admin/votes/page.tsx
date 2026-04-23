@@ -8,6 +8,11 @@ import { isAdminRole } from "@/lib/roles";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { formatEnumLabel } from "@/lib/format";
 import { createAdminVote, uploadAdminVoteCover } from "@/lib/admin-votes";
+import {
+  WeightedQuestionsEditor,
+  buildWeightedQuestionPayload,
+  type WeightedQuestionDraft,
+} from "@/components/admin/WeightedQuestionsEditor";
 
 type OptionInput = {
   optionText: string;
@@ -61,6 +66,9 @@ export default function AdminVotesPage() {
       displayOrder: 2,
     },
   ]);
+  const [weightedQuestions, setWeightedQuestions] = useState<
+    WeightedQuestionDraft[]
+  >([]);
 
   const [resultVisibilityMode, setResultVisibilityMode] = useState<
     "HIDE_ALL" | "SHOW_RAW_ONLY" | "SHOW_WEIGHTED_ONLY" | "SHOW_BOTH"
@@ -240,6 +248,11 @@ export default function AdminVotesPage() {
     setIsSubmitting(true);
 
     try {
+      const weightedQuestionPayload =
+        voteType === "SPECIALIZED"
+          ? buildWeightedQuestionPayload(weightedQuestions)
+          : undefined;
+
       const response = await createAdminVote(token, {
         slug: slug.trim(),
         title: title.trim(),
@@ -254,6 +267,7 @@ export default function AdminVotesPage() {
         endAt: new Date(endAt).toISOString(),
         isPublished,
         options: normalizedOptions,
+        weightedQuestions: weightedQuestionPayload,
         displaySettings: {
           resultVisibilityMode,
           showParticipationStats,
@@ -318,8 +332,8 @@ export default function AdminVotesPage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <h1 className="text-3xl font-semibold">Create Consultation</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-            Use this screen to create a real consultation. For this step, we are
-            validating the self-assessment flow end to end.
+            Use this screen to create a real consultation with its public
+            options, weighting mode, schedule, and visibility settings.
           </p>
 
           <div className="mt-8 grid gap-5 md:grid-cols-2">
@@ -512,6 +526,26 @@ export default function AdminVotesPage() {
               ))}
             </div>
           </div>
+
+          {voteType === "SPECIALIZED" ? (
+            <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+              <h2 className="text-lg font-semibold">
+                Specialized weighted questions
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                Add optional specialized-only questions whose selected answers
+                adjust the final specialized weight after the existing base
+                calculation.
+              </p>
+
+              <div className="mt-5">
+                <WeightedQuestionsEditor
+                  value={weightedQuestions}
+                  onChange={setWeightedQuestions}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-8 rounded-2xl border border-slate-200 p-5">
             <h2 className="text-lg font-semibold">Visibility settings</h2>

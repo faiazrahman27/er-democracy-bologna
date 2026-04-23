@@ -182,10 +182,11 @@ model Vote {
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  createdByAdmin  User                 @relation("VotesCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
-  options         VoteOption[]
-  displaySettings VoteDisplaySettings?
-  submissions     VoteSubmission[]
+  createdByAdmin    User                   @relation("VotesCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  options           VoteOption[]
+  displaySettings   VoteDisplaySettings?
+  submissions       VoteSubmission[]
+  weightedQuestions VoteWeightedQuestion[]
 
   @@index([slug])
   @@index([status])
@@ -240,25 +241,81 @@ model VoteDisplaySettings {
 }
 
 model VoteSubmission {
-  id                  String          @id @default(cuid())
-  voteId              String
-  userId              String
-  selectedOptionId    String
-  selfAssessmentScore Int?
-  weightUsed          Decimal         @db.Decimal(10, 4)
-  calculationType     CalculationType
-  submittedAt         DateTime        @default(now())
-  createdAt           DateTime        @default(now())
+  id                               String          @id @default(cuid())
+  voteId                           String
+  userId                           String
+  selectedOptionId                 String
+  selfAssessmentScore              Int?
+  specializedBaseWeightUsed        Decimal?        @db.Decimal(10, 4)
+  specializedQuestionModifierTotal Decimal?        @db.Decimal(10, 4)
+  weightUsed                       Decimal         @db.Decimal(10, 4)
+  calculationType                  CalculationType
+  submittedAt                      DateTime        @default(now())
+  createdAt                        DateTime        @default(now())
 
-  vote           Vote       @relation(fields: [voteId], references: [id], onDelete: Cascade)
-  user           User       @relation(fields: [userId], references: [id], onDelete: Restrict)
-  selectedOption VoteOption @relation(fields: [selectedOptionId], references: [id], onDelete: Restrict)
+  vote                    Vote                           @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  user                    User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  selectedOption          VoteOption                     @relation(fields: [selectedOptionId], references: [id], onDelete: Restrict)
+  weightedQuestionAnswers VoteSubmissionWeightedAnswer[]
 
   @@unique([voteId, userId])
   @@index([voteId])
   @@index([userId])
   @@index([selectedOptionId])
   @@index([submittedAt])
+}
+
+model VoteWeightedQuestion {
+  id           String   @id @default(cuid())
+  voteId       String
+  prompt       String   @db.VarChar(500)
+  displayOrder Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vote              Vote                           @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  answerOptions     VoteWeightedQuestionOption[]
+  submissionAnswers VoteSubmissionWeightedAnswer[]
+
+  @@unique([voteId, displayOrder])
+  @@index([voteId])
+}
+
+model VoteWeightedQuestionOption {
+  id           String   @id @default(cuid())
+  questionId   String
+  optionText   String   @db.VarChar(300)
+  modifier     Decimal  @db.Decimal(10, 4)
+  displayOrder Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  question          VoteWeightedQuestion           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  submissionAnswers VoteSubmissionWeightedAnswer[]
+
+  @@unique([questionId, id])
+  @@unique([questionId, displayOrder])
+  @@index([questionId])
+}
+
+model VoteSubmissionWeightedAnswer {
+  id               String   @id @default(cuid())
+  voteSubmissionId String
+  questionId       String
+  optionId         String
+  modifierUsed     Decimal  @db.Decimal(10, 4)
+  submittedAt      DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  voteSubmission       VoteSubmission             @relation(fields: [voteSubmissionId], references: [id], onDelete: Cascade)
+  weightedQuestion     VoteWeightedQuestion       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedAnswerOption VoteWeightedQuestionOption @relation(fields: [questionId, optionId], references: [questionId, id], onDelete: Cascade)
+
+  @@unique([voteSubmissionId, questionId])
+  @@index([voteSubmissionId])
+  @@index([questionId])
+  @@index([questionId, optionId])
+  @@index([optionId])
 }
 
 model Article {

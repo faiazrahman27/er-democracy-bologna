@@ -43,6 +43,16 @@ export type PublicVoteDetail = {
     optionText: string;
     displayOrder: number;
   }>;
+  weightedQuestions: Array<{
+    id: string;
+    prompt: string;
+    displayOrder: number;
+    answerOptions: Array<{
+      id: string;
+      optionText: string;
+      displayOrder: number;
+    }>;
+  }>;
   displaySettings: {
     resultVisibilityMode:
       | "HIDE_ALL"

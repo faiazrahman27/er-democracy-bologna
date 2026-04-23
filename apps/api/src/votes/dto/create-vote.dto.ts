@@ -8,11 +8,13 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateVoteOptionDto } from './create-vote-option.dto';
 import { CreateVoteDisplaySettingsDto } from './create-vote-display-settings.dto';
+import { CreateVoteWeightedQuestionDto } from './create-vote-weighted-question.dto';
 
 export enum VoteTypeDto {
   GENERAL = 'GENERAL',
@@ -86,6 +88,12 @@ export class CreateVoteDto {
   @ValidateNested({ each: true })
   @Type(() => CreateVoteOptionDto)
   options!: CreateVoteOptionDto[];
+
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateVoteWeightedQuestionDto)
+  weightedQuestions?: CreateVoteWeightedQuestionDto[];
 
   @ValidateNested()
   @Type(() => CreateVoteDisplaySettingsDto)

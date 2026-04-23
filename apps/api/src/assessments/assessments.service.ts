@@ -130,7 +130,10 @@ export class AssessmentsService {
   ) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { secretUserId },
-      select: PSEUDONYMOUS_ASSESSMENT_SELECT,
+      select: {
+        ...PSEUDONYMOUS_ASSESSMENT_SELECT,
+        userId: true,
+      },
     });
 
     if (!assessment) {
@@ -138,6 +141,62 @@ export class AssessmentsService {
         `No pseudonymous assessment found for secret user ID "${secretUserId}"`,
       );
     }
+
+    const specializedVoteSubmissions = await this.prisma.voteSubmission.findMany(
+      {
+        where: {
+          userId: assessment.userId,
+          vote: {
+            voteType: 'SPECIALIZED',
+            weightedQuestions: {
+              some: {},
+            },
+          },
+        },
+        orderBy: {
+          submittedAt: 'desc',
+        },
+        select: {
+          id: true,
+          submittedAt: true,
+          weightUsed: true,
+          specializedBaseWeightUsed: true,
+          specializedQuestionModifierTotal: true,
+          selectedOption: {
+            select: {
+              id: true,
+              optionText: true,
+            },
+          },
+          vote: {
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+            },
+          },
+          weightedQuestionAnswers: {
+            select: {
+              questionId: true,
+              optionId: true,
+              modifierUsed: true,
+              weightedQuestion: {
+                select: {
+                  prompt: true,
+                  displayOrder: true,
+                },
+              },
+              selectedAnswerOption: {
+                select: {
+                  optionText: true,
+                  displayOrder: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    );
 
     if (adminUserId) {
       await this.auditService.logAdminAction({
@@ -153,7 +212,38 @@ export class AssessmentsService {
       });
     }
 
-    return assessment;
+    const { userId: _userId, ...pseudonymousAssessment } = assessment;
+
+    return {
+      ...pseudonymousAssessment,
+      specializedVoteSubmissions: specializedVoteSubmissions.map(
+        (submission) => ({
+          submissionId: submission.id,
+          submittedAt: submission.submittedAt,
+          vote: submission.vote,
+          selectedOptionId: submission.selectedOption.id,
+          selectedOptionText: submission.selectedOption.optionText,
+          weightUsed: submission.weightUsed,
+          specializedBaseWeightUsed: submission.specializedBaseWeightUsed,
+          specializedQuestionModifierTotal:
+            submission.specializedQuestionModifierTotal,
+          weightedQuestionAnswers: submission.weightedQuestionAnswers
+            .map((answer) => ({
+              questionId: answer.questionId,
+              questionPrompt: answer.weightedQuestion.prompt,
+              questionDisplayOrder: answer.weightedQuestion.displayOrder,
+              selectedOptionId: answer.optionId,
+              selectedOptionText: answer.selectedAnswerOption.optionText,
+              optionDisplayOrder: answer.selectedAnswerOption.displayOrder,
+              modifierUsed: answer.modifierUsed,
+            }))
+            .sort(
+              (left, right) =>
+                left.questionDisplayOrder - right.questionDisplayOrder,
+            ),
+        }),
+      ),
+    };
   }
 
   private normalizeAssessmentDto(

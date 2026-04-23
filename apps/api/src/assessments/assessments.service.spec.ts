@@ -23,6 +23,9 @@ describe('AssessmentsService', () => {
       findUnique: jest.Mock;
       update: jest.Mock;
     };
+    voteSubmission: {
+      findMany: jest.Mock;
+    };
   };
   let auditService: {
     logAdminAction: jest.Mock;
@@ -34,6 +37,9 @@ describe('AssessmentsService', () => {
         create: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
+      },
+      voteSubmission: {
+        findMany: jest.fn(),
       },
     };
     auditService = {
@@ -130,6 +136,121 @@ describe('AssessmentsService', () => {
 
     expect(updateCall.data.assessmentCompleted).toBe(false);
     expect(updateCall.data.completedAt).toBeNull();
+  });
+
+  it('includes specialized weighted-question answers in secret lookup responses', async () => {
+    prismaService.assessment.findUnique.mockResolvedValue({
+      id: 'assessment-1',
+      userId: 'user-1',
+      secretUserId: 'secret-1',
+      ageRange: AssessmentAgeRangeDto.AGE_25_34,
+      gender: AssessmentGenderDto.FEMALE,
+      city: AssessmentCityDto.BOLOGNA,
+      region: AssessmentRegionDto.EMILIA_ROMAGNA,
+      country: AssessmentCountryDto.ITALY,
+      stakeholderRole: AssessmentStakeholderRoleDto.UNIVERSITY_STUDENT,
+      backgroundCategory: AssessmentBackgroundCategoryDto.EDUCATION,
+      experienceLevel: AssessmentExperienceLevelDto.INTERMEDIATE,
+      yearsOfExperience: 5,
+      studyLevel: AssessmentStudyLevelDto.MASTER_DEGREE,
+      relationshipToArea: AssessmentRelationshipToAreaDto.RESIDENT,
+      assessmentCompleted: true,
+      completedAt: new Date('2026-04-01T12:00:00.000Z'),
+      createdAt: new Date('2026-03-01T12:00:00.000Z'),
+      updatedAt: new Date('2026-04-02T12:00:00.000Z'),
+    });
+    prismaService.voteSubmission.findMany.mockResolvedValue([
+      {
+        id: 'submission-1',
+        submittedAt: new Date('2026-04-10T12:00:00.000Z'),
+        weightUsed: 1.45,
+        specializedBaseWeightUsed: 1.1,
+        specializedQuestionModifierTotal: 0.35,
+        selectedOption: {
+          id: 'option-1',
+          optionText: 'Option A',
+        },
+        vote: {
+          id: 'vote-1',
+          slug: 'mobility-plan',
+          title: 'Mobility Plan',
+        },
+        weightedQuestionAnswers: [
+          {
+            questionId: 'question-2',
+            optionId: 'answer-2',
+            modifierUsed: -0.2,
+            weightedQuestion: {
+              prompt: 'How deeply are you affected by this topic?',
+              displayOrder: 2,
+            },
+            selectedAnswerOption: {
+              optionText: 'Somewhat affected',
+              displayOrder: 2,
+            },
+          },
+          {
+            questionId: 'question-1',
+            optionId: 'answer-1',
+            modifierUsed: 0.35,
+            weightedQuestion: {
+              prompt: 'How closely does this topic match your expertise?',
+              displayOrder: 1,
+            },
+            selectedAnswerOption: {
+              optionText: 'Directly relevant',
+              displayOrder: 1,
+            },
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.getAssessmentBySecretUserId(
+      'secret-1',
+      'admin-1',
+    );
+
+    expect(result).toMatchObject({
+      secretUserId: 'secret-1',
+      specializedVoteSubmissions: [
+        {
+          submissionId: 'submission-1',
+          selectedOptionId: 'option-1',
+          selectedOptionText: 'Option A',
+          weightUsed: 1.45,
+          specializedBaseWeightUsed: 1.1,
+          specializedQuestionModifierTotal: 0.35,
+          weightedQuestionAnswers: [
+            {
+              questionId: 'question-1',
+              questionPrompt: 'How closely does this topic match your expertise?',
+              questionDisplayOrder: 1,
+              selectedOptionId: 'answer-1',
+              selectedOptionText: 'Directly relevant',
+              optionDisplayOrder: 1,
+              modifierUsed: 0.35,
+            },
+            {
+              questionId: 'question-2',
+              questionPrompt: 'How deeply are you affected by this topic?',
+              questionDisplayOrder: 2,
+              selectedOptionId: 'answer-2',
+              selectedOptionText: 'Somewhat affected',
+              optionDisplayOrder: 2,
+              modifierUsed: -0.2,
+            },
+          ],
+        },
+      ],
+    });
+    expect(auditService.logAdminAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminUserId: 'admin-1',
+        actionType: 'ASSESSMENT_SECRET_LOOKUP',
+        targetId: 'assessment-1',
+      }),
+    );
   });
 });
 
