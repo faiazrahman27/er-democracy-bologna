@@ -75,6 +75,8 @@ export class SupabaseService {
         `Image file is too large. Maximum allowed size is ${this.maxFileSizeBytes} bytes`,
       );
     }
+
+    this.assertFileSignatureMatchesMimeType(file);
   }
 
   async uploadVoteCoverImage(file: Express.Multer.File, slug?: string) {
@@ -178,6 +180,44 @@ export class SupabaseService {
     }
 
     throw new BadRequestException('Could not determine a safe file extension');
+  }
+
+  private assertFileSignatureMatchesMimeType(file: Express.Multer.File) {
+    const signature =
+      file.buffer.length >= 12
+        ? file.buffer.subarray(0, 12)
+        : file.buffer.subarray(0, file.buffer.length);
+
+    const isJpeg =
+      signature.length >= 3 &&
+      signature[0] === 0xff &&
+      signature[1] === 0xd8 &&
+      signature[2] === 0xff;
+    const isPng =
+      signature.length >= 8 &&
+      signature[0] === 0x89 &&
+      signature[1] === 0x50 &&
+      signature[2] === 0x4e &&
+      signature[3] === 0x47 &&
+      signature[4] === 0x0d &&
+      signature[5] === 0x0a &&
+      signature[6] === 0x1a &&
+      signature[7] === 0x0a;
+    const isWebp =
+      signature.length >= 12 &&
+      signature.toString('ascii', 0, 4) === 'RIFF' &&
+      signature.toString('ascii', 8, 12) === 'WEBP';
+
+    const signatureMatchesMimeType =
+      (file.mimetype === 'image/jpeg' && isJpeg) ||
+      (file.mimetype === 'image/png' && isPng) ||
+      (file.mimetype === 'image/webp' && isWebp);
+
+    if (!signatureMatchesMimeType) {
+      throw new BadRequestException(
+        'Uploaded file content does not match the declared image type',
+      );
+    }
   }
 
   private slugifySegment(value: string, fallback: string) {

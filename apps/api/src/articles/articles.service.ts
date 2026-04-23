@@ -1,5 +1,6 @@
 import { ArticleStatus } from '@prisma/client';
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -25,15 +26,25 @@ export class ArticlesService {
 
   async create(actor: ArticleActor, dto: CreateArticleDto) {
     this.assertCanChangePublicationStatus(actor.role, null, dto.status);
+    const normalizedSlug = dto.slug.trim().toLowerCase();
+
+    const existingArticle = await this.prisma.article.findUnique({
+      where: { slug: normalizedSlug },
+      select: { id: true },
+    });
+
+    if (existingArticle) {
+      throw new ConflictException('An article with this slug already exists');
+    }
 
     const article = await this.prisma.article.create({
       data: {
         title: dto.title.trim(),
-        slug: dto.slug.trim(),
+        slug: normalizedSlug,
         summary: dto.summary.trim(),
         content: dto.content,
-        coverImageUrl: dto.coverImageUrl?.trim(),
-        coverImageAlt: dto.coverImageAlt?.trim(),
+        coverImageUrl: dto.coverImageUrl?.trim() || null,
+        coverImageAlt: dto.coverImageAlt?.trim() || null,
         status: dto.status ?? 'DRAFT',
         createdById: actor.id,
         publishedAt: dto.status === 'PUBLISHED' ? new Date() : null,
@@ -72,8 +83,14 @@ export class ArticlesService {
         title: dto.title?.trim(),
         summary: dto.summary?.trim(),
         content: dto.content,
-        coverImageUrl: dto.coverImageUrl?.trim(),
-        coverImageAlt: dto.coverImageAlt?.trim(),
+        coverImageUrl:
+          dto.coverImageUrl !== undefined
+            ? dto.coverImageUrl.trim() || null
+            : undefined,
+        coverImageAlt:
+          dto.coverImageAlt !== undefined
+            ? dto.coverImageAlt.trim() || null
+            : undefined,
         status: dto.status,
         publishedAt:
           dto.status === 'PUBLISHED' && !existing.publishedAt
@@ -131,8 +148,10 @@ export class ArticlesService {
   }
 
   async findBySlug(slug: string) {
+    const normalizedSlug = slug.trim().toLowerCase();
+
     const article = await this.prisma.article.findUnique({
-      where: { slug },
+      where: { slug: normalizedSlug },
     });
 
     if (!article || article.status !== 'PUBLISHED') {

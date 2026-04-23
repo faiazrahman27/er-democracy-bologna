@@ -5,14 +5,21 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { VoteStatusDto } from './create-vote.dto';
 import { ResultVisibilityModeDto } from './create-vote-display-settings.dto';
 import { CreateVoteWeightedQuestionDto } from './create-vote-weighted-question.dto';
+
+const HTTP_URL_VALIDATION_OPTIONS = {
+  protocols: ['http', 'https'],
+  require_protocol: true,
+  require_tld: false,
+};
 
 export class UpdateVoteDto {
   @IsOptional()
@@ -35,8 +42,14 @@ export class UpdateVoteDto {
   status?: VoteStatusDto;
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
   @MaxLength(500)
+  @IsUrl(HTTP_URL_VALIDATION_OPTIONS, {
+    message: 'coverImageUrl must be a valid http or https URL',
+  })
   coverImageUrl?: string;
 
   @IsOptional()

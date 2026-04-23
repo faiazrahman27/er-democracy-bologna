@@ -7,6 +7,7 @@ import {
 import ExcelJS from 'exceljs';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateVoteDto } from './dto/create-vote.dto';
 import { UpdateVoteDto } from './dto/update-vote.dto';
 import { SubmitVoteDto } from './dto/submit-vote.dto';
@@ -26,13 +27,47 @@ const MAX_SPECIALIZED_FINAL_WEIGHT = 2.0;
 const MAX_WEIGHTED_QUESTION_MODIFIER_DECIMAL_PLACES = 4;
 
 type AdminAnalyticsExportOptions = {
+  adminUserId?: string;
   includeParticipantSheet?: boolean;
   includeSecretUserId?: boolean;
   includeSensitiveAssessmentDetails?: boolean;
 };
 
 type AdminParticipantsOptions = {
+  adminUserId?: string;
   includeSecretUserId?: boolean;
+};
+
+type AssessmentSnapshot = {
+  secretUserId: string | null;
+  ageRange: string | null;
+  gender: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  stakeholderRole: string | null;
+  backgroundCategory: string | null;
+  experienceLevel: string | null;
+  yearsOfExperience: number | null;
+  studyLevel: string | null;
+  relationshipToArea: string | null;
+  assessmentCompleted: boolean;
+};
+
+type SubmissionAssessmentSnapshot = {
+  assessmentSecretUserId: string | null;
+  assessmentAgeRange: string | null;
+  assessmentGender: string | null;
+  assessmentCity: string | null;
+  assessmentRegion: string | null;
+  assessmentCountry: string | null;
+  assessmentStakeholderRole: string | null;
+  assessmentBackgroundCategory: string | null;
+  assessmentExperienceLevel: string | null;
+  assessmentYearsOfExperience: number | null;
+  assessmentStudyLevel: string | null;
+  assessmentRelationshipToArea: string | null;
+  assessmentCompleted: boolean;
 };
 
 type NormalizedWeightedQuestionConfig = {
@@ -57,7 +92,10 @@ type ResolvedWeightedQuestionAnswer = {
 
 @Injectable()
 export class VotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async createVote(adminUserId: string, dto: CreateVoteDto) {
     const startAt = new Date(dto.startAt);
@@ -101,7 +139,7 @@ export class VotesService {
 
     this.assertValidPublicationState(dto.status, dto.isPublished);
 
-    return this.prisma.vote.create({
+    const createdVote = await this.prisma.vote.create({
       data: {
         slug: normalizedSlug,
         title: dto.title.trim(),
@@ -162,6 +200,25 @@ export class VotesService {
       },
       select: this.fullVoteSelect(),
     });
+
+    await this.auditService.logAdminAction({
+      adminUserId,
+      actionType: 'VOTE_CREATE',
+      targetType: 'Vote',
+      targetId: createdVote.id ?? normalizedSlug,
+      afterJson: {
+        slug: createdVote.slug ?? normalizedSlug,
+        title: createdVote.title ?? dto.title.trim(),
+        voteType: createdVote.voteType ?? dto.voteType,
+        status: createdVote.status ?? dto.status,
+        isPublished: createdVote.isPublished ?? dto.isPublished,
+        optionCount: createdVote.options?.length ?? dto.options.length,
+        weightedQuestionCount:
+          createdVote.weightedQuestions?.length ?? weightedQuestions.length,
+      },
+    });
+
+    return createdVote;
   }
 
   async getPublicVotes() {
@@ -404,7 +461,7 @@ export class VotesService {
     };
   }
 
-  async updateVote(slug: string, dto: UpdateVoteDto) {
+  async updateVote(adminUserId: string, slug: string, dto: UpdateVoteDto) {
     const normalizedSlug = slug.trim().toLowerCase();
 
     const existingVote = await this.prisma.vote.findUnique({
@@ -419,6 +476,7 @@ export class VotesService {
         startAt: true,
         endAt: true,
         isPublished: true,
+        lockedAt: true,
         submissions: {
           select: { id: true },
           take: 1,
@@ -555,7 +613,7 @@ export class VotesService {
           )
         : null;
 
-    return this.prisma.vote.update({
+    const updatedVote = await this.prisma.vote.update({
       where: { slug: normalizedSlug },
       data: {
         title: dto.title?.trim(),
@@ -584,7 +642,9 @@ export class VotesService {
             : dto.isPublished === false
               ? null
               : undefined,
-        lockedAt: hasSubmissions ? new Date() : undefined,
+        lockedAt: hasSubmissions
+          ? (existingVote.lockedAt ?? new Date())
+          : undefined,
         weightedQuestions:
           nextWeightedQuestions !== null
             ? {
@@ -638,6 +698,45 @@ export class VotesService {
       },
       select: this.fullVoteSelect(),
     });
+
+    await this.auditService.logAdminAction({
+      adminUserId,
+      actionType: 'VOTE_UPDATE',
+      targetType: 'Vote',
+      targetId: updatedVote.id ?? existingVote.id,
+      beforeJson: {
+        title: existingVote.title,
+        summary: existingVote.summary,
+        methodologySummary: existingVote.methodologySummary,
+        status: existingVote.status,
+        startAt: existingVote.startAt.toISOString(),
+        endAt: existingVote.endAt.toISOString(),
+        isPublished: existingVote.isPublished,
+        lockedAt: existingVote.lockedAt?.toISOString() ?? null,
+      },
+      afterJson: {
+        title: updatedVote.title ?? dto.title?.trim() ?? existingVote.title,
+        summary:
+          updatedVote.summary ?? dto.summary?.trim() ?? existingVote.summary,
+        methodologySummary:
+          updatedVote.methodologySummary ??
+          (dto.methodologySummary !== undefined
+            ? dto.methodologySummary.trim()
+            : existingVote.methodologySummary),
+        status: updatedVote.status ?? nextStatus,
+        startAt:
+          updatedVote.startAt?.toISOString() ?? nextStartAt.toISOString(),
+        endAt: updatedVote.endAt?.toISOString() ?? nextEndAt.toISOString(),
+        isPublished: updatedVote.isPublished ?? nextIsPublished,
+        lockedAt: updatedVote.lockedAt?.toISOString() ?? null,
+        weightedQuestionCount:
+          updatedVote.weightedQuestions?.length ??
+          nextWeightedQuestions?.length ??
+          0,
+      },
+    });
+
+    return updatedVote;
   }
 
   async submitVote(userId: string, slug: string, dto: SubmitVoteDto) {
@@ -733,36 +832,26 @@ export class VotesService {
       );
     }
 
-    let assessment: {
-      stakeholderRole: string | null;
-      backgroundCategory: string | null;
-      experienceLevel: string | null;
-      yearsOfExperience: number | null;
-      studyLevel: string | null;
-      relationshipToArea: string | null;
-      city: string | null;
-      region: string | null;
-      country: string | null;
-      assessmentCompleted: boolean;
-    } | null = null;
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { userId },
+      select: {
+        secretUserId: true,
+        ageRange: true,
+        gender: true,
+        stakeholderRole: true,
+        backgroundCategory: true,
+        experienceLevel: true,
+        yearsOfExperience: true,
+        studyLevel: true,
+        relationshipToArea: true,
+        city: true,
+        region: true,
+        country: true,
+        assessmentCompleted: true,
+      },
+    });
 
     if (vote.voteType === 'SPECIALIZED') {
-      assessment = await this.prisma.assessment.findUnique({
-        where: { userId },
-        select: {
-          stakeholderRole: true,
-          backgroundCategory: true,
-          experienceLevel: true,
-          yearsOfExperience: true,
-          studyLevel: true,
-          relationshipToArea: true,
-          city: true,
-          region: true,
-          country: true,
-          assessmentCompleted: true,
-        },
-      });
-
       if (!assessment || !assessment.assessmentCompleted) {
         throw new ForbiddenException(
           'A completed assessment is required for specialized votes',
@@ -844,6 +933,7 @@ export class VotesService {
           voteId: vote.id,
           userId,
           selectedOptionId: dto.selectedOptionId,
+          ...this.buildAssessmentSnapshotData(assessment),
           selfAssessmentScore:
             vote.voteType === 'SELF_ASSESSMENT'
               ? (dto.selfAssessmentScore ?? null)
@@ -1165,25 +1255,7 @@ export class VotesService {
         submissions: {
           select: {
             userId: true,
-            user: {
-              select: {
-                assessment: {
-                  select: {
-                    ageRange: true,
-                    gender: true,
-                    stakeholderRole: true,
-                    backgroundCategory: true,
-                    experienceLevel: true,
-                    yearsOfExperience: true,
-                    studyLevel: true,
-                    relationshipToArea: true,
-                    city: true,
-                    region: true,
-                    country: true,
-                  },
-                },
-              },
-            },
+            ...this.submissionAssessmentSnapshotSelect(),
           },
         },
       },
@@ -1248,7 +1320,7 @@ export class VotesService {
     if (displaySettings.showStakeholderBreakdown) {
       analytics.stakeholderBreakdown = buildBreakdown(
         vote.submissions.map(
-          (submission) => submission.user.assessment?.stakeholderRole,
+          (submission) => submission.assessmentStakeholderRole,
         ),
       );
     }
@@ -1256,42 +1328,35 @@ export class VotesService {
     if (displaySettings.showBackgroundBreakdown) {
       analytics.backgroundBreakdown = buildBreakdown(
         vote.submissions.map(
-          (submission) => submission.user.assessment?.backgroundCategory,
+          (submission) => submission.assessmentBackgroundCategory,
         ),
       );
     }
 
     if (displaySettings.showLocationBreakdown) {
       analytics.locationBreakdown = buildBreakdown(
-        vote.submissions.map(
-          (submission) =>
-            submission.user.assessment?.city ||
-            submission.user.assessment?.region ||
-            submission.user.assessment?.country,
+        vote.submissions.map((submission) =>
+          this.getSubmissionLocationLabel(submission),
         ),
       );
     }
 
     if (displaySettings.showAgeRangeBreakdown) {
       analytics.ageRangeBreakdown = buildBreakdown(
-        vote.submissions.map(
-          (submission) => submission.user.assessment?.ageRange,
-        ),
+        vote.submissions.map((submission) => submission.assessmentAgeRange),
       );
     }
 
     if (displaySettings.showGenderBreakdown) {
       analytics.genderBreakdown = buildBreakdown(
-        vote.submissions.map(
-          (submission) => submission.user.assessment?.gender,
-        ),
+        vote.submissions.map((submission) => submission.assessmentGender),
       );
     }
 
     if (displaySettings.showExperienceLevelBreakdown) {
       analytics.experienceLevelBreakdown = buildBreakdown(
         vote.submissions.map(
-          (submission) => submission.user.assessment?.experienceLevel,
+          (submission) => submission.assessmentExperienceLevel,
         ),
       );
     }
@@ -1299,23 +1364,21 @@ export class VotesService {
     if (displaySettings.showYearsOfExperienceBreakdown) {
       analytics.yearsOfExperienceBreakdown = buildBreakdown(
         vote.submissions.map(
-          (submission) => submission.user.assessment?.yearsOfExperience,
+          (submission) => submission.assessmentYearsOfExperience,
         ),
       );
     }
 
     if (displaySettings.showStudyLevelBreakdown) {
       analytics.studyLevelBreakdown = buildBreakdown(
-        vote.submissions.map(
-          (submission) => submission.user.assessment?.studyLevel,
-        ),
+        vote.submissions.map((submission) => submission.assessmentStudyLevel),
       );
     }
 
     if (displaySettings.showRelationshipBreakdown) {
       analytics.relationshipToAreaBreakdown = buildBreakdown(
         vote.submissions.map(
-          (submission) => submission.user.assessment?.relationshipToArea,
+          (submission) => submission.assessmentRelationshipToArea,
         ),
       );
     }
@@ -1341,26 +1404,7 @@ export class VotesService {
           select: {
             id: true,
             weightUsed: true,
-            user: {
-              select: {
-                assessment: {
-                  select: {
-                    secretUserId: true,
-                    ageRange: true,
-                    gender: true,
-                    stakeholderRole: true,
-                    backgroundCategory: true,
-                    experienceLevel: true,
-                    yearsOfExperience: true,
-                    studyLevel: true,
-                    relationshipToArea: true,
-                    city: true,
-                    region: true,
-                    country: true,
-                  },
-                },
-              },
-            },
+            ...this.submissionAssessmentSnapshotSelect(),
           },
         },
       },
@@ -1387,50 +1431,41 @@ export class VotesService {
       breakdowns: {
         stakeholderBreakdown: buildBreakdown(
           vote.submissions.map(
-            (submission) => submission.user.assessment?.stakeholderRole,
+            (submission) => submission.assessmentStakeholderRole,
           ),
         ),
         backgroundBreakdown: buildBreakdown(
           vote.submissions.map(
-            (submission) => submission.user.assessment?.backgroundCategory,
+            (submission) => submission.assessmentBackgroundCategory,
           ),
         ),
         locationBreakdown: buildBreakdown(
-          vote.submissions.map(
-            (submission) =>
-              submission.user.assessment?.city ||
-              submission.user.assessment?.region ||
-              submission.user.assessment?.country,
+          vote.submissions.map((submission) =>
+            this.getSubmissionLocationLabel(submission),
           ),
         ),
         ageRangeBreakdown: buildBreakdown(
-          vote.submissions.map(
-            (submission) => submission.user.assessment?.ageRange,
-          ),
+          vote.submissions.map((submission) => submission.assessmentAgeRange),
         ),
         genderBreakdown: buildBreakdown(
-          vote.submissions.map(
-            (submission) => submission.user.assessment?.gender,
-          ),
+          vote.submissions.map((submission) => submission.assessmentGender),
         ),
         experienceLevelBreakdown: buildBreakdown(
           vote.submissions.map(
-            (submission) => submission.user.assessment?.experienceLevel,
+            (submission) => submission.assessmentExperienceLevel,
           ),
         ),
         yearsOfExperienceBreakdown: buildBreakdown(
           vote.submissions.map(
-            (submission) => submission.user.assessment?.yearsOfExperience,
+            (submission) => submission.assessmentYearsOfExperience,
           ),
         ),
         studyLevelBreakdown: buildBreakdown(
-          vote.submissions.map(
-            (submission) => submission.user.assessment?.studyLevel,
-          ),
+          vote.submissions.map((submission) => submission.assessmentStudyLevel),
         ),
         relationshipToAreaBreakdown: buildBreakdown(
           vote.submissions.map(
-            (submission) => submission.user.assessment?.relationshipToArea,
+            (submission) => submission.assessmentRelationshipToArea,
           ),
         ),
       },
@@ -1439,7 +1474,7 @@ export class VotesService {
 
   async getAdminParticipants(
     slug: string,
-    { includeSecretUserId = false }: AdminParticipantsOptions = {},
+    { adminUserId, includeSecretUserId = false }: AdminParticipantsOptions = {},
   ) {
     const normalizedSlug = slug.trim().toLowerCase();
 
@@ -1462,6 +1497,7 @@ export class VotesService {
             calculationType: true,
             selfAssessmentScore: true,
             submittedAt: true,
+            ...this.submissionAssessmentSnapshotSelect(),
             weightedQuestionAnswers: {
               select: {
                 questionId: true,
@@ -1481,16 +1517,6 @@ export class VotesService {
                 },
               },
             },
-            user: {
-              select: {
-                assessment: {
-                  select: {
-                    secretUserId: true,
-                    assessmentCompleted: true,
-                  },
-                },
-              },
-            },
             selectedOption: {
               select: {
                 optionText: true,
@@ -1505,6 +1531,20 @@ export class VotesService {
       throw new NotFoundException('Vote participants not found');
     }
 
+    if (includeSecretUserId && adminUserId) {
+      await this.auditService.logAdminAction({
+        adminUserId,
+        actionType: 'VOTE_PARTICIPANTS_VIEW_SECRET',
+        targetType: 'Vote',
+        targetId: vote.id,
+        afterJson: {
+          slug: vote.slug,
+          includeSecretUserId: true,
+          viewedAt: new Date().toISOString(),
+        },
+      });
+    }
+
     return {
       slug: vote.slug,
       title: vote.title,
@@ -1512,7 +1552,7 @@ export class VotesService {
         submissionId: submission.id,
         ...(includeSecretUserId
           ? {
-              secretUserId: submission.user.assessment?.secretUserId ?? null,
+              secretUserId: submission.assessmentSecretUserId ?? null,
             }
           : {}),
         selectedOptionId: submission.selectedOptionId,
@@ -1521,8 +1561,7 @@ export class VotesService {
         calculationType: submission.calculationType,
         selfAssessmentScore: submission.selfAssessmentScore,
         submittedAt: submission.submittedAt,
-        hasCompletedAssessment:
-          submission.user.assessment?.assessmentCompleted ?? false,
+        hasCompletedAssessment: submission.assessmentCompleted,
         ...(includeSecretUserId
           ? {
               specializedBaseWeightUsed:
@@ -1552,6 +1591,7 @@ export class VotesService {
   async exportAdminAnalyticsExcel(
     slug: string,
     {
+      adminUserId,
       includeParticipantSheet = false,
       includeSecretUserId = false,
       includeSensitiveAssessmentDetails = false,
@@ -1593,30 +1633,10 @@ export class VotesService {
             calculationType: true,
             selfAssessmentScore: true,
             submittedAt: true,
+            ...this.submissionAssessmentSnapshotSelect(),
             selectedOption: {
               select: {
                 optionText: true,
-              },
-            },
-            user: {
-              select: {
-                assessment: {
-                  select: {
-                    secretUserId: true,
-                    ageRange: true,
-                    gender: true,
-                    stakeholderRole: true,
-                    backgroundCategory: true,
-                    experienceLevel: true,
-                    yearsOfExperience: true,
-                    studyLevel: true,
-                    relationshipToArea: true,
-                    city: true,
-                    region: true,
-                    country: true,
-                    assessmentCompleted: true,
-                  },
-                },
               },
             },
           },
@@ -1669,56 +1689,49 @@ export class VotesService {
 
     const stakeholderBreakdown = buildBreakdown(
       vote.submissions.map(
-        (submission) => submission.user.assessment?.stakeholderRole,
+        (submission) => submission.assessmentStakeholderRole,
       ),
     );
 
     const backgroundBreakdown = buildBreakdown(
       vote.submissions.map(
-        (submission) => submission.user.assessment?.backgroundCategory,
+        (submission) => submission.assessmentBackgroundCategory,
       ),
     );
 
     const locationBreakdown = buildBreakdown(
-      vote.submissions.map(
-        (submission) =>
-          submission.user.assessment?.city ||
-          submission.user.assessment?.region ||
-          submission.user.assessment?.country,
+      vote.submissions.map((submission) =>
+        this.getSubmissionLocationLabel(submission),
       ),
     );
 
     const ageRangeBreakdown = buildBreakdown(
-      vote.submissions.map(
-        (submission) => submission.user.assessment?.ageRange,
-      ),
+      vote.submissions.map((submission) => submission.assessmentAgeRange),
     );
 
     const genderBreakdown = buildBreakdown(
-      vote.submissions.map((submission) => submission.user.assessment?.gender),
+      vote.submissions.map((submission) => submission.assessmentGender),
     );
 
     const experienceLevelBreakdown = buildBreakdown(
       vote.submissions.map(
-        (submission) => submission.user.assessment?.experienceLevel,
+        (submission) => submission.assessmentExperienceLevel,
       ),
     );
 
     const yearsOfExperienceBreakdown = buildBreakdown(
       vote.submissions.map(
-        (submission) => submission.user.assessment?.yearsOfExperience,
+        (submission) => submission.assessmentYearsOfExperience,
       ),
     );
 
     const studyLevelBreakdown = buildBreakdown(
-      vote.submissions.map(
-        (submission) => submission.user.assessment?.studyLevel,
-      ),
+      vote.submissions.map((submission) => submission.assessmentStudyLevel),
     );
 
     const relationshipToAreaBreakdown = buildBreakdown(
       vote.submissions.map(
-        (submission) => submission.user.assessment?.relationshipToArea,
+        (submission) => submission.assessmentRelationshipToArea,
       ),
     );
 
@@ -1936,7 +1949,7 @@ export class VotesService {
           submissionId: submission.id,
           ...(includeSecretUserId
             ? {
-                secretUserId: submission.user.assessment?.secretUserId ?? '',
+                secretUserId: submission.assessmentSecretUserId ?? '',
               }
             : {}),
           selectedOptionText: submission.selectedOption.optionText,
@@ -1944,42 +1957,32 @@ export class VotesService {
           calculationType: formatStoredValueLabel(submission.calculationType),
           selfAssessmentScore: submission.selfAssessmentScore ?? '',
           submittedAt: submission.submittedAt.toISOString(),
-          assessmentCompleted: submission.user.assessment?.assessmentCompleted
-            ? 'Yes'
-            : 'No',
+          assessmentCompleted: submission.assessmentCompleted ? 'Yes' : 'No',
           ...(includeSensitiveAssessmentDetails
             ? {
-                ageRange: formatStoredValueLabel(
-                  submission.user.assessment?.ageRange,
-                ),
-                gender: formatStoredValueLabel(
-                  submission.user.assessment?.gender,
-                ),
+                ageRange: formatStoredValueLabel(submission.assessmentAgeRange),
+                gender: formatStoredValueLabel(submission.assessmentGender),
                 stakeholderRole: formatStoredValueLabel(
-                  submission.user.assessment?.stakeholderRole,
+                  submission.assessmentStakeholderRole,
                 ),
                 backgroundCategory: formatStoredValueLabel(
-                  submission.user.assessment?.backgroundCategory,
+                  submission.assessmentBackgroundCategory,
                 ),
                 experienceLevel: formatStoredValueLabel(
-                  submission.user.assessment?.experienceLevel,
+                  submission.assessmentExperienceLevel,
                 ),
                 yearsOfExperience: formatStoredValueLabel(
-                  submission.user.assessment?.yearsOfExperience,
+                  submission.assessmentYearsOfExperience,
                 ),
                 studyLevel: formatStoredValueLabel(
-                  submission.user.assessment?.studyLevel,
+                  submission.assessmentStudyLevel,
                 ),
                 relationshipToArea: formatStoredValueLabel(
-                  submission.user.assessment?.relationshipToArea,
+                  submission.assessmentRelationshipToArea,
                 ),
-                city: formatStoredValueLabel(submission.user.assessment?.city),
-                region: formatStoredValueLabel(
-                  submission.user.assessment?.region,
-                ),
-                country: formatStoredValueLabel(
-                  submission.user.assessment?.country,
-                ),
+                city: formatStoredValueLabel(submission.assessmentCity),
+                region: formatStoredValueLabel(submission.assessmentRegion),
+                country: formatStoredValueLabel(submission.assessmentCountry),
               }
             : {}),
         })),
@@ -1990,10 +1993,72 @@ export class VotesService {
     const fileName = `${vote.slug}-analytics.xlsx`;
     const fileBuffer = await workbook.xlsx.writeBuffer();
 
+    if (adminUserId) {
+      await this.auditService.logAdminAction({
+        adminUserId,
+        actionType: 'VOTE_ANALYTICS_EXPORT',
+        targetType: 'Vote',
+        targetId: vote.id,
+        afterJson: {
+          slug: vote.slug,
+          includeParticipantSheet,
+          includeSecretUserId,
+          includeSensitiveAssessmentDetails,
+          exportedAt: new Date().toISOString(),
+        },
+      });
+    }
+
     return {
       fileName,
       buffer: Buffer.from(fileBuffer),
     };
+  }
+
+  private buildAssessmentSnapshotData(assessment: AssessmentSnapshot | null) {
+    return {
+      assessmentSecretUserId: assessment?.secretUserId ?? null,
+      assessmentAgeRange: assessment?.ageRange ?? null,
+      assessmentGender: assessment?.gender ?? null,
+      assessmentCity: assessment?.city ?? null,
+      assessmentRegion: assessment?.region ?? null,
+      assessmentCountry: assessment?.country ?? null,
+      assessmentStakeholderRole: assessment?.stakeholderRole ?? null,
+      assessmentBackgroundCategory: assessment?.backgroundCategory ?? null,
+      assessmentExperienceLevel: assessment?.experienceLevel ?? null,
+      assessmentYearsOfExperience: assessment?.yearsOfExperience ?? null,
+      assessmentStudyLevel: assessment?.studyLevel ?? null,
+      assessmentRelationshipToArea: assessment?.relationshipToArea ?? null,
+      assessmentCompleted: assessment?.assessmentCompleted ?? false,
+    };
+  }
+
+  private submissionAssessmentSnapshotSelect() {
+    return {
+      assessmentSecretUserId: true,
+      assessmentAgeRange: true,
+      assessmentGender: true,
+      assessmentCity: true,
+      assessmentRegion: true,
+      assessmentCountry: true,
+      assessmentStakeholderRole: true,
+      assessmentBackgroundCategory: true,
+      assessmentExperienceLevel: true,
+      assessmentYearsOfExperience: true,
+      assessmentStudyLevel: true,
+      assessmentRelationshipToArea: true,
+      assessmentCompleted: true,
+    };
+  }
+
+  private getSubmissionLocationLabel<T extends SubmissionAssessmentSnapshot>(
+    submission: T,
+  ) {
+    return (
+      submission.assessmentCity ||
+      submission.assessmentRegion ||
+      submission.assessmentCountry
+    );
   }
 
   private formatBreakdownRowsForExport(
@@ -2053,7 +2118,10 @@ export class VotesService {
           );
         }
 
-        if (!Array.isArray(question.answerOptions) || question.answerOptions.length < 2) {
+        if (
+          !Array.isArray(question.answerOptions) ||
+          question.answerOptions.length < 2
+        ) {
           throw new BadRequestException(
             'Weighted questions must include at least two answer options',
           );
@@ -2118,7 +2186,10 @@ export class VotesService {
       return [];
     }
 
-    if (!submittedAnswers || submittedAnswers.length !== weightedQuestions.length) {
+    if (
+      !submittedAnswers ||
+      submittedAnswers.length !== weightedQuestions.length
+    ) {
       throw new BadRequestException('All weighted questions must be answered');
     }
 
@@ -2137,7 +2208,11 @@ export class VotesService {
     );
 
     for (const submittedAnswer of submittedAnswers) {
-      if (!weightedQuestions.some((question) => question.id === submittedAnswer.questionId)) {
+      if (
+        !weightedQuestions.some(
+          (question) => question.id === submittedAnswer.questionId,
+        )
+      ) {
         throw new BadRequestException(
           'Weighted question does not belong to this vote',
         );
@@ -2148,7 +2223,9 @@ export class VotesService {
       const submittedAnswer = submittedAnswersByQuestionId.get(question.id);
 
       if (!submittedAnswer) {
-        throw new BadRequestException('All weighted questions must be answered');
+        throw new BadRequestException(
+          'All weighted questions must be answered',
+        );
       }
 
       const selectedOption = question.answerOptions.find(
@@ -2398,7 +2475,9 @@ export class VotesService {
     const meta =
       typeof error.meta === 'object' && error.meta !== null ? error.meta : null;
     const target =
-      meta && 'target' in meta ? (meta.target as string | string[] | undefined) : undefined;
+      meta && 'target' in meta
+        ? (meta.target as string | string[] | undefined)
+        : undefined;
 
     if (typeof target === 'string') {
       return [target];

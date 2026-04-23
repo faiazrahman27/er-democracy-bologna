@@ -14,7 +14,9 @@ import { CreateVoteWeightedQuestionOptionDto } from './create-vote-weighted-ques
 
 export class CreateVoteWeightedQuestionDto {
   @IsDefined({ message: 'prompt is required' })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)

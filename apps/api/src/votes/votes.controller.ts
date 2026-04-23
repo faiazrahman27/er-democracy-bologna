@@ -153,6 +153,7 @@ export class VotesController {
     return {
       message: 'Admin vote participants fetched successfully',
       participants: await this.votesService.getAdminParticipants(slug, {
+        adminUserId: user.id,
         includeSecretUserId,
       }),
     };
@@ -175,6 +176,7 @@ export class VotesController {
       roleHasPermission(user.role, PERMISSIONS.ASSESSMENT_SECRET_LOOKUP);
     const includeSensitiveAssessmentDetails = includeSecretUserId;
     const file = await this.votesService.exportAdminAnalyticsExcel(slug, {
+      adminUserId: user.id,
       includeParticipantSheet,
       includeSecretUserId,
       includeSensitiveAssessmentDetails,
@@ -238,10 +240,14 @@ export class VotesController {
   @RequirePermissions(PERMISSIONS.CONSULTATION_EDIT)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Patch(':slug')
-  async updateVote(@Param('slug') slug: string, @Body() dto: UpdateVoteDto) {
+  async updateVote(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('slug') slug: string,
+    @Body() dto: UpdateVoteDto,
+  ) {
     return {
       message: 'Vote updated successfully',
-      vote: await this.votesService.updateVote(slug, dto),
+      vote: await this.votesService.updateVote(user.id, slug, dto),
     };
   }
 

@@ -11,14 +11,16 @@ import { Transform } from 'class-transformer';
 
 export class CreateVoteWeightedQuestionOptionDto {
   @IsDefined({ message: 'optionText is required' })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
   @IsNotEmpty()
   @MaxLength(300)
   optionText!: string;
 
   @IsDefined({ message: 'modifier is required' })
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (typeof value === 'string') {
       const trimmedValue = value.trim();
 

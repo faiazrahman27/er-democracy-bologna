@@ -24,6 +24,10 @@ import {
   REFRESH_TOKEN_COOKIE_NAME,
   setRefreshTokenCookie,
 } from './utils/auth-cookie.util';
+import {
+  assertStateChangingOriginAllowed,
+  getAllowedOriginsFromConfig,
+} from '../common/http/origin.util';
 
 type RequestWithCookies = Request & {
   cookies?: Partial<Record<typeof REFRESH_TOKEN_COOKIE_NAME, string>>;
@@ -41,41 +45,72 @@ export class AuthController {
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('verify-email')
-  async verifyEmail(@Body() body: VerifyEmailDto) {
-    return this.authService.verifyEmail(body.token);
+  async verifyEmail(@Body() body: VerifyEmailDto, @Req() request: Request) {
+    return this.authService.verifyEmail(
+      body.token,
+      this.getRequestContext(request),
+    );
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Get('verify-email')
-  async verifyEmailFromQuery(@Query() query: VerifyEmailDto) {
-    return this.authService.verifyEmail(query.token);
+  async verifyEmailFromQuery(
+    @Query() query: VerifyEmailDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.verifyEmail(
+      query.token,
+      this.getRequestContext(request),
+    );
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('resend-verification')
-  async resendVerification(@Body() body: ResendVerificationDto) {
-    return this.authService.resendVerificationEmail(body.email);
+  async resendVerification(
+    @Body() body: ResendVerificationDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.resendVerificationEmail(
+      body.email,
+      this.getRequestContext(request),
+    );
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
-  async forgotPassword(@Body() body: ForgotPasswordDto) {
-    return this.authService.requestPasswordReset(body.email);
+  async forgotPassword(
+    @Body() body: ForgotPasswordDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.requestPasswordReset(
+      body.email,
+      this.getRequestContext(request),
+    );
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('reset-password')
-  async resetPassword(@Body() body: ResetPasswordDto) {
-    return this.authService.resetPassword(body.token, body.password);
+  async resetPassword(@Body() body: ResetPasswordDto, @Req() request: Request) {
+    return this.authService.resetPassword(
+      body.token,
+      body.password,
+      this.getRequestContext(request),
+    );
   }
 
   @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.authService.login(loginDto);
+    this.assertCookieOriginAllowed(request);
+
+    const result = await this.authService.login(
+      loginDto,
+      this.getRequestContext(request),
+    );
 
     setRefreshTokenCookie({
       response,
@@ -98,6 +133,8 @@ export class AuthController {
     @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: Response,
   ) {
+    this.assertCookieOriginAllowed(request);
+
     const refreshToken = request.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
 
     const result =
@@ -118,11 +155,14 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('logout')
   async logout(
     @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: Response,
   ) {
+    this.assertCookieOriginAllowed(request);
+
     const refreshToken = request.cookies?.[REFRESH_TOKEN_COOKIE_NAME] ?? null;
 
     clearRefreshTokenCookie(
@@ -140,6 +180,21 @@ export class AuthController {
     return {
       message: 'Authenticated user fetched successfully',
       user,
+    };
+  }
+
+  private assertCookieOriginAllowed(request: Request) {
+    assertStateChangingOriginAllowed({
+      origin: request.headers.origin,
+      referer: request.headers.referer,
+      allowedOrigins: getAllowedOriginsFromConfig(process.env.CORS_ORIGIN),
+    });
+  }
+
+  private getRequestContext(request: Request) {
+    return {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get('user-agent') ?? null,
     };
   }
 }

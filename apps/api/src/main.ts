@@ -1,27 +1,35 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
-
-function getAllowedOrigins(): string[] {
-  const configuredOrigins =
-    process.env.CORS_ORIGIN?.split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean) ?? [];
-
-  if (configuredOrigins.length > 0) {
-    return configuredOrigins;
-  }
-
-  throw new Error('CORS_ORIGIN must include at least one allowed origin');
-}
+import { getAllowedOriginsFromConfig } from './common/http/origin.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableShutdownHooks();
   app.setGlobalPrefix('api');
 
-  const allowedOrigins = getAllowedOrigins();
+  const httpAdapter = app.getHttpAdapter().getInstance() as {
+    disable?: (setting: string) => void;
+  };
+
+  httpAdapter.disable?.('x-powered-by');
+
+  app.use((_request: Request, response: Response, next: NextFunction) => {
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('X-Frame-Options', 'DENY');
+    response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=()',
+    );
+
+    next();
+  });
+
+  const allowedOrigins = getAllowedOriginsFromConfig(process.env.CORS_ORIGIN);
 
   app.enableCors({
     origin: (
@@ -38,7 +46,7 @@ async function bootstrap() {
         return;
       }
 
-      callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
+      callback(new Error('Origin is not allowed by CORS'), false);
     },
     credentials: true,
   });
@@ -59,8 +67,10 @@ async function bootstrap() {
   const port = process.env.PORT ? Number(process.env.PORT) : 3001;
   await app.listen(port);
 
-  console.log(`Application is running on: http://localhost:${port}/api`);
-  console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`Application is running on: http://localhost:${port}/api`);
+    console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+  }
 }
 
 void bootstrap();

@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ArticlesService } from './articles.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -106,6 +106,28 @@ describe('ArticlesService', () => {
 
     expect(prisma.article.create).not.toHaveBeenCalled();
     expect(auditService.logAdminAction).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate article slugs after normalization', async () => {
+    prisma.article.findUnique.mockResolvedValue({
+      id: 'article-1',
+    });
+
+    await expect(
+      service.create(
+        { id: 'admin-1', role: 'CONTENT_ADMIN' },
+        {
+          title: 'New article',
+          slug: '  New-Article  ',
+          summary: 'A sufficiently long article summary',
+          content: 'Article body',
+        },
+      ),
+    ).rejects.toThrow(
+      new ConflictException('An article with this slug already exists'),
+    );
+
+    expect(prisma.article.create).not.toHaveBeenCalled();
   });
 
   it('allows content edits when the article status is unchanged', async () => {

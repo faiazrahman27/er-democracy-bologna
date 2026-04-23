@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { VotesController } from './votes.controller';
 import { VotesService } from './votes.service';
 import { SupabaseService } from '../common/supabase/supabase.service';
+import { VoteWeightedPayloadCompatibilityGuard } from './vote-weighted-payload-compatibility.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('VotesController', () => {
   let controller: VotesController;
@@ -36,6 +38,20 @@ describe('VotesController', () => {
           useValue: {},
         },
         {
+          provide: VoteWeightedPayloadCompatibilityGuard,
+          useValue: {
+            canActivate: jest.fn().mockResolvedValue(true),
+          },
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            vote: {
+              findUnique: jest.fn(),
+            },
+          },
+        },
+        {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockReturnValue(2 * 1024 * 1024),
@@ -64,6 +80,7 @@ describe('VotesController', () => {
     expect(votesService.getAdminParticipants).toHaveBeenCalledWith(
       'mobility-plan',
       {
+        adminUserId: 'admin-1',
         includeSecretUserId: false,
       },
     );
@@ -91,6 +108,7 @@ describe('VotesController', () => {
     expect(votesService.exportAdminAnalyticsExcel).toHaveBeenCalledWith(
       'mobility-plan',
       {
+        adminUserId: 'admin-1',
         includeParticipantSheet: true,
         includeSecretUserId: true,
         includeSensitiveAssessmentDetails: true,
@@ -120,6 +138,7 @@ describe('VotesController', () => {
     expect(votesService.exportAdminAnalyticsExcel).toHaveBeenCalledWith(
       'mobility-plan',
       {
+        adminUserId: 'admin-1',
         includeParticipantSheet: false,
         includeSecretUserId: false,
         includeSensitiveAssessmentDetails: false,

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { ResultVisibilityModeDto } from './dto/create-vote-display-settings.dto';
 import { VoteStatusDto, VoteTypeDto } from './dto/create-vote.dto';
 import { VotesService } from './votes.service';
@@ -29,6 +30,12 @@ describe('VotesService weighted-question validation', () => {
         {
           provide: PrismaService,
           useValue: prismaService,
+        },
+        {
+          provide: AuditService,
+          useValue: {
+            logAdminAction: jest.fn().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();
@@ -252,21 +259,21 @@ describe('VotesService weighted-question validation', () => {
       ],
       expectedMessage: 'Weighted question answer options cannot be empty',
     },
-  ])('rejects invalid weighted-question configuration: $label', async ({
-    weightedQuestions,
-    expectedMessage,
-  }) => {
-    prismaService.vote.findUnique.mockResolvedValue(null);
+  ])(
+    'rejects invalid weighted-question configuration: $label',
+    async ({ weightedQuestions, expectedMessage }) => {
+      prismaService.vote.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.createVote(
-        'admin-1',
-        buildCreateVoteDto({
-          weightedQuestions,
-        }),
-      ),
-    ).rejects.toThrow(new BadRequestException(expectedMessage));
-  });
+      await expect(
+        service.createVote(
+          'admin-1',
+          buildCreateVoteDto({
+            weightedQuestions,
+          }),
+        ),
+      ).rejects.toThrow(new BadRequestException(expectedMessage));
+    },
+  );
 });
 
 function buildCreateVoteDto(

@@ -10,6 +10,7 @@ import { VotesService } from './votes.service';
 import { VoteStatusDto, VoteTypeDto } from './dto/create-vote.dto';
 import { ResultVisibilityModeDto } from './dto/create-vote-display-settings.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import * as voteWeightUtil from '../common/voting/vote-weight.util';
 
 describe('VotesService', () => {
@@ -30,6 +31,9 @@ describe('VotesService', () => {
       findUnique: jest.Mock;
     };
   };
+  let auditService: {
+    logAdminAction: jest.Mock;
+  };
 
   beforeEach(async () => {
     prismaService = {
@@ -48,6 +52,9 @@ describe('VotesService', () => {
         findUnique: jest.fn(),
       },
     };
+    auditService = {
+      logAdminAction: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -55,6 +62,10 @@ describe('VotesService', () => {
         {
           provide: PrismaService,
           useValue: prismaService,
+        },
+        {
+          provide: AuditService,
+          useValue: auditService,
         },
       ],
     }).compile();
@@ -134,6 +145,57 @@ describe('VotesService', () => {
         studyLevel: 'MASTER_DEGREE',
       },
     });
+  });
+
+  it('stores immutable assessment snapshots on vote submissions', async () => {
+    prismaService.vote.findUnique.mockResolvedValue(
+      buildSpecializedVoteForSubmission(),
+    );
+    prismaService.voteSubmission.findUnique.mockResolvedValue(null);
+    prismaService.assessment.findUnique.mockResolvedValue(
+      buildCompletedAssessment(),
+    );
+    prismaService.voteSubmission.create.mockResolvedValue({
+      id: 'submission-1',
+      voteId: 'vote-1',
+      userId: 'user-1',
+      selectedOptionId: 'option-1',
+      selfAssessmentScore: null,
+      weightUsed: 1.24,
+      calculationType: 'SPECIALIZED',
+      submittedAt: new Date('2026-04-18T10:00:00.000Z'),
+      createdAt: new Date('2026-04-18T10:00:00.000Z'),
+    });
+
+    await service.submitVote('user-1', 'mobility-plan', {
+      selectedOptionId: 'option-1',
+      weightedQuestionAnswers: [
+        {
+          questionId: 'question-1',
+          optionId: 'answer-1',
+        },
+      ],
+    });
+
+    expect(prismaService.voteSubmission.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          assessmentSecretUserId: 'secret-user-1',
+          assessmentAgeRange: 'AGE_25_34',
+          assessmentGender: 'FEMALE',
+          assessmentStakeholderRole: 'UNIVERSITY_STUDENT',
+          assessmentBackgroundCategory: 'EDUCATION',
+          assessmentExperienceLevel: 'EXPERT',
+          assessmentYearsOfExperience: 12,
+          assessmentStudyLevel: 'MASTER_DEGREE',
+          assessmentRelationshipToArea: 'RESIDENT',
+          assessmentCity: 'BOLOGNA',
+          assessmentRegion: 'EMILIA_ROMAGNA',
+          assessmentCountry: 'ITALY',
+          assessmentCompleted: true,
+        }),
+      }),
+    );
   });
 
   it('returns the friendly already-voted error when the unique vote submission constraint races', async () => {
@@ -965,7 +1027,7 @@ describe('VotesService', () => {
     });
 
     await expect(
-      service.updateVote('mobility-plan', {
+      service.updateVote('admin-1', 'mobility-plan', {
         isPublished: false,
       }),
     ).rejects.toThrow(
@@ -991,7 +1053,7 @@ describe('VotesService', () => {
     });
     prismaService.vote.update.mockResolvedValue({});
 
-    await service.updateVote('mobility-plan', {
+    await service.updateVote('admin-1', 'mobility-plan', {
       weightedQuestions: buildWeightedQuestionConfig(),
     });
 
@@ -1042,7 +1104,7 @@ describe('VotesService', () => {
     });
     prismaService.vote.update.mockResolvedValue({});
 
-    await service.updateVote('mobility-plan', {
+    await service.updateVote('admin-1', 'mobility-plan', {
       weightedQuestions: [],
     });
 
@@ -1073,7 +1135,7 @@ describe('VotesService', () => {
     });
 
     await expect(
-      service.updateVote('mobility-plan', {
+      service.updateVote('admin-1', 'mobility-plan', {
         weightedQuestions: buildWeightedQuestionConfig(),
       }),
     ).rejects.toThrow(
@@ -1084,6 +1146,8 @@ describe('VotesService', () => {
   });
 
   it('still allows safe non-core updates after submissions already exist', async () => {
+    const originalLockedAt = new Date('2026-05-02T12:00:00.000Z');
+
     prismaService.vote.findUnique.mockResolvedValue({
       id: 'vote-1',
       voteType: 'SPECIALIZED',
@@ -1094,12 +1158,13 @@ describe('VotesService', () => {
       startAt: new Date('2026-05-01T12:00:00.000Z'),
       endAt: new Date('2026-05-10T12:00:00.000Z'),
       isPublished: true,
+      lockedAt: originalLockedAt,
       submissions: [{ id: 'submission-1' }],
       displaySettings: null,
     });
     prismaService.vote.update.mockResolvedValue({});
 
-    await service.updateVote('mobility-plan', {
+    await service.updateVote('admin-1', 'mobility-plan', {
       status: VoteStatusDto.CLOSED,
       endAt: '2026-05-12T12:00:00.000Z',
     });
@@ -1109,7 +1174,7 @@ describe('VotesService', () => {
         data: expect.objectContaining({
           status: VoteStatusDto.CLOSED,
           endAt: new Date('2026-05-12T12:00:00.000Z'),
-          lockedAt: expect.any(Date),
+          lockedAt: originalLockedAt,
         }),
       }),
     );
@@ -1133,7 +1198,7 @@ describe('VotesService', () => {
       });
 
       await expect(
-        service.updateVote('mobility-plan', {
+        service.updateVote('admin-1', 'mobility-plan', {
           weightedQuestions: [],
         }),
       ).rejects.toThrow(
@@ -1168,30 +1233,24 @@ describe('VotesService', () => {
       submissions: [
         {
           userId: 'user-1',
-          user: {
-            assessment: {
-              yearsOfExperience: 2,
-              studyLevel: 'BACHELOR_DEGREE',
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentYearsOfExperience: 2,
+            assessmentStudyLevel: 'BACHELOR_DEGREE',
+          }),
         },
         {
           userId: 'user-2',
-          user: {
-            assessment: {
-              yearsOfExperience: 2,
-              studyLevel: 'MASTER_DEGREE',
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentYearsOfExperience: 2,
+            assessmentStudyLevel: 'MASTER_DEGREE',
+          }),
         },
         {
           userId: 'user-3',
-          user: {
-            assessment: {
-              yearsOfExperience: 5,
-              studyLevel: 'MASTER_DEGREE',
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentYearsOfExperience: 5,
+            assessmentStudyLevel: 'MASTER_DEGREE',
+          }),
         },
       ],
     });
@@ -1232,19 +1291,9 @@ describe('VotesService', () => {
       },
       submissions: Array.from({ length: 5 }, (_, index) => ({
         userId: `user-${index + 1}`,
-        user: {
-          assessment: {
-            stakeholderRole: 'RESIDENT',
-            backgroundCategory: null,
-            experienceLevel: null,
-            relationshipToArea: null,
-            city: null,
-            region: null,
-            country: null,
-            ageRange: null,
-            gender: null,
-          },
-        },
+        ...buildSubmissionAssessmentSnapshot({
+          assessmentStakeholderRole: 'RESIDENT',
+        }),
       })),
     });
 
@@ -1318,67 +1367,27 @@ describe('VotesService', () => {
       submissions: [
         {
           userId: 'user-1',
-          user: {
-            assessment: {
-              stakeholderRole: 'RESIDENT',
-              backgroundCategory: null,
-              experienceLevel: null,
-              relationshipToArea: null,
-              city: null,
-              region: null,
-              country: null,
-              ageRange: null,
-              gender: null,
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentStakeholderRole: 'RESIDENT',
+          }),
         },
         {
           userId: 'user-2',
-          user: {
-            assessment: {
-              stakeholderRole: 'VISITOR',
-              backgroundCategory: null,
-              experienceLevel: null,
-              relationshipToArea: null,
-              city: null,
-              region: null,
-              country: null,
-              ageRange: null,
-              gender: null,
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentStakeholderRole: 'VISITOR',
+          }),
         },
         {
           userId: 'user-3',
-          user: {
-            assessment: {
-              stakeholderRole: 'NON_RESIDENT',
-              backgroundCategory: null,
-              experienceLevel: null,
-              relationshipToArea: null,
-              city: null,
-              region: null,
-              country: null,
-              ageRange: null,
-              gender: null,
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentStakeholderRole: 'NON_RESIDENT',
+          }),
         },
         {
           userId: 'user-4',
-          user: {
-            assessment: {
-              stakeholderRole: 'RESIDENT',
-              backgroundCategory: null,
-              experienceLevel: null,
-              relationshipToArea: null,
-              city: null,
-              region: null,
-              country: null,
-              ageRange: null,
-              gender: null,
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentStakeholderRole: 'RESIDENT',
+          }),
         },
       ],
     });
@@ -1535,12 +1544,10 @@ describe('VotesService', () => {
           selectedOption: {
             optionText: 'Option A',
           },
-          user: {
-            assessment: {
-              secretUserId: 'secret-1',
-              assessmentCompleted: true,
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentSecretUserId: 'secret-1',
+            assessmentCompleted: true,
+          }),
         },
       ],
     });
@@ -1602,17 +1609,16 @@ describe('VotesService', () => {
           selectedOption: {
             optionText: 'Option A',
           },
-          user: {
-            assessment: {
-              secretUserId: 'secret-1',
-              assessmentCompleted: true,
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentSecretUserId: 'secret-1',
+            assessmentCompleted: true,
+          }),
         },
       ],
     });
 
     const result = await service.getAdminParticipants('mobility-plan', {
+      adminUserId: 'admin-1',
       includeSecretUserId: true,
     });
 
@@ -1633,6 +1639,14 @@ describe('VotesService', () => {
         },
       ],
     });
+    expect(auditService.logAdminAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminUserId: 'admin-1',
+        actionType: 'VOTE_PARTICIPANTS_VIEW_SECRET',
+        targetType: 'Vote',
+        targetId: 'vote-1',
+      }),
+    );
   });
 
   it('omits the participants sheet when export is generated without participant access', async () => {
@@ -1665,21 +1679,19 @@ describe('VotesService', () => {
           selectedOption: {
             optionText: 'Option A',
           },
-          user: {
-            assessment: {
-              secretUserId: 'secret-1',
-              assessmentCompleted: true,
-              ageRange: 'AGE_25_34',
-              gender: 'FEMALE',
-              stakeholderRole: 'RESIDENT',
-              backgroundCategory: 'CITIZEN',
-              experienceLevel: 'INTERMEDIATE',
-              relationshipToArea: 'RESIDENT',
-              city: 'Bologna',
-              region: 'Emilia-Romagna',
-              country: 'Italy',
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentSecretUserId: 'secret-1',
+            assessmentCompleted: true,
+            assessmentAgeRange: 'AGE_25_34',
+            assessmentGender: 'FEMALE',
+            assessmentStakeholderRole: 'RESIDENT',
+            assessmentBackgroundCategory: 'CITIZEN',
+            assessmentExperienceLevel: 'INTERMEDIATE',
+            assessmentRelationshipToArea: 'RESIDENT',
+            assessmentCity: 'Bologna',
+            assessmentRegion: 'Emilia-Romagna',
+            assessmentCountry: 'Italy',
+          }),
         },
       ],
     });
@@ -1727,21 +1739,19 @@ describe('VotesService', () => {
           selectedOption: {
             optionText: 'Option A',
           },
-          user: {
-            assessment: {
-              secretUserId: 'secret-1',
-              assessmentCompleted: true,
-              ageRange: 'AGE_25_34',
-              gender: 'FEMALE',
-              stakeholderRole: 'RESIDENT',
-              backgroundCategory: 'CITIZEN',
-              experienceLevel: 'INTERMEDIATE',
-              relationshipToArea: 'RESIDENT',
-              city: 'Bologna',
-              region: 'Emilia-Romagna',
-              country: 'Italy',
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentSecretUserId: 'secret-1',
+            assessmentCompleted: true,
+            assessmentAgeRange: 'AGE_25_34',
+            assessmentGender: 'FEMALE',
+            assessmentStakeholderRole: 'RESIDENT',
+            assessmentBackgroundCategory: 'CITIZEN',
+            assessmentExperienceLevel: 'INTERMEDIATE',
+            assessmentRelationshipToArea: 'RESIDENT',
+            assessmentCity: 'Bologna',
+            assessmentRegion: 'Emilia-Romagna',
+            assessmentCountry: 'Italy',
+          }),
         },
       ],
     });
@@ -1795,28 +1805,27 @@ describe('VotesService', () => {
           selectedOption: {
             optionText: 'Option A',
           },
-          user: {
-            assessment: {
-              secretUserId: 'secret-1',
-              assessmentCompleted: true,
-              ageRange: 'AGE_25_34',
-              gender: 'FEMALE',
-              stakeholderRole: 'RESIDENT',
-              backgroundCategory: 'CITIZEN',
-              experienceLevel: 'INTERMEDIATE',
-              yearsOfExperience: 5,
-              studyLevel: 'MASTER_DEGREE',
-              relationshipToArea: 'RESIDENT',
-              city: 'Bologna',
-              region: 'Emilia-Romagna',
-              country: 'Italy',
-            },
-          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentSecretUserId: 'secret-1',
+            assessmentCompleted: true,
+            assessmentAgeRange: 'AGE_25_34',
+            assessmentGender: 'FEMALE',
+            assessmentStakeholderRole: 'RESIDENT',
+            assessmentBackgroundCategory: 'CITIZEN',
+            assessmentExperienceLevel: 'INTERMEDIATE',
+            assessmentYearsOfExperience: 5,
+            assessmentStudyLevel: 'MASTER_DEGREE',
+            assessmentRelationshipToArea: 'RESIDENT',
+            assessmentCity: 'Bologna',
+            assessmentRegion: 'Emilia-Romagna',
+            assessmentCountry: 'Italy',
+          }),
         },
       ],
     });
 
     const file = await service.exportAdminAnalyticsExcel('mobility-plan', {
+      adminUserId: 'admin-1',
       includeParticipantSheet: true,
       includeSecretUserId: true,
       includeSensitiveAssessmentDetails: true,
@@ -1834,6 +1843,14 @@ describe('VotesService', () => {
     expect(headers).toContain('Secret User ID');
     expect(headers).toContain('Age Range');
     expect(headers).toContain('Study Level');
+    expect(auditService.logAdminAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminUserId: 'admin-1',
+        actionType: 'VOTE_ANALYTICS_EXPORT',
+        targetType: 'Vote',
+        targetId: 'vote-1',
+      }),
+    );
   });
 
   it('normalizes conflicting timing settings when loading admin consultation details', async () => {
@@ -2022,6 +2039,9 @@ function buildMultiQuestionWeightedConfigForSubmission() {
 
 function buildCompletedAssessment() {
   return {
+    secretUserId: 'secret-user-1',
+    ageRange: 'AGE_25_34',
+    gender: 'FEMALE',
     stakeholderRole: 'UNIVERSITY_STUDENT',
     backgroundCategory: 'EDUCATION',
     experienceLevel: 'EXPERT',
@@ -2032,6 +2052,41 @@ function buildCompletedAssessment() {
     region: 'EMILIA_ROMAGNA',
     country: 'ITALY',
     assessmentCompleted: true,
+  };
+}
+
+function buildSubmissionAssessmentSnapshot(
+  overrides: Partial<{
+    assessmentSecretUserId: string | null;
+    assessmentAgeRange: string | null;
+    assessmentGender: string | null;
+    assessmentCity: string | null;
+    assessmentRegion: string | null;
+    assessmentCountry: string | null;
+    assessmentStakeholderRole: string | null;
+    assessmentBackgroundCategory: string | null;
+    assessmentExperienceLevel: string | null;
+    assessmentYearsOfExperience: number | null;
+    assessmentStudyLevel: string | null;
+    assessmentRelationshipToArea: string | null;
+    assessmentCompleted: boolean;
+  }> = {},
+) {
+  return {
+    assessmentSecretUserId: null,
+    assessmentAgeRange: null,
+    assessmentGender: null,
+    assessmentCity: null,
+    assessmentRegion: null,
+    assessmentCountry: null,
+    assessmentStakeholderRole: null,
+    assessmentBackgroundCategory: null,
+    assessmentExperienceLevel: null,
+    assessmentYearsOfExperience: null,
+    assessmentStudyLevel: null,
+    assessmentRelationshipToArea: null,
+    assessmentCompleted: false,
+    ...overrides,
   };
 }
 

@@ -142,8 +142,8 @@ export class AssessmentsService {
       );
     }
 
-    const specializedVoteSubmissions = await this.prisma.voteSubmission.findMany(
-      {
+    const specializedVoteSubmissions =
+      await this.prisma.voteSubmission.findMany({
         where: {
           userId: assessment.userId,
           vote: {
@@ -195,8 +195,7 @@ export class AssessmentsService {
             },
           },
         },
-      },
-    );
+      });
 
     if (adminUserId) {
       await this.auditService.logAdminAction({
@@ -212,7 +211,8 @@ export class AssessmentsService {
       });
     }
 
-    const { userId: _userId, ...pseudonymousAssessment } = assessment;
+    const { userId: removedUserId, ...pseudonymousAssessment } = assessment;
+    void removedUserId;
 
     return {
       ...pseudonymousAssessment,

@@ -18,8 +18,11 @@ export class VoteWeightedPayloadCompatibilityGuard implements CanActivate {
 
     const body =
       request.body && typeof request.body === 'object' ? request.body : {};
-    const hasWeightedQuestions = this.hasOwnProperty(body, 'weightedQuestions');
-    const hasWeightedQuestionAnswers = this.hasOwnProperty(
+    const hasWeightedQuestions = this.hasOwnSafeProperty(
+      body,
+      'weightedQuestions',
+    );
+    const hasWeightedQuestionAnswers = this.hasOwnSafeProperty(
       body,
       'weightedQuestionAnswers',
     );
@@ -74,7 +77,7 @@ export class VoteWeightedPayloadCompatibilityGuard implements CanActivate {
     return true;
   }
 
-  private hasOwnProperty(
+  private hasOwnSafeProperty(
     value: Record<string, unknown>,
     propertyName: string,
   ): boolean {

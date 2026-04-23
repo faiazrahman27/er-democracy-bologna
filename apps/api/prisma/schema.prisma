@@ -209,6 +209,7 @@ model VoteOption {
   submissions VoteSubmission[]
 
   @@unique([voteId, displayOrder])
+  @@unique([voteId, id])
   @@index([voteId])
 }
 
@@ -245,6 +246,19 @@ model VoteSubmission {
   voteId                           String
   userId                           String
   selectedOptionId                 String
+  assessmentSecretUserId           String?         @db.VarChar(64)
+  assessmentAgeRange               String?         @db.VarChar(50)
+  assessmentGender                 String?         @db.VarChar(50)
+  assessmentCity                   String?         @db.VarChar(100)
+  assessmentRegion                 String?         @db.VarChar(100)
+  assessmentCountry                String?         @db.VarChar(100)
+  assessmentStakeholderRole        String?         @db.VarChar(100)
+  assessmentBackgroundCategory     String?         @db.VarChar(100)
+  assessmentExperienceLevel        String?         @db.VarChar(100)
+  assessmentYearsOfExperience      Int?
+  assessmentStudyLevel             String?         @db.VarChar(100)
+  assessmentRelationshipToArea     String?         @db.VarChar(100)
+  assessmentCompleted              Boolean         @default(false)
   selfAssessmentScore              Int?
   specializedBaseWeightUsed        Decimal?        @db.Decimal(10, 4)
   specializedQuestionModifierTotal Decimal?        @db.Decimal(10, 4)
@@ -255,13 +269,14 @@ model VoteSubmission {
 
   vote                    Vote                           @relation(fields: [voteId], references: [id], onDelete: Cascade)
   user                    User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
-  selectedOption          VoteOption                     @relation(fields: [selectedOptionId], references: [id], onDelete: Restrict)
+  selectedOption          VoteOption                     @relation(fields: [voteId, selectedOptionId], references: [voteId, id], onDelete: Restrict)
   weightedQuestionAnswers VoteSubmissionWeightedAnswer[]
 
   @@unique([voteId, userId])
   @@index([voteId])
   @@index([userId])
   @@index([selectedOptionId])
+  @@index([voteId, selectedOptionId])
   @@index([submittedAt])
 }
 

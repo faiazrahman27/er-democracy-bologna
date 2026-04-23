@@ -1,5 +1,12 @@
-import { IsString, IsOptional, IsEnum, Length } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsUrl, Length } from 'class-validator';
 import { ArticleStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
+
+const HTTP_URL_VALIDATION_OPTIONS = {
+  protocols: ['http', 'https'],
+  require_protocol: true,
+  require_tld: false,
+};
 
 export class UpdateArticleDto {
   @IsOptional()
@@ -17,7 +24,13 @@ export class UpdateArticleDto {
   content?: string;
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
+  @IsUrl(HTTP_URL_VALIDATION_OPTIONS, {
+    message: 'coverImageUrl must be a valid http or https URL',
+  })
   coverImageUrl?: string;
 
   @IsOptional()

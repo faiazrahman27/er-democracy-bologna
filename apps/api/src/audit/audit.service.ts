@@ -27,10 +27,10 @@ export class AuditService {
   async logAdminAction(input: AuditLogInput) {
     return this.prisma.adminAuditLog.create({
       data: {
-        adminUserId: input.adminUserId,
-        actionType: input.actionType,
-        targetType: input.targetType,
-        targetId: input.targetId,
+        adminUserId: this.truncateValue(input.adminUserId, 100),
+        actionType: this.truncateValue(input.actionType, 100),
+        targetType: this.truncateValue(input.targetType, 100),
+        targetId: this.truncateValue(input.targetId, 100),
         beforeJson:
           input.beforeJson !== undefined
             ? (input.beforeJson as object)
@@ -39,7 +39,7 @@ export class AuditService {
           input.afterJson !== undefined
             ? (input.afterJson as object)
             : undefined,
-        reason: input.reason,
+        reason: this.truncateOptionalValue(input.reason, 500),
       },
       select: {
         id: true,
@@ -56,10 +56,10 @@ export class AuditService {
     return this.prisma.authAuditLog.create({
       data: {
         userId: input.userId ?? undefined,
-        attemptedEmail: input.attemptedEmail ?? undefined,
-        eventType: input.eventType,
-        ipAddress: input.ipAddress ?? undefined,
-        userAgent: input.userAgent ?? undefined,
+        attemptedEmail: this.truncateOptionalValue(input.attemptedEmail, 255),
+        eventType: this.truncateValue(input.eventType, 100),
+        ipAddress: this.truncateOptionalValue(input.ipAddress, 100),
+        userAgent: this.truncateOptionalValue(input.userAgent, 500),
         metadataJson:
           input.metadata !== undefined ? (input.metadata as object) : undefined,
       },
@@ -72,5 +72,22 @@ export class AuditService {
         createdAt: true,
       },
     });
+  }
+
+  private truncateValue(value: string, maxLength: number): string {
+    return value.trim().slice(0, maxLength);
+  }
+
+  private truncateOptionalValue(
+    value: string | null | undefined,
+    maxLength: number,
+  ): string | undefined {
+    const normalized = value?.trim();
+
+    if (!normalized) {
+      return undefined;
+    }
+
+    return normalized.slice(0, maxLength);
   }
 }

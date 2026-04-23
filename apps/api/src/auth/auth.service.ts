@@ -21,6 +21,11 @@ type AccessTokenPayload = {
   role: string;
 };
 
+export type AuthRequestContext = {
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -64,7 +69,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, requestContext: AuthRequestContext = {}) {
     const attemptedEmail = loginDto.email.trim().toLowerCase();
     const user = await this.usersService.findByEmailForAuth(loginDto.email);
 
@@ -72,6 +77,7 @@ export class AuthService {
       await this.logAuthEventSafely({
         attemptedEmail,
         eventType: 'LOGIN_FAILED',
+        ...requestContext,
         metadata: {
           reason: 'USER_NOT_FOUND',
         },
@@ -85,6 +91,7 @@ export class AuthService {
         userId: user.id,
         attemptedEmail: user.email,
         eventType: 'LOGIN_BLOCKED',
+        ...requestContext,
         metadata: {
           reason: 'ACCOUNT_INACTIVE',
         },
@@ -98,6 +105,7 @@ export class AuthService {
         userId: user.id,
         attemptedEmail: user.email,
         eventType: 'LOGIN_BLOCKED',
+        ...requestContext,
         metadata: {
           reason: 'EMAIL_NOT_VERIFIED',
         },
@@ -115,6 +123,7 @@ export class AuthService {
         userId: user.id,
         attemptedEmail: user.email,
         eventType: 'LOGIN_BLOCKED',
+        ...requestContext,
         metadata: {
           reason: 'ACCOUNT_LOCKED',
           lockedUntil: user.lockedUntil.toISOString(),
@@ -149,6 +158,7 @@ export class AuthService {
         userId: user.id,
         attemptedEmail: user.email,
         eventType: 'LOGIN_FAILED',
+        ...requestContext,
         metadata: {
           reason: 'INVALID_PASSWORD',
           failedLoginCount: nextFailedLoginCount,
@@ -162,6 +172,7 @@ export class AuthService {
           userId: user.id,
           attemptedEmail: user.email,
           eventType: 'ACCOUNT_LOCKED',
+          ...requestContext,
           metadata: {
             failedLoginCount: nextFailedLoginCount,
             lockedUntil: lockedUntil?.toISOString(),
@@ -189,6 +200,7 @@ export class AuthService {
       userId: user.id,
       attemptedEmail: user.email,
       eventType: 'LOGIN_SUCCESS',
+      ...requestContext,
       metadata: {
         role: user.role,
       },
@@ -271,7 +283,7 @@ export class AuthService {
     };
   }
 
-  async verifyEmail(token: string) {
+  async verifyEmail(token: string, requestContext: AuthRequestContext = {}) {
     const normalizedToken = token.trim();
 
     if (!normalizedToken) {
@@ -326,6 +338,16 @@ export class AuthService {
       }),
     ]);
 
+    await this.logAuthEventSafely({
+      userId: tokenRecord.user.id,
+      attemptedEmail: tokenRecord.user.email,
+      eventType: 'EMAIL_VERIFIED',
+      ...requestContext,
+      metadata: {
+        role: tokenRecord.user.role,
+      },
+    });
+
     return {
       message: 'Email verified successfully',
       user: {
@@ -339,36 +361,73 @@ export class AuthService {
     };
   }
 
-  async resendVerificationEmail(email: string) {
-    const user = await this.usersService.findByEmailForAuth(email);
+  async resendVerificationEmail(
+    email: string,
+    requestContext: AuthRequestContext = {},
+  ) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const genericResponse = {
+      message:
+        'If an account with that email exists, a verification email has been sent.',
+    };
 
-    if (!user) {
-      return {
-        message:
-          'If an account with that email exists, a verification email has been sent.',
-      };
-    }
+    const user = await this.usersService.findByEmailForAuth(normalizedEmail);
 
-    if (user.emailVerified) {
-      return {
-        message: 'This email address is already verified.',
-      };
+    if (!user || user.emailVerified) {
+      await this.logAuthEventSafely({
+        userId: user?.id,
+        attemptedEmail: normalizedEmail,
+        eventType: 'VERIFICATION_RESEND_REQUEST',
+        ...requestContext,
+        metadata: {
+          userFound: !!user,
+          alreadyVerified: user?.emailVerified ?? false,
+        },
+      });
+
+      return genericResponse;
     }
 
     const verificationToken = await this.createEmailVerificationToken(user.id);
 
-    await this.sendVerificationEmail({
-      email: user.email,
-      fullName: user.fullName,
-      token: verificationToken,
+    try {
+      await this.sendVerificationEmail({
+        email: user.email,
+        fullName: user.fullName,
+        token: verificationToken,
+      });
+    } catch {
+      await this.logAuthEventSafely({
+        userId: user.id,
+        attemptedEmail: user.email,
+        eventType: 'VERIFICATION_RESEND_DELIVERY_FAILED',
+        ...requestContext,
+        metadata: {
+          userFound: true,
+        },
+      });
+
+      return genericResponse;
+    }
+
+    await this.logAuthEventSafely({
+      userId: user.id,
+      attemptedEmail: user.email,
+      eventType: 'VERIFICATION_RESEND_REQUEST',
+      ...requestContext,
+      metadata: {
+        userFound: true,
+        alreadyVerified: false,
+      },
     });
 
-    return {
-      message: 'Verification email sent successfully.',
-    };
+    return genericResponse;
   }
 
-  async requestPasswordReset(email: string) {
+  async requestPasswordReset(
+    email: string,
+    requestContext: AuthRequestContext = {},
+  ) {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail) {
@@ -384,6 +443,7 @@ export class AuthService {
       await this.logAuthEventSafely({
         attemptedEmail: normalizedEmail,
         eventType: 'PASSWORD_RESET_REQUEST',
+        ...requestContext,
         metadata: {
           userFound: false,
         },
@@ -397,16 +457,34 @@ export class AuthService {
 
     const resetToken = await this.createPasswordResetToken(user.id);
 
-    await this.sendPasswordResetEmail({
-      email: user.email,
-      fullName: user.fullName,
-      token: resetToken,
-    });
+    try {
+      await this.sendPasswordResetEmail({
+        email: user.email,
+        fullName: user.fullName,
+        token: resetToken,
+      });
+    } catch {
+      await this.logAuthEventSafely({
+        userId: user.id,
+        attemptedEmail: user.email,
+        eventType: 'PASSWORD_RESET_DELIVERY_FAILED',
+        ...requestContext,
+        metadata: {
+          userFound: true,
+        },
+      });
+
+      return {
+        message:
+          'If an account with that email exists, a password reset email has been sent.',
+      };
+    }
 
     await this.logAuthEventSafely({
       userId: user.id,
       attemptedEmail: user.email,
       eventType: 'PASSWORD_RESET_REQUEST',
+      ...requestContext,
       metadata: {
         userFound: true,
       },
@@ -418,7 +496,11 @@ export class AuthService {
     };
   }
 
-  async resetPassword(token: string, password: string) {
+  async resetPassword(
+    token: string,
+    password: string,
+    requestContext: AuthRequestContext = {},
+  ) {
     const normalizedToken = token.trim();
 
     if (!normalizedToken) {
@@ -487,6 +569,7 @@ export class AuthService {
     await this.logAuthEventSafely({
       userId: tokenRecord.userId,
       eventType: 'PASSWORD_RESET_SUCCESS',
+      ...requestContext,
       metadata: {
         refreshTokensRevoked: true,
       },
@@ -651,7 +734,7 @@ export class AuthService {
 
     if (result.error) {
       throw new InternalServerErrorException(
-        `Failed to send verification email: ${result.error.message}`,
+        'Unable to send verification email at this time',
       );
     }
   }
@@ -714,7 +797,7 @@ export class AuthService {
 
     if (result.error) {
       throw new InternalServerErrorException(
-        `Failed to send password reset email: ${result.error.message}`,
+        'Unable to send password reset email at this time',
       );
     }
   }
