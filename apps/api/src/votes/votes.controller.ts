@@ -24,6 +24,7 @@ import { PERMISSIONS } from '../auth/permissions/permissions.constants';
 import { roleHasPermission } from '../auth/permissions/role-permissions.constants';
 import { SupabaseService } from '../common/supabase/supabase.service';
 import { ImageUploadInterceptor } from '../common/upload/image-upload.interceptor';
+import { VoteWeightedPayloadCompatibilityGuard } from './vote-weighted-payload-compatibility.guard';
 
 type AuthenticatedUser = {
   id: string;
@@ -211,7 +212,11 @@ export class VotesController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+    VoteWeightedPayloadCompatibilityGuard,
+  )
   @RequirePermissions(PERMISSIONS.CONSULTATION_CREATE)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post()
@@ -225,7 +230,11 @@ export class VotesController {
     };
   }
 
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @UseGuards(
+    JwtAuthGuard,
+    PermissionsGuard,
+    VoteWeightedPayloadCompatibilityGuard,
+  )
   @RequirePermissions(PERMISSIONS.CONSULTATION_EDIT)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Patch(':slug')
@@ -236,7 +245,7 @@ export class VotesController {
     };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, VoteWeightedPayloadCompatibilityGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post(':slug/submit')
   async submitVote(

@@ -213,6 +213,31 @@ describe('VotesService', () => {
     );
   });
 
+  it('keeps specialized create payloads with no weighted questions on the no-op path', async () => {
+    prismaService.vote.findUnique.mockResolvedValue(null);
+    prismaService.vote.create.mockResolvedValue({
+      id: 'vote-1',
+      slug: 'mobility-plan',
+    });
+
+    await service.createVote(
+      'admin-1',
+      buildCreateVoteDto({
+        voteType: VoteTypeDto.SPECIALIZED,
+        weightedQuestions: [],
+      }),
+    );
+
+    expect(prismaService.vote.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          voteType: VoteTypeDto.SPECIALIZED,
+          weightedQuestions: undefined,
+        }),
+      }),
+    );
+  });
+
   it.each([VoteTypeDto.GENERAL, VoteTypeDto.SELF_ASSESSMENT])(
     'rejects weighted-question configuration on %s consultations',
     async (voteType) => {
@@ -557,8 +582,8 @@ describe('VotesService', () => {
         selectedOptionId: 'option-1',
       }),
     ).rejects.toThrow(
-        new BadRequestException('All weighted questions must be answered'),
-      );
+      new BadRequestException('All weighted questions must be answered'),
+    );
   });
 
   it.each([
@@ -636,7 +661,9 @@ describe('VotesService', () => {
         ],
       }),
     ).rejects.toThrow(
-      new BadRequestException('Each weighted question can only be answered once'),
+      new BadRequestException(
+        'Each weighted question can only be answered once',
+      ),
     );
   });
 
@@ -993,6 +1020,37 @@ describe('VotesService', () => {
                 },
               },
             ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('allows specialized consultations to clear weighted questions before any submissions exist', async () => {
+    prismaService.vote.findUnique.mockResolvedValue({
+      id: 'vote-1',
+      voteType: 'SPECIALIZED',
+      title: 'Mobility Plan',
+      summary: 'Summary',
+      methodologySummary: 'Methodology',
+      status: 'PUBLISHED',
+      startAt: new Date('2026-05-01T12:00:00.000Z'),
+      endAt: new Date('2026-05-10T12:00:00.000Z'),
+      isPublished: true,
+      submissions: [],
+      displaySettings: null,
+    });
+    prismaService.vote.update.mockResolvedValue({});
+
+    await service.updateVote('mobility-plan', {
+      weightedQuestions: [],
+    });
+
+    expect(prismaService.vote.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          weightedQuestions: {
+            deleteMany: {},
           },
         }),
       }),
@@ -1506,7 +1564,9 @@ describe('VotesService', () => {
     expect(result.participants[0]).not.toHaveProperty(
       'specializedQuestionModifierTotal',
     );
-    expect(result.participants[0]).not.toHaveProperty('weightedQuestionAnswers');
+    expect(result.participants[0]).not.toHaveProperty(
+      'weightedQuestionAnswers',
+    );
   });
 
   it('includes secret user IDs and weighted-question details in participant lists when secret lookup access is enabled', async () => {

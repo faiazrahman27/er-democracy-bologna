@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { ValidationError, validate } from 'class-validator';
 import { ResultVisibilityModeDto } from './create-vote-display-settings.dto';
@@ -48,6 +49,18 @@ describe('Weighted question DTO validation', () => {
       optionText: 'Neutral',
       modifier: 0,
       displayOrder: 1,
+    });
+  });
+
+  it('accepts specialized create payloads with no weighted questions configured', async () => {
+    const transformed = await transformWithApiPipe(CreateVoteDto, {
+      ...buildCreateVotePayload(),
+      weightedQuestions: [],
+    });
+
+    expect(transformed).toMatchObject({
+      voteType: VoteTypeDto.SPECIALIZED,
+      weightedQuestions: [],
     });
   });
 
@@ -219,12 +232,137 @@ describe('Weighted question DTO validation', () => {
     expect(messages).toContain('questionId should not be empty');
     expect(messages).toContain('optionId should not be empty');
   });
+
+  it('rejects create payloads that use label instead of optionText', async () => {
+    const messages = await transformAndCollectMessages(
+      CreateVoteDto,
+      buildCreateVotePayload({
+        weightedQuestions: [
+          {
+            prompt: 'How closely does this topic match your expertise?',
+            displayOrder: 1,
+            answerOptions: [
+              {
+                label: 'Directly relevant',
+                modifier: 0.35,
+                displayOrder: 1,
+              },
+              {
+                label: 'Neutral',
+                modifier: 0,
+                displayOrder: 2,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(messages).toContain(
+      'weightedQuestions.0.answerOptions.0.property label should not exist',
+    );
+    expect(messages).toContain(
+      'weightedQuestions.0.answerOptions.0.optionText is required',
+    );
+  });
+
+  it('rejects missing option displayOrder with a clearer required-field message', async () => {
+    const messages = await transformAndCollectMessages(
+      CreateVoteDto,
+      buildCreateVotePayload({
+        options: [
+          { optionText: 'Option A' },
+          { optionText: 'Option B', displayOrder: 2 },
+        ],
+      }),
+    );
+
+    expect(messages).toContain('options.0.displayOrder is required');
+  });
+
+  it('rejects incomplete displaySettings with required-field messages', async () => {
+    const messages = await transformAndCollectMessages(
+      CreateVoteDto,
+      buildCreateVotePayload({
+        displaySettings: {
+          resultVisibilityMode: ResultVisibilityModeDto.HIDE_ALL,
+          showParticipationStats: false,
+        },
+      }),
+    );
+
+    expect(messages).toContain(
+      'displaySettings.showStakeholderBreakdown is required',
+    );
+    expect(messages).toContain(
+      'displaySettings.showOnlyAfterVoteCloses is required',
+    );
+  });
+});
+
+const apiValidationPipe = new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: true,
+  transform: true,
+  transformOptions: {
+    enableImplicitConversion: false,
+  },
 });
 
 async function validateAndCollectMessages(instance: object) {
   const errors = await validate(instance);
 
   return collectMessages(errors);
+}
+
+async function transformAndCollectMessages(
+  metatype: new () => object,
+  payload: object,
+) {
+  try {
+    await transformWithApiPipe(metatype, payload);
+    return [];
+  } catch (error) {
+    return collectPipeMessages(error);
+  }
+}
+
+async function transformWithApiPipe(
+  metatype: new () => object,
+  payload: object,
+) {
+  return apiValidationPipe.transform(payload, {
+    type: 'body',
+    metatype,
+  });
+}
+
+function collectPipeMessages(error: unknown): string[] {
+  if (!(error instanceof BadRequestException)) {
+    throw error;
+  }
+
+  const response = error.getResponse();
+
+  if (
+    typeof response === 'object' &&
+    response !== null &&
+    'message' in response
+  ) {
+    const message = response.message;
+
+    if (typeof message === 'string') {
+      return [message];
+    }
+
+    if (Array.isArray(message)) {
+      return message.filter(
+        (value): value is string => typeof value === 'string',
+      );
+    }
+  }
+
+  return [error.message];
 }
 
 function collectMessages(

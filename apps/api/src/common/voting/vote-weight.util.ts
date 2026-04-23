@@ -256,6 +256,8 @@ const NON_DISCRIMINATIVE_ALIAS_TOKENS = new Set([
   'access',
   'activities',
   'activity',
+  'communication',
+  'coordination',
   'care',
   'community',
   'communities',
@@ -264,11 +266,18 @@ const NON_DISCRIMINATIVE_ALIAS_TOKENS = new Set([
   'delivery',
   'design',
   'development',
+  'digital',
+  'enterprise',
   'evidence',
+  'financial',
   'general',
+  'governance',
   'initiative',
   'initiatives',
+  'innovation',
+  'infrastructure',
   'local',
+  'management',
   'operations',
   'participation',
   'plan',
@@ -282,14 +291,18 @@ const NON_DISCRIMINATIVE_ALIAS_TOKENS = new Set([
   'projects',
   'public',
   'quality',
+  'research',
   'review',
   'reviews',
+  'security',
   'service',
   'services',
   'strategy',
   'support',
   'system',
   'systems',
+  'training',
+  'transformation',
   'wellbeing',
   'workshop',
   'workshops',
@@ -439,10 +452,25 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'campus life',
       'campus housing',
       'student housing',
+      'campus facilities',
       'lecture halls',
+      'library services',
       'course scheduling',
+      'exam scheduling',
+      'study spaces',
+      'tutorial services',
+      'student wellbeing',
+      'student counselling',
+      'student representation',
+      'teaching quality',
       'academic support',
       'higher education',
+      'scholarship services',
+      'borse di studio',
+      'didattica universitaria',
+      'diritto allo studio',
+      'aule studio',
+      'segreterie studenti',
       'servizi agli studenti',
       'vita universitaria',
       'ateneo',
@@ -456,7 +484,14 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'classroom learning',
       'school curriculum',
       'secondary education',
+      'school timetable',
+      'school transport',
+      'after school programmes',
+      'student guidance',
+      'canteen services',
       'didattica scolastica',
+      'orientamento scolastico',
+      'mensa scolastica',
       'vita scolastica',
       'scuola',
     ],
@@ -468,7 +503,14 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'commercial activity',
       'business development',
       'small enterprise',
+      'local retail',
+      'merchant services',
+      'main street commerce',
+      'commercial permits',
+      'neighborhood shops',
+      'attivita commerciali',
       'commercio locale',
+      'negozi di vicinato',
       'impresa',
     ],
     0.62,
@@ -479,7 +521,14 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'venture creation',
       'innovation hub',
       'business incubation',
+      'startup financing',
+      'accelerator programmes',
+      'new venture growth',
+      'innovation ecosystem',
+      'accelerazione d impresa',
+      'ecosistema startup',
       'impresa innovativa',
+      'nuove imprese',
       'imprenditoria',
     ],
     0.68,
@@ -489,6 +538,13 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'workplace conditions',
       'company workforce',
       'industry employment',
+      'employee commuting',
+      'workforce development',
+      'occupational safety',
+      'company operations',
+      'shift work',
+      'pendolarismo lavorativo',
+      'sicurezza sul lavoro',
       'settore privato',
       'corporate work',
     ],
@@ -499,6 +555,13 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'municipal staff',
       'public administration',
       'local government operations',
+      'public service delivery',
+      'administrative offices',
+      'municipal workforce',
+      'service counters',
+      'public agency operations',
+      'enti pubblici',
+      'sportelli pubblici',
       'servizi pubblici',
       'amministrazione comunale',
     ],
@@ -509,6 +572,12 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'independent professionals',
       'freelance work',
       'creative freelancing',
+      'client work',
+      'independent consulting',
+      'project based work',
+      'portfolio careers',
+      'partita iva',
+      'coworking',
       'liberi professionisti',
     ],
     0.56,
@@ -518,6 +587,12 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'self employed workers',
       'independent business',
       'small enterprise',
+      'micro enterprise',
+      'professional practice',
+      'independent trade',
+      'self employment support',
+      'attivita autonoma',
+      'lavoro autonomo',
       'lavoratori autonomi',
     ],
     0.58,
@@ -528,6 +603,19 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'evidence synthesis',
       'data collection',
       'laboratory work',
+      'applied research',
+      'research methodology',
+      'research evaluation',
+      'survey research',
+      'peer review',
+      'field studies',
+      'research protocols',
+      'research design',
+      'academic publishing',
+      'metodologia della ricerca',
+      'protocolli di ricerca',
+      'pubblicazioni scientifiche',
+      'valutazione della ricerca',
       'ricerca scientifica',
       'ricerca accademica',
     ],
@@ -539,7 +627,19 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'higher education policy',
       'university operations',
       'academic services',
+      'degree programmes',
+      'curriculum governance',
+      'teaching quality assurance',
+      'course accreditation',
+      'faculty senate',
+      'department governance',
+      'research supervision',
+      'course delivery',
+      'programmi di studio',
+      'coordinamento dei corsi',
+      'didattica universitaria',
       'governo accademico',
+      'senato accademico',
       'universita',
     ],
     0.68,
@@ -550,8 +650,15 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'classroom practice',
       'curriculum design',
       'school pedagogy',
+      'student assessment',
+      'lesson planning',
+      'school inclusion',
+      'learning pathways',
+      'classroom management',
       'formazione docenti',
       'insegnamento',
+      'orientamento didattico',
+      'valutazione degli studenti',
     ],
     0.66,
   ),
@@ -560,6 +667,13 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'nonprofit services',
       'civic organizations',
       'community advocacy',
+      'social impact programmes',
+      'nonprofit partnerships',
+      'humanitarian aid',
+      'community outreach',
+      'advocacy campaigns',
+      'associazionismo civico',
+      'cooperazione sociale',
       'terzo settore',
       'organizzazioni civiche',
     ],
@@ -570,7 +684,13 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'community volunteering',
       'mutual aid',
       'civic support',
+      'community assistance',
+      'food distribution',
+      'emergency volunteering',
+      'neighborhood mutual aid',
+      'aiuto di prossimita',
       'volontariato',
+      'volontariato civico',
       'supporto civico',
     ],
     0.54,
@@ -580,6 +700,19 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'public office',
       'municipal administration',
       'administrative procedure',
+      'permit processing',
+      'administrative enforcement',
+      'municipal regulation',
+      'public records',
+      'records management',
+      'service counters',
+      'public registry',
+      'administrative acts',
+      'sportello unico',
+      'sportello comunale',
+      'atti amministrativi',
+      'procedimenti amministrativi',
+      'attuazione amministrativa',
       'servizi comunali',
       'ufficio pubblico',
       'comune',
@@ -592,6 +725,19 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'regulatory framework',
       'strategic governance',
       'public decision making',
+      'policy implementation',
+      'institutional coordination',
+      'preparedness planning',
+      'response governance',
+      'regulatory strategy',
+      'legislative agenda',
+      'programme steering',
+      'policy oversight',
+      'institutional reform',
+      'indirizzo politico',
+      'programmazione strategica',
+      'coordinamento istituzionale',
+      'attuazione delle politiche',
       'definizione delle politiche',
       'governance pubblica',
     ],
@@ -603,6 +749,19 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'hospital services',
       'clinical operations',
       'health services',
+      'emergency triage',
+      'frontline care',
+      'hospital coordination',
+      'clinical pathways',
+      'care continuity',
+      'triage',
+      'ward operations',
+      'outpatient care',
+      'hospital staffing',
+      'assistenza clinica',
+      'reparti ospedalieri',
+      'pronto soccorso',
+      'coordinamento ospedaliero',
       'assistenza sanitaria',
       'ospedale',
     ],
@@ -614,6 +773,20 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'justice system',
       'rights protection',
       'regulatory interpretation',
+      'administrative law',
+      'municipal regulation',
+      'ordinance compliance',
+      'regulatory enforcement',
+      'statutory obligations',
+      'licensing compliance',
+      'administrative appeals',
+      'public procurement law',
+      'contract compliance',
+      'appalti pubblici',
+      'diritto amministrativo',
+      'ricorsi amministrativi',
+      'regolamenti comunali',
+      'conformita normativa',
       'normativa',
       'giustizia',
     ],
@@ -625,7 +798,13 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'visual communication',
       'cultural production',
       'design practice',
+      'graphic design',
+      'audiovisual production',
+      'creative direction',
+      'exhibition design',
+      'comunicazione visiva',
       'industrie culturali',
+      'produzione audiovisiva',
       'progettazione creativa',
     ],
     0.62,
@@ -636,6 +815,12 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'job training',
       'labour market support',
       'workforce transition',
+      'job placement',
+      'reskilling programmes',
+      'career counselling',
+      'employability services',
+      'orientamento al lavoro',
+      'ricollocazione',
       'servizi per il lavoro',
     ],
     0.48,
@@ -646,6 +831,12 @@ const ROLE_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'ageing policy',
       'elder care',
       'pension systems',
+      'active ageing',
+      'senior mobility',
+      'community centres',
+      'pensioner services',
+      'centri anziani',
+      'invecchiamento attivo',
       'servizi per anziani',
       'pensione',
     ],
@@ -660,6 +851,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'commercial strategy',
       'enterprise governance',
       'organizational management',
+      'business operations',
+      'operations management',
+      'business continuity',
+      'commercial management',
+      'gestione operativa',
+      'governance aziendale',
       'gestione aziendale',
       'sviluppo d impresa',
     ],
@@ -671,9 +868,16 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'public budget',
       'financial planning',
       'investment strategy',
+      'cost benefit analysis',
+      'fiscal policy',
+      'economic impact assessment',
+      'budget forecasting',
+      'analisi economica',
       'economia',
       'finanza',
       'bilancio',
+      'politica fiscale',
+      'spesa pubblica',
     ],
     0.62,
   ),
@@ -683,7 +887,13 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'audit controls',
       'regulatory audit',
       'bookkeeping',
+      'internal controls',
+      'expense reporting',
+      'audit trail',
+      'financial compliance',
       'contabilita',
+      'audit interno',
+      'controllo di gestione',
       'revisione contabile',
     ],
     0.7,
@@ -694,8 +904,15 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'brand strategy',
       'outreach campaign',
       'stakeholder communication',
+      'audience engagement',
+      'content strategy',
+      'campaign planning',
+      'institutional communication',
+      'brand positioning',
+      'campagne informative',
       'marketing territoriale',
       'comunicazione pubblica',
+      'comunicazione istituzionale',
     ],
     0.58,
   ),
@@ -705,8 +922,15 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'innovation policy',
       'venture creation',
       'business incubation',
+      'innovation ecosystem',
+      'accelerator programmes',
+      'venture building',
+      'startup support',
+      'technology transfer',
+      'ecosistema innovazione',
       'innovazione',
       'startup',
+      'trasferimento tecnologico',
     ],
     0.68,
   ),
@@ -716,7 +940,13 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'algorithms',
       'software platforms',
       'informatics',
+      'distributed systems',
+      'database systems',
+      'computational methods',
+      'programming languages',
+      'basi di dati',
       'informatica',
+      'programmazione',
       'sistemi digitali',
     ],
     0.7,
@@ -727,6 +957,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'application platform',
       'software development',
       'developer tools',
+      'backend services',
+      'system integration',
+      'api design',
+      'quality assurance',
+      'continuous integration',
+      'integrazione applicativa',
       'sviluppo software',
       'architettura software',
     ],
@@ -738,7 +974,14 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'statistical modelling',
       'data platform',
       'predictive analysis',
+      'data governance',
+      'data pipelines',
+      'statistical inference',
+      'forecasting models',
+      'business intelligence',
       'analisi dei dati',
+      'governance dei dati',
+      'modellazione predittiva',
       'modelli statistici',
     ],
     0.76,
@@ -749,8 +992,15 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'algorithmic systems',
       'predictive models',
       'neural systems',
+      'ai systems',
+      'model deployment',
+      'natural language processing',
+      'computer vision',
+      'decision support algorithms',
+      'modelli generativi',
       'intelligenza artificiale',
       'apprendimento automatico',
+      'visione artificiale',
     ],
     0.82,
   ),
@@ -760,6 +1010,13 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'incident response',
       'privacy protection',
       'threat prevention',
+      'cyber incident response',
+      'network security',
+      'vulnerability management',
+      'identity access management',
+      'security operations',
+      'incidenti cyber',
+      'sicurezza delle reti',
       'sicurezza informatica',
       'protezione dei dati',
     ],
@@ -771,6 +1028,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'enterprise systems',
       'it infrastructure',
       'digital operations',
+      'enterprise architecture',
+      'digital transformation',
+      'erp systems',
+      'information governance',
+      'service integration',
+      'governance dei sistemi informativi',
       'sistemi informativi',
       'servizi digitali',
     ],
@@ -781,6 +1044,11 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'technical infrastructure',
       'systems engineering',
       'engineering design',
+      'technical feasibility',
+      'engineering standards',
+      'system reliability',
+      'project engineering',
+      'affidabilita tecnica',
       'infrastrutture tecniche',
       'progettazione tecnica',
     ],
@@ -792,6 +1060,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'manufacturing systems',
       'supply chain',
       'industrial operations',
+      'production planning',
+      'process engineering',
+      'operational efficiency',
+      'lean manufacturing',
+      'industrial logistics',
+      'gestione della produzione',
       'ingegneria industriale',
       'ottimizzazione dei processi',
     ],
@@ -803,6 +1077,20 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'roads and bridges',
       'structural safety',
       'construction works',
+      'drainage systems',
+      'bridge maintenance',
+      'road safety engineering',
+      'transport corridors',
+      'water infrastructure',
+      'stormwater management',
+      'structural inspections',
+      'road maintenance',
+      'bridge retrofits',
+      'hydraulic infrastructure',
+      'idraulica urbana',
+      'manutenzione stradale',
+      'rete stradale',
+      'sicurezza strutturale',
       'infrastrutture civili',
       'opere pubbliche',
     ],
@@ -814,6 +1102,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'electrical grid',
       'energy distribution',
       'electronics infrastructure',
+      'smart grid',
+      'electrical substations',
+      'charging infrastructure',
+      'grid resilience',
+      'power electronics',
+      'impianti elettrici',
       'rete elettrica',
       'sistemi elettrici',
     ],
@@ -825,6 +1119,19 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'machinery',
       'manufacturing equipment',
       'thermal systems',
+      'hvac systems',
+      'heating and cooling systems',
+      'heat exchange',
+      'fluid systems',
+      'thermodynamics',
+      'building services engineering',
+      'thermal plant',
+      'fluid dynamics',
+      'energy efficiency retrofit',
+      'centrali termiche',
+      'climatizzazione',
+      'impianti termici',
+      'scambiatori di calore',
       'impianti meccanici',
       'macchinari',
     ],
@@ -837,6 +1144,21 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'spatial planning',
       'land use',
       'built environment',
+      'urban mobility planning',
+      'street design',
+      'walkability',
+      'neighborhood planning',
+      'public realm',
+      'master planning',
+      'urban design',
+      'zoning',
+      'streetscape design',
+      'assetto urbano',
+      'pianificazione della mobilita',
+      'progettazione urbana',
+      'spazio urbano',
+      'progettazione stradale',
+      'uso del suolo',
       'urbanistica',
       'rigenerazione urbana',
       'quartieri',
@@ -850,6 +1172,18 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'education policy',
       'schools and universities',
       'student learning',
+      'teaching quality',
+      'learning outcomes',
+      'student services',
+      'study spaces',
+      'curriculum governance',
+      'assessment design',
+      'student support services',
+      'learning pathways',
+      'governance didattica',
+      'didattica universitaria',
+      'servizi per studenti',
+      'supporto didattico',
       'istruzione',
       'apprendimento',
       'scuola',
@@ -863,8 +1197,14 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'professional training',
       'instructional design',
       'classroom pedagogy',
+      'adult education',
+      'teacher coaching',
+      'skills training',
+      'professional development',
       'formazione',
       'didattica',
+      'formazione professionale',
+      'progettazione formativa',
     ],
     0.62,
   ),
@@ -874,6 +1214,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'community research',
       'social inequality',
       'societal analysis',
+      'community engagement',
+      'demographic analysis',
+      'participatory research',
+      'social cohesion',
+      'analisi sociale',
+      'ricerca sociale',
       'scienze sociali',
       'inclusione sociale',
     ],
@@ -885,6 +1231,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'civic participation',
       'public governance',
       'electoral systems',
+      'policy analysis',
+      'institutional design',
+      'democratic governance',
+      'civic institutions',
+      'analisi politica',
+      'istituzioni democratiche',
       'scienze politiche',
       'partecipazione civica',
     ],
@@ -896,6 +1248,19 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'local government',
       'administrative reform',
       'civic administration',
+      'permit administration',
+      'administrative enforcement',
+      'policy implementation',
+      'emergency coordination',
+      'institutional coordination',
+      'administrative procedure',
+      'public procurement',
+      'service delivery reform',
+      'performance management',
+      'governo locale',
+      'sportello unico',
+      'attuazione delle politiche',
+      'regolamenti comunali',
       'amministrazione pubblica',
       'servizi comunali',
       'comune',
@@ -908,6 +1273,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'migration policy',
       'diplomatic relations',
       'european affairs',
+      'cross border cooperation',
+      'european policy',
+      'international development',
+      'global governance',
+      'affari europei',
+      'cooperazione transfrontaliera',
       'relazioni internazionali',
       'cooperazione internazionale',
     ],
@@ -919,6 +1290,20 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'regulatory compliance',
       'rights protection',
       'justice policy',
+      'administrative law',
+      'municipal regulation',
+      'regulatory enforcement',
+      'legal obligations',
+      'public procurement law',
+      'licensing rules',
+      'administrative appeals',
+      'contract compliance',
+      'appalti pubblici',
+      'diritto amministrativo',
+      'obblighi legali',
+      'ricorsi amministrativi',
+      'regolamenti comunali',
+      'conformita normativa',
       'diritto',
       'normativa',
       'tutela dei diritti',
@@ -931,6 +1316,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'crime prevention',
       'policing policy',
       'emergency response',
+      'community safety',
+      'emergency management',
+      'urban security',
+      'civil protection',
+      'polizia locale',
+      'protezione civile',
       'sicurezza pubblica',
       'prevenzione del crimine',
     ],
@@ -942,6 +1333,17 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'patient care',
       'clinical access',
       'care delivery',
+      'hospital coordination',
+      'care continuity',
+      'emergency triage',
+      'healthcare resilience',
+      'primary care',
+      'outpatient services',
+      'care pathways',
+      'hospital access',
+      'continuita assistenziale',
+      'presa in carico',
+      'pronto soccorso',
       'sanita',
       'assistenza sanitaria',
     ],
@@ -952,9 +1354,15 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'clinical treatment',
       'medical diagnosis',
       'hospital medicine',
+      'clinical protocols',
+      'diagnostic pathways',
+      'specialist care',
+      'medical wards',
       'medicina clinica',
       'diagnosi medica',
       'ospedale',
+      'percorsi clinici',
+      'protocolli clinici',
     ],
     0.76,
   ),
@@ -963,6 +1371,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'nursing care',
       'patient assistance',
       'care coordination',
+      'patient monitoring',
+      'ward care',
+      'nursing staff coordination',
+      'bedside assistance',
+      'assistenza di reparto',
+      'coordinamento infermieristico',
       'infermieristica',
       'assistenza ai pazienti',
     ],
@@ -974,6 +1388,20 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'epidemiology',
       'health promotion',
       'population health',
+      'emergency preparedness',
+      'outbreak response',
+      'epidemiological surveillance',
+      'health emergency coordination',
+      'preparedness exercises',
+      'vaccination campaigns',
+      'screening programmes',
+      'health surveillance',
+      'prevention programmes',
+      'prevenzione collettiva',
+      'emergenza sanitaria',
+      'sanita territoriale',
+      'sorveglianza epidemiologica',
+      'preparazione alle emergenze',
       'salute pubblica',
       'prevenzione sanitaria',
     ],
@@ -985,6 +1413,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'behavioural support',
       'counselling services',
       'psychological wellbeing',
+      'psychological services',
+      'emotional wellbeing',
+      'behavioral health',
+      'mental health support',
+      'benessere psicologico',
+      'consulenza psicologica',
       'salute mentale',
       'supporto psicologico',
     ],
@@ -996,8 +1430,14 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'ethics and values',
       'literary culture',
       'humanistic studies',
+      'cultural interpretation',
+      'humanistic education',
+      'critical studies',
+      'heritage interpretation',
+      'interpretazione culturale',
       'patrimonio culturale',
       'studi umanistici',
+      'studi culturali',
     ],
     0.46,
   ),
@@ -1006,6 +1446,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'historical heritage',
       'archives and memory',
       'museum collections',
+      'local archives',
+      'public memory',
+      'historical research',
+      'archival heritage',
+      'memoria pubblica',
+      'ricerca storica',
       'storia locale',
       'archivi storici',
     ],
@@ -1016,6 +1462,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'ethical reflection',
       'moral reasoning',
       'public ethics',
+      'applied ethics',
+      'bioethics',
+      'civic ethics',
+      'ethics committees',
+      'bioetica',
+      'etica applicata',
       'filosofia morale',
       'etica pubblica',
     ],
@@ -1027,8 +1479,14 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'translation studies',
       'literary education',
       'multilingual communication',
+      'language mediation',
+      'reading promotion',
+      'literary studies',
+      'translation services',
       'lingue',
       'letteratura',
+      'mediazione linguistica',
+      'promozione della lettura',
     ],
     0.62,
   ),
@@ -1037,8 +1495,14 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'visual design',
       'creative production',
       'cultural design',
+      'graphic communication',
+      'service design',
+      'exhibition design',
+      'creative direction',
       'arti visive',
       'design culturale',
+      'direzione creativa',
+      'progettazione visiva',
     ],
     0.64,
   ),
@@ -1048,6 +1512,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'journalistic reporting',
       'digital publishing',
       'public information',
+      'editorial policy',
+      'fact checking',
+      'local news',
+      'investigative reporting',
+      'editoria digitale',
+      'informazione locale',
       'giornalismo',
       'mezzi di comunicazione',
     ],
@@ -1059,9 +1529,23 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'green infrastructure',
       'energy transition',
       'biodiversity',
+      'climate adaptation',
+      'decarbonization',
+      'emissions reduction',
+      'sustainable mobility',
+      'urban sustainability',
+      'climate mitigation',
+      'environmental assessment',
+      'resource efficiency',
+      'urban ecology',
+      'adattamento climatico',
+      'efficienza delle risorse',
+      'mobilita sostenibile',
+      'decarbonizzazione',
       'economia circolare',
       'sostenibilita',
       'ambiente',
+      'valutazione ambientale',
       'clima',
     ],
     0.8,
@@ -1072,8 +1556,14 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'agricultural production',
       'rural development',
       'agri food chain',
+      'food security',
+      'agroecology',
+      'short supply chains',
+      'food distribution',
       'agricoltura',
+      'filiera corta',
       'filiera alimentare',
+      'sicurezza alimentare',
     ],
     0.72,
   ),
@@ -1083,6 +1573,12 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'destination management',
       'hospitality services',
       'tourism strategy',
+      'visitor services',
+      'cultural tourism',
+      'hotel operations',
+      'destination promotion',
+      'accoglienza turistica',
+      'gestione dei flussi turistici',
       'turismo',
       'ospitalita',
     ],
@@ -1096,8 +1592,23 @@ const BACKGROUND_SEMANTIC_EXPANSIONS: Record<string, SemanticExpansion> = {
       'bus network',
       'tram service',
       'traffic management',
+      'multimodal transport',
+      'mobility hubs',
+      'street safety',
+      'pedestrian network',
+      'local transit',
+      'intermodal exchange',
+      'transit planning',
+      'shared mobility',
+      'mobility demand management',
+      'rail services',
+      'road circulation',
+      'pianificazione del traffico',
+      'sicurezza stradale',
+      'mobilita multimodale',
       'mobilita',
       'trasporto',
+      'trasporto pubblico locale',
       'piste ciclabili',
       'autobus',
     ],
@@ -1548,11 +2059,14 @@ function getPrimaryRelevanceWeight(
   if (relevanceLevel === 'strong') {
     const synergy =
       stakeholderRoleMatch.kind !== 'none' && backgroundInfluence.active
-        ? 0.04
+        ? 0.03
         : 0;
 
     return (
-      1.04 + stakeholderRoleContribution + backgroundContribution + synergy
+      0.98 +
+      stakeholderRoleContribution * 0.95 +
+      backgroundContribution * 0.92 +
+      synergy
     );
   }
 
@@ -1563,17 +2077,17 @@ function getPrimaryRelevanceWeight(
         : 0;
 
     return (
-      0.94 +
-      stakeholderRoleContribution * 0.75 +
-      backgroundContribution * 0.85 +
+      0.92 +
+      stakeholderRoleContribution * 0.78 +
+      backgroundContribution * 0.88 +
       synergy
     );
   }
 
-  let penalty = 0.16;
+  let penalty = 0.15;
 
   if (stakeholderRoleMatch.kind === 'none') {
-    penalty += 0.18;
+    penalty += 0.17;
   } else if (stakeholderRoleMatch.kind === 'partial') {
     penalty += 0.04;
   }
@@ -1582,7 +2096,7 @@ function getPrimaryRelevanceWeight(
     !backgroundInfluence.active ||
     backgroundInfluence.match.kind === 'none'
   ) {
-    penalty += 0.12;
+    penalty += 0.1;
   } else if (!backgroundInfluence.stronglyActive) {
     penalty += 0.03;
   }
@@ -1590,8 +2104,10 @@ function getPrimaryRelevanceWeight(
   return (
     1 -
     penalty +
-    stakeholderRoleContribution * 0.22 +
-    backgroundContribution * 0.22
+    stakeholderRoleContribution * 0.3 +
+    backgroundContribution * 0.34 +
+    stakeholderRoleMatch.strength * 0.03 +
+    backgroundInfluence.match.strength * 0.05
   );
 }
 
@@ -1684,10 +2200,6 @@ function getExperienceAdjustment(
   experienceLevel: string | null | undefined,
   yearsOfExperience: number | null | undefined,
 ): number {
-  if (relevanceLevel === 'weak') {
-    return 0;
-  }
-
   const expertiseDepthScore = getExpertiseDepthScore(
     experienceLevel,
     yearsOfExperience,
@@ -1695,6 +2207,23 @@ function getExperienceAdjustment(
 
   if (expertiseDepthScore === 0) {
     return 0;
+  }
+
+  if (relevanceLevel === 'weak') {
+    const applicability = clamp(
+      stakeholderRoleMatch.strength * 0.32 +
+        backgroundInfluence.match.strength * 0.36 +
+        backgroundInfluence.applicability * 0.18 +
+        0.18,
+      0,
+      0.48,
+    );
+
+    if (applicability < 0.06) {
+      return 0;
+    }
+
+    return round(0.05 * expertiseDepthScore * applicability);
   }
 
   const applicability = clamp(
@@ -1705,7 +2234,7 @@ function getExperienceAdjustment(
     1,
   );
 
-  const cap = relevanceLevel === 'strong' ? 0.11 : 0.045;
+  const cap = relevanceLevel === 'strong' ? 0.085 : 0.05;
 
   return round(cap * expertiseDepthScore * applicability);
 }
@@ -1716,14 +2245,27 @@ function getStudyLevelAdjustment(
   backgroundInfluence: BackgroundInfluence,
   studyLevel: string | null | undefined,
 ): number {
-  if (relevanceLevel === 'weak') {
-    return 0;
-  }
-
   const studyLevelScore = getStudyLevelScore(studyLevel);
 
   if (studyLevelScore === 0) {
     return 0;
+  }
+
+  if (relevanceLevel === 'weak') {
+    const applicability = clamp(
+      backgroundInfluence.match.strength * 0.42 +
+        stakeholderRoleMatch.strength * 0.24 +
+        backgroundInfluence.applicability * 0.12 +
+        0.12,
+      0,
+      0.4,
+    );
+
+    if (applicability < 0.05) {
+      return 0;
+    }
+
+    return round(0.02 * studyLevelScore * applicability);
   }
 
   const applicability = clamp(
@@ -1738,7 +2280,7 @@ function getStudyLevelAdjustment(
     return 0;
   }
 
-  const cap = relevanceLevel === 'strong' ? 0.07 : 0.026;
+  const cap = relevanceLevel === 'strong' ? 0.055 : 0.03;
   return round(cap * studyLevelScore * applicability);
 }
 
@@ -1752,14 +2294,14 @@ function getSignalResolutionAdjustment(
     backgroundInfluence.match.strength * 0.42;
 
   if (relevanceLevel === 'strong') {
-    return round((combinedStrength - 0.55) * 0.05);
+    return round((combinedStrength - 0.6) * 0.04);
   }
 
   if (relevanceLevel === 'partial') {
-    return round((combinedStrength - 0.35) * 0.03);
+    return round((combinedStrength - 0.34) * 0.032);
   }
 
-  return round((combinedStrength - 0.15) * 0.02);
+  return round((combinedStrength - 0.08) * 0.04);
 }
 
 function isLocationRelevant(
@@ -1780,7 +2322,7 @@ function getRelationshipToAreaAdjustment(
   locationRelevant: boolean,
   relationshipToArea: string | null | undefined,
 ): number {
-  if (!locationRelevant || relevanceLevel === 'weak') {
+  if (!locationRelevant) {
     return 0;
   }
 
@@ -1788,22 +2330,35 @@ function getRelationshipToAreaAdjustment(
 
   switch (normalizeValue(relationshipToArea)) {
     case 'resident':
-      baseAdjustment = 0.035;
+      baseAdjustment =
+        relevanceLevel === 'strong'
+          ? 0.028
+          : relevanceLevel === 'partial'
+            ? 0.018
+            : 0.012;
       break;
     case 'non resident':
-      baseAdjustment = 0.012;
+      baseAdjustment =
+        relevanceLevel === 'strong'
+          ? 0.01
+          : relevanceLevel === 'partial'
+            ? 0.007
+            : 0.004;
       break;
     case 'visitor':
-      baseAdjustment = -0.018;
+      baseAdjustment =
+        relevanceLevel === 'strong'
+          ? -0.016
+          : relevanceLevel === 'partial'
+            ? -0.012
+            : -0.01;
       break;
     default:
       baseAdjustment = 0;
       break;
   }
 
-  return relevanceLevel === 'strong'
-    ? baseAdjustment
-    : round(baseAdjustment * 0.7);
+  return round(baseAdjustment);
 }
 
 function getCityAdjustment(
@@ -1812,7 +2367,7 @@ function getCityAdjustment(
   locationRelevant: boolean,
   city: string | null | undefined,
 ): number {
-  if (!locationRelevant || relevanceLevel === 'weak') {
+  if (!locationRelevant) {
     return 0;
   }
 
@@ -1822,7 +2377,81 @@ function getCityAdjustment(
     return 0;
   }
 
-  return relevanceLevel === 'strong' ? 0.015 : 0.01;
+  return relevanceLevel === 'strong'
+    ? 0.012
+    : relevanceLevel === 'partial'
+      ? 0.008
+      : 0.004;
+}
+
+function getExceptionalSpecialistAdjustment(
+  relevanceLevel: RelevanceLevel,
+  stakeholderRoleMatch: FieldMatch,
+  backgroundInfluence: BackgroundInfluence,
+  contextSignals: ConsultationContextSignals,
+  assessment: AssessmentForWeighting,
+): number {
+  if (
+    relevanceLevel !== 'strong' ||
+    stakeholderRoleMatch.kind !== 'strong' ||
+    backgroundInfluence.match.kind !== 'strong' ||
+    !backgroundInfluence.stronglyActive
+  ) {
+    return 0;
+  }
+
+  const normalizedRelationship = normalizeValue(assessment.relationshipToArea);
+  const normalizedCity = normalizeValue(assessment.city);
+  const cityAligned =
+    !!normalizedCity && contextSignals.fullText.includes(normalizedCity);
+
+  if (normalizedRelationship !== 'resident' || !cityAligned) {
+    return 0;
+  }
+
+  const expertiseDepthScore = getExpertiseDepthScore(
+    assessment.experienceLevel,
+    assessment.yearsOfExperience,
+  );
+  const studyLevelScore = getStudyLevelScore(assessment.studyLevel);
+
+  if (expertiseDepthScore < 0.72 || studyLevelScore < 0.68) {
+    return 0;
+  }
+
+  const phraseSignal = Math.max(
+    stakeholderRoleMatch.exactPhraseWeight,
+    stakeholderRoleMatch.semanticPhraseWeight,
+    backgroundInfluence.match.exactPhraseWeight,
+    backgroundInfluence.match.semanticPhraseWeight,
+  );
+  const roleElite = clamp((stakeholderRoleMatch.strength - 0.74) / 0.26, 0, 1);
+  const backgroundElite = clamp(
+    (backgroundInfluence.match.strength - 0.82) / 0.18,
+    0,
+    1,
+  );
+  const applicabilityElite = clamp(
+    (backgroundInfluence.applicability - 0.9) / 0.1,
+    0,
+    1,
+  );
+  const expertiseElite = clamp((expertiseDepthScore - 0.72) / 0.28, 0, 1);
+  const studyElite = clamp((studyLevelScore - 0.68) / 0.26, 0, 1);
+  const phraseElite = clamp((phraseSignal - 0.72) / 0.88, 0, 1);
+
+  return round(
+    clamp(
+      roleElite * 0.055 +
+        backgroundElite * 0.05 +
+        applicabilityElite * 0.02 +
+        expertiseElite * 0.03 +
+        studyElite * 0.08 +
+        phraseElite * 0.03,
+      0,
+      0.2,
+    ),
+  );
 }
 
 function getSpecializedWeight(
@@ -1878,6 +2507,13 @@ function getSpecializedWeight(
     contextSignals,
     locationRelevant,
     assessment.city,
+  );
+  weight += getExceptionalSpecialistAdjustment(
+    relevanceLevel,
+    stakeholderRoleMatch,
+    backgroundInfluence,
+    contextSignals,
+    assessment,
   );
 
   return round(clamp(weight, MIN_SPECIALIZED_WEIGHT, MAX_SPECIALIZED_WEIGHT));
