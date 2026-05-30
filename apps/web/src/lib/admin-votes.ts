@@ -19,12 +19,14 @@ export type AdminVoteWeightedQuestion = {
   answerOptions: AdminVoteWeightedQuestionOption[];
 };
 
+export type AdminVoteType = "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
+
 export type AdminCreateVotePayload = {
   slug: string;
   title: string;
   summary: string;
   methodologySummary?: string;
-  voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
+  voteType: AdminVoteType;
   topicCategory: string;
   status:
     | "DRAFT"
@@ -108,7 +110,7 @@ export type AdminCreateVoteResponse = {
     id: string;
     slug: string;
     title: string;
-    voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
+    voteType: AdminVoteType;
     status: string;
     isPublished: boolean;
   };
@@ -120,7 +122,7 @@ export type AdminVoteListItem = {
   title: string;
   summary: string;
   methodologySummary: string | null;
-  voteType: "GENERAL" | "SPECIALIZED" | "SELF_ASSESSMENT";
+  voteType: AdminVoteType;
   topicCategory: string;
   status: string;
   coverImageUrl: string | null;
@@ -181,7 +183,7 @@ export type AdminResultsResponse = {
   results: {
     slug: string;
     title: string;
-    voteType: string;
+    voteType: AdminVoteType;
     topicCategory: string;
     totals: {
       totalRawVotes: number;
@@ -217,6 +219,7 @@ export type AdminParticipantsResponse = {
   participants: {
     slug: string;
     title: string;
+    voteType: AdminVoteType;
     participants: Array<{
       submissionId: string;
       secretUserId?: string | null;

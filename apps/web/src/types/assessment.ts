@@ -200,7 +200,6 @@ export const ASSESSMENT_VALUE_LABELS = Object.freeze(
 
 export type Assessment = {
   id: string;
-  userId: string;
   secretUserId: string;
   ageRange: AgeRange | null;
   gender: Gender | null;

@@ -18,6 +18,9 @@ export const envValidationSchema = Joi.object({
     .min(1)
     .max(365)
     .required(),
+
+  PRIVACY_HMAC_SECRET: Joi.string().trim().min(32).required(),
+
   COOKIE_DOMAIN: Joi.string().allow('').default(''),
   COOKIE_SECURE: Joi.boolean()
     .when('NODE_ENV', {

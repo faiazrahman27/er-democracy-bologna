@@ -11,6 +11,7 @@ import { VoteStatusDto, VoteTypeDto } from './dto/create-vote.dto';
 import { ResultVisibilityModeDto } from './dto/create-vote-display-settings.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PrivacyHashService } from '../common/privacy/privacy-hash.service';
 import * as voteWeightUtil from '../common/voting/vote-weight.util';
 
 describe('VotesService', () => {
@@ -34,6 +35,10 @@ describe('VotesService', () => {
   let auditService: {
     logAdminAction: jest.Mock;
   };
+  let privacyHashService: {
+    createAssessmentOwnerHash: jest.Mock;
+    createVoteVoterHash: jest.Mock;
+  };
 
   beforeEach(async () => {
     prismaService = {
@@ -52,8 +57,18 @@ describe('VotesService', () => {
         findUnique: jest.fn(),
       },
     };
+
     auditService = {
       logAdminAction: jest.fn().mockResolvedValue(undefined),
+    };
+
+    privacyHashService = {
+      createAssessmentOwnerHash: jest.fn((userId: string) => {
+        return `owner-hash-${userId}`;
+      }),
+      createVoteVoterHash: jest.fn((voteId: string, userId: string) => {
+        return `voter-hash-${voteId}-${userId}`;
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -66,6 +81,10 @@ describe('VotesService', () => {
         {
           provide: AuditService,
           useValue: auditService,
+        },
+        {
+          provide: PrivacyHashService,
+          useValue: privacyHashService,
         },
       ],
     }).compile();
@@ -98,6 +117,7 @@ describe('VotesService', () => {
     });
     prismaService.voteSubmission.findUnique.mockResolvedValue(null);
     prismaService.assessment.findUnique.mockResolvedValue({
+      secretUserId: 'secret-user-1',
       stakeholderRole: 'UNIVERSITY_STUDENT',
       backgroundCategory: 'EDUCATION',
       experienceLevel: 'EXPERT',
@@ -112,7 +132,6 @@ describe('VotesService', () => {
     prismaService.voteSubmission.create.mockResolvedValue({
       id: 'submission-1',
       voteId: 'vote-1',
-      userId: 'user-1',
       selectedOptionId: 'option-1',
       selfAssessmentScore: null,
       weightUsed: 1.75,
@@ -130,11 +149,34 @@ describe('VotesService', () => {
       selectedOptionId: 'option-1',
     });
 
-    const [weightInput] = calculateVoteWeightSpy.mock.calls as [
+    expect(privacyHashService.createVoteVoterHash).toHaveBeenCalledWith(
+      'vote-1',
+      'user-1',
+    );
+    expect(privacyHashService.createAssessmentOwnerHash).toHaveBeenCalledWith(
+      'user-1',
+    );
+    expect(prismaService.voteSubmission.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          voteId_voterHash: {
+            voteId: 'vote-1',
+            voterHash: 'voter-hash-vote-1-user-1',
+          },
+        },
+      }),
+    );
+    expect(prismaService.assessment.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { ownerHash: 'owner-hash-user-1' },
+      }),
+    );
+
+    const [[weightInput]] = calculateVoteWeightSpy.mock.calls as [
       [Parameters<typeof voteWeightUtil.calculateVoteWeight>[0]],
     ];
 
-    expect(weightInput[0]).toMatchObject({
+    expect(weightInput).toMatchObject({
       voteType: 'SPECIALIZED',
       topicCategory: 'governance',
       title: 'University student housing and academic support',
@@ -147,7 +189,7 @@ describe('VotesService', () => {
     });
   });
 
-  it('stores immutable assessment snapshots on vote submissions', async () => {
+  it('stores immutable assessment snapshots on specialized vote submissions and keeps the secret lookup link specialized-only', async () => {
     prismaService.vote.findUnique.mockResolvedValue(
       buildSpecializedVoteForSubmission(),
     );
@@ -158,7 +200,6 @@ describe('VotesService', () => {
     prismaService.voteSubmission.create.mockResolvedValue({
       id: 'submission-1',
       voteId: 'vote-1',
-      userId: 'user-1',
       selectedOptionId: 'option-1',
       selfAssessmentScore: null,
       weightUsed: 1.24,
@@ -180,6 +221,7 @@ describe('VotesService', () => {
     expect(prismaService.voteSubmission.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          voterHash: 'voter-hash-vote-1-user-1',
           assessmentSecretUserId: 'secret-user-1',
           assessmentAgeRange: 'AGE_25_34',
           assessmentGender: 'FEMALE',
@@ -196,6 +238,98 @@ describe('VotesService', () => {
         }),
       }),
     );
+
+    const createCall = prismaService.voteSubmission.create.mock.calls[0][0] as {
+      data: Record<string, unknown>;
+      select: Record<string, unknown>;
+    };
+
+    expect(createCall.data).not.toHaveProperty('userId');
+    expect(createCall.select).not.toHaveProperty('userId');
+  });
+
+  it('does not store assessmentSecretUserId on GENERAL vote submissions', async () => {
+    prismaService.vote.findUnique.mockResolvedValue({
+      id: 'vote-1',
+      title: 'Mobility Plan',
+      summary: 'Summary',
+      methodologySummary: null,
+      voteType: 'GENERAL',
+      topicCategory: 'mobility',
+      status: 'PUBLISHED',
+      isPublished: true,
+      startAt: new Date('2020-01-01T00:00:00.000Z'),
+      endAt: new Date('2999-01-01T00:00:00.000Z'),
+      options: [{ id: 'option-1' }],
+      weightedQuestions: [],
+    });
+    prismaService.voteSubmission.findUnique.mockResolvedValue(null);
+    prismaService.assessment.findUnique.mockResolvedValue(
+      buildCompletedAssessment(),
+    );
+    prismaService.voteSubmission.create.mockResolvedValue({});
+
+    await service.submitVote('user-1', 'mobility-plan', {
+      selectedOptionId: 'option-1',
+    });
+
+    expect(prismaService.voteSubmission.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          voterHash: 'voter-hash-vote-1-user-1',
+          assessmentSecretUserId: null,
+        }),
+      }),
+    );
+
+    const createCall = prismaService.voteSubmission.create.mock.calls[0][0] as {
+      data: Record<string, unknown>;
+    };
+
+    expect(createCall.data).not.toHaveProperty('userId');
+  });
+
+  it('does not store assessmentSecretUserId on SELF_ASSESSMENT vote submissions', async () => {
+    prismaService.vote.findUnique.mockResolvedValue({
+      id: 'vote-1',
+      title: 'Self Assessment',
+      summary: 'Summary',
+      methodologySummary: null,
+      voteType: 'SELF_ASSESSMENT',
+      topicCategory: 'civic',
+      status: 'PUBLISHED',
+      isPublished: true,
+      startAt: new Date('2020-01-01T00:00:00.000Z'),
+      endAt: new Date('2999-01-01T00:00:00.000Z'),
+      options: [{ id: 'option-1' }],
+      weightedQuestions: [],
+    });
+    prismaService.voteSubmission.findUnique.mockResolvedValue(null);
+    prismaService.assessment.findUnique.mockResolvedValue(
+      buildCompletedAssessment(),
+    );
+    prismaService.voteSubmission.create.mockResolvedValue({});
+
+    await service.submitVote('user-1', 'self-assessment', {
+      selectedOptionId: 'option-1',
+      selfAssessmentScore: 7,
+    });
+
+    expect(prismaService.voteSubmission.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          voterHash: 'voter-hash-vote-1-user-1',
+          assessmentSecretUserId: null,
+          selfAssessmentScore: 7,
+        }),
+      }),
+    );
+
+    const createCall = prismaService.voteSubmission.create.mock.calls[0][0] as {
+      data: Record<string, unknown>;
+    };
+
+    expect(createCall.data).not.toHaveProperty('userId');
   });
 
   it('returns the friendly already-voted error when the unique vote submission constraint races', async () => {
@@ -211,12 +345,14 @@ describe('VotesService', () => {
       startAt: new Date('2020-01-01T00:00:00.000Z'),
       endAt: new Date('2999-01-01T00:00:00.000Z'),
       options: [{ id: 'option-1' }],
+      weightedQuestions: [],
     });
     prismaService.voteSubmission.findUnique.mockResolvedValue(null);
+    prismaService.assessment.findUnique.mockResolvedValue(null);
     prismaService.voteSubmission.create.mockRejectedValue({
       code: 'P2002',
       meta: {
-        target: ['voteId', 'userId'],
+        target: ['voteId', 'voterHash'],
       },
     });
 
@@ -378,22 +514,12 @@ describe('VotesService', () => {
       ],
     });
     prismaService.voteSubmission.findUnique.mockResolvedValue(null);
-    prismaService.assessment.findUnique.mockResolvedValue({
-      stakeholderRole: 'UNIVERSITY_STUDENT',
-      backgroundCategory: 'EDUCATION',
-      experienceLevel: 'EXPERT',
-      yearsOfExperience: 12,
-      studyLevel: 'MASTER_DEGREE',
-      relationshipToArea: 'RESIDENT',
-      city: 'BOLOGNA',
-      region: 'EMILIA_ROMAGNA',
-      country: 'ITALY',
-      assessmentCompleted: true,
-    });
+    prismaService.assessment.findUnique.mockResolvedValue(
+      buildCompletedAssessment(),
+    );
     prismaService.voteSubmission.create.mockResolvedValue({
       id: 'submission-1',
       voteId: 'vote-1',
-      userId: 'user-1',
       selectedOptionId: 'option-1',
       selfAssessmentScore: null,
       specializedBaseWeightUsed: 1.15,
@@ -422,6 +548,7 @@ describe('VotesService', () => {
     expect(prismaService.voteSubmission.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          voterHash: 'voter-hash-vote-1-user-1',
           specializedBaseWeightUsed: 1.15,
           specializedQuestionModifierTotal: 0.35,
           weightUsed: 1.5,
@@ -440,8 +567,11 @@ describe('VotesService', () => {
 
     const createCall = prismaService.voteSubmission.create.mock.calls[0][0] as {
       select: Record<string, unknown>;
+      data: Record<string, unknown>;
     };
 
+    expect(createCall.data).not.toHaveProperty('userId');
+    expect(createCall.select).not.toHaveProperty('userId');
     expect(createCall.select).not.toHaveProperty('specializedBaseWeightUsed');
     expect(createCall.select).not.toHaveProperty(
       'specializedQuestionModifierTotal',
@@ -481,7 +611,6 @@ describe('VotesService', () => {
     prismaService.voteSubmission.create.mockResolvedValue({
       id: 'submission-1',
       voteId: 'vote-1',
-      userId: 'user-1',
       selectedOptionId: 'option-1',
       selfAssessmentScore: null,
       weightUsed: 1.55,
@@ -682,6 +811,7 @@ describe('VotesService', () => {
         weightedQuestions: [],
       });
       prismaService.voteSubmission.findUnique.mockResolvedValue(null);
+      prismaService.assessment.findUnique.mockResolvedValue(null);
 
       await expect(
         service.submitVote('user-1', 'mobility-plan', payload),
@@ -961,6 +1091,7 @@ describe('VotesService', () => {
     expect(prismaService.voteSubmission.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          assessmentSecretUserId: 'secret-user-1',
           specializedBaseWeightUsed: 1.24,
           specializedQuestionModifierTotal: 0,
           weightUsed: 1.24,
@@ -1231,27 +1362,18 @@ describe('VotesService', () => {
         showRelationshipBreakdown: false,
       },
       submissions: [
-        {
-          userId: 'user-1',
-          ...buildSubmissionAssessmentSnapshot({
-            assessmentYearsOfExperience: 2,
-            assessmentStudyLevel: 'BACHELOR_DEGREE',
-          }),
-        },
-        {
-          userId: 'user-2',
-          ...buildSubmissionAssessmentSnapshot({
-            assessmentYearsOfExperience: 2,
-            assessmentStudyLevel: 'MASTER_DEGREE',
-          }),
-        },
-        {
-          userId: 'user-3',
-          ...buildSubmissionAssessmentSnapshot({
-            assessmentYearsOfExperience: 5,
-            assessmentStudyLevel: 'MASTER_DEGREE',
-          }),
-        },
+        buildSubmissionAssessmentSnapshot({
+          assessmentYearsOfExperience: 2,
+          assessmentStudyLevel: 'BACHELOR_DEGREE',
+        }),
+        buildSubmissionAssessmentSnapshot({
+          assessmentYearsOfExperience: 2,
+          assessmentStudyLevel: 'MASTER_DEGREE',
+        }),
+        buildSubmissionAssessmentSnapshot({
+          assessmentYearsOfExperience: 5,
+          assessmentStudyLevel: 'MASTER_DEGREE',
+        }),
       ],
     });
 
@@ -1289,12 +1411,11 @@ describe('VotesService', () => {
         showExperienceLevelBreakdown: false,
         showRelationshipBreakdown: false,
       },
-      submissions: Array.from({ length: 5 }, (_, index) => ({
-        userId: `user-${index + 1}`,
-        ...buildSubmissionAssessmentSnapshot({
+      submissions: Array.from({ length: 5 }, () =>
+        buildSubmissionAssessmentSnapshot({
           assessmentStakeholderRole: 'RESIDENT',
         }),
-      })),
+      ),
     });
 
     const result = await service.getPublicAnalytics('mobility-plan');
@@ -1345,6 +1466,46 @@ describe('VotesService', () => {
     });
   });
 
+  it('checks public analytics after-voting visibility with voterHash instead of userId', async () => {
+    prismaService.vote.findFirst.mockResolvedValue({
+      id: 'vote-1',
+      slug: 'mobility-plan',
+      title: 'Mobility Plan',
+      endAt: new Date('2026-05-01T12:00:00.000Z'),
+      displaySettings: {
+        resultVisibilityMode: 'SHOW_BOTH',
+        showAfterVotingOnly: true,
+        showOnlyAfterVoteCloses: false,
+        showParticipationStats: true,
+        showStakeholderBreakdown: false,
+        showBackgroundBreakdown: false,
+        showLocationBreakdown: false,
+        showAgeRangeBreakdown: false,
+        showGenderBreakdown: false,
+        showExperienceLevelBreakdown: false,
+        showRelationshipBreakdown: false,
+      },
+      submissions: [buildSubmissionAssessmentSnapshot()],
+    });
+    prismaService.voteSubmission.findUnique.mockResolvedValue({
+      id: 'submission-1',
+    });
+
+    const result = await service.getPublicAnalytics('mobility-plan', 'user-1');
+
+    expect(prismaService.voteSubmission.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          voteId_voterHash: {
+            voteId: 'vote-1',
+            voterHash: 'voter-hash-vote-1-user-1',
+          },
+        },
+      }),
+    );
+    expect(result.visibility.canShowAnalytics).toBe(true);
+  });
+
   it('shows low-count public breakdowns without suppressing or collapsing them', async () => {
     prismaService.vote.findFirst.mockResolvedValue({
       id: 'vote-1',
@@ -1365,30 +1526,18 @@ describe('VotesService', () => {
         showRelationshipBreakdown: false,
       },
       submissions: [
-        {
-          userId: 'user-1',
-          ...buildSubmissionAssessmentSnapshot({
-            assessmentStakeholderRole: 'RESIDENT',
-          }),
-        },
-        {
-          userId: 'user-2',
-          ...buildSubmissionAssessmentSnapshot({
-            assessmentStakeholderRole: 'VISITOR',
-          }),
-        },
-        {
-          userId: 'user-3',
-          ...buildSubmissionAssessmentSnapshot({
-            assessmentStakeholderRole: 'NON_RESIDENT',
-          }),
-        },
-        {
-          userId: 'user-4',
-          ...buildSubmissionAssessmentSnapshot({
-            assessmentStakeholderRole: 'RESIDENT',
-          }),
-        },
+        buildSubmissionAssessmentSnapshot({
+          assessmentStakeholderRole: 'RESIDENT',
+        }),
+        buildSubmissionAssessmentSnapshot({
+          assessmentStakeholderRole: 'VISITOR',
+        }),
+        buildSubmissionAssessmentSnapshot({
+          assessmentStakeholderRole: 'NON_RESIDENT',
+        }),
+        buildSubmissionAssessmentSnapshot({
+          assessmentStakeholderRole: 'RESIDENT',
+        }),
       ],
     });
 
@@ -1475,6 +1624,7 @@ describe('VotesService', () => {
       createdAt: new Date('2026-04-01T12:00:00.000Z'),
       updatedAt: new Date('2026-04-02T12:00:00.000Z'),
       options: [],
+      weightedQuestions: [],
       displaySettings: null,
     });
 
@@ -1530,6 +1680,7 @@ describe('VotesService', () => {
       id: 'vote-1',
       slug: 'mobility-plan',
       title: 'Mobility Plan',
+      voteType: 'SPECIALIZED',
       submissions: [
         {
           id: 'submission-1',
@@ -1537,7 +1688,7 @@ describe('VotesService', () => {
           specializedBaseWeightUsed: null,
           specializedQuestionModifierTotal: null,
           weightUsed: 1,
-          calculationType: 'GENERAL',
+          calculationType: 'SPECIALIZED',
           selfAssessmentScore: null,
           submittedAt: new Date('2026-04-10T12:00:00.000Z'),
           weightedQuestionAnswers: [],
@@ -1559,7 +1710,7 @@ describe('VotesService', () => {
       selectedOptionId: 'option-1',
       selectedOptionText: 'Option A',
       weightUsed: 1,
-      calculationType: 'GENERAL',
+      calculationType: 'SPECIALIZED',
       selfAssessmentScore: null,
       submittedAt: new Date('2026-04-10T12:00:00.000Z'),
       hasCompletedAssessment: true,
@@ -1576,11 +1727,12 @@ describe('VotesService', () => {
     );
   });
 
-  it('includes secret user IDs and weighted-question details in participant lists when secret lookup access is enabled', async () => {
+  it('includes secret user IDs and weighted-question details in participant lists only for specialized votes when secret lookup access is enabled', async () => {
     prismaService.vote.findUnique.mockResolvedValue({
       id: 'vote-1',
       slug: 'mobility-plan',
       title: 'Mobility Plan',
+      voteType: 'SPECIALIZED',
       submissions: [
         {
           id: 'submission-1',
@@ -1622,6 +1774,7 @@ describe('VotesService', () => {
       includeSecretUserId: true,
     });
 
+    expect(result.voteType).toBe('SPECIALIZED');
     expect(result.participants[0]).toMatchObject({
       submissionId: 'submission-1',
       secretUserId: 'secret-1',
@@ -1648,6 +1801,75 @@ describe('VotesService', () => {
       }),
     );
   });
+
+  it.each([VoteTypeDto.GENERAL, VoteTypeDto.SELF_ASSESSMENT])(
+    'does not expose secret user IDs or specialized evidence for %s participant lists even when requested',
+    async (voteType) => {
+      prismaService.vote.findUnique.mockResolvedValue({
+        id: 'vote-1',
+        slug: 'mobility-plan',
+        title: 'Mobility Plan',
+        voteType,
+        submissions: [
+          {
+            id: 'submission-1',
+            selectedOptionId: 'option-1',
+            specializedBaseWeightUsed: 1.1,
+            specializedQuestionModifierTotal: 0.35,
+            weightUsed: 1,
+            calculationType: voteType,
+            selfAssessmentScore:
+              voteType === VoteTypeDto.SELF_ASSESSMENT ? 7 : null,
+            submittedAt: new Date('2026-04-10T12:00:00.000Z'),
+            weightedQuestionAnswers: [
+              {
+                questionId: 'question-1',
+                optionId: 'answer-1',
+                modifierUsed: 0.35,
+                weightedQuestion: {
+                  prompt: 'Hidden specialized detail',
+                  displayOrder: 1,
+                },
+                selectedAnswerOption: {
+                  optionText: 'Hidden answer',
+                  displayOrder: 1,
+                },
+              },
+            ],
+            selectedOption: {
+              optionText: 'Option A',
+            },
+            ...buildSubmissionAssessmentSnapshot({
+              assessmentSecretUserId: 'secret-1',
+              assessmentCompleted: true,
+            }),
+          },
+        ],
+      });
+
+      const result = await service.getAdminParticipants('mobility-plan', {
+        adminUserId: 'admin-1',
+        includeSecretUserId: true,
+      });
+
+      expect(result.voteType).toBe(voteType);
+      expect(result.participants[0]).not.toHaveProperty('secretUserId');
+      expect(result.participants[0]).not.toHaveProperty(
+        'specializedBaseWeightUsed',
+      );
+      expect(result.participants[0]).not.toHaveProperty(
+        'specializedQuestionModifierTotal',
+      );
+      expect(result.participants[0]).not.toHaveProperty(
+        'weightedQuestionAnswers',
+      );
+      expect(auditService.logAdminAction).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionType: 'VOTE_PARTICIPANTS_VIEW_SECRET',
+        }),
+      );
+    },
+  );
 
   it('omits the participants sheet when export is generated without participant access', async () => {
     prismaService.vote.findUnique.mockResolvedValue({
@@ -1680,7 +1902,7 @@ describe('VotesService', () => {
             optionText: 'Option A',
           },
           ...buildSubmissionAssessmentSnapshot({
-            assessmentSecretUserId: 'secret-1',
+            assessmentSecretUserId: null,
             assessmentCompleted: true,
             assessmentAgeRange: 'AGE_25_34',
             assessmentGender: 'FEMALE',
@@ -1740,7 +1962,7 @@ describe('VotesService', () => {
             optionText: 'Option A',
           },
           ...buildSubmissionAssessmentSnapshot({
-            assessmentSecretUserId: 'secret-1',
+            assessmentSecretUserId: null,
             assessmentCompleted: true,
             assessmentAgeRange: 'AGE_25_34',
             assessmentGender: 'FEMALE',
@@ -1775,7 +1997,7 @@ describe('VotesService', () => {
     expect(headers).not.toContain('Gender');
   });
 
-  it('includes secret and demographic columns in participant exports with secret lookup access', async () => {
+  it('does not include secret user ID columns in GENERAL participant exports even when secret lookup is requested', async () => {
     prismaService.vote.findUnique.mockResolvedValue({
       id: 'vote-1',
       slug: 'mobility-plan',
@@ -1800,7 +2022,70 @@ describe('VotesService', () => {
           selectedOptionId: 'option-1',
           weightUsed: 1,
           calculationType: 'GENERAL',
-          selfAssessmentScore: 5,
+          selfAssessmentScore: null,
+          submittedAt: new Date('2026-04-10T12:00:00.000Z'),
+          selectedOption: {
+            optionText: 'Option A',
+          },
+          ...buildSubmissionAssessmentSnapshot({
+            assessmentSecretUserId: 'secret-should-not-export',
+            assessmentCompleted: true,
+          }),
+        },
+      ],
+    });
+
+    const file = await service.exportAdminAnalyticsExcel('mobility-plan', {
+      adminUserId: 'admin-1',
+      includeParticipantSheet: true,
+      includeSecretUserId: true,
+    });
+    const workbook = new ExcelJS.Workbook();
+    const workbookBuffer = file.buffer as unknown as Parameters<
+      typeof workbook.xlsx.load
+    >[0];
+
+    await workbook.xlsx.load(workbookBuffer);
+
+    const participantsSheet = workbook.getWorksheet('Participants');
+    const headers = getWorksheetHeaders(participantsSheet);
+
+    expect(headers).not.toContain('Secret User ID');
+    expect(auditService.logAdminAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        afterJson: expect.objectContaining({
+          includeSecretUserId: false,
+        }),
+      }),
+    );
+  });
+
+  it('includes secret and demographic columns in SPECIALIZED participant exports with secret lookup access', async () => {
+    prismaService.vote.findUnique.mockResolvedValue({
+      id: 'vote-1',
+      slug: 'mobility-plan',
+      title: 'Mobility Plan',
+      voteType: 'SPECIALIZED',
+      topicCategory: 'mobility',
+      status: 'PUBLISHED',
+      startAt: new Date('2026-04-01T12:00:00.000Z'),
+      endAt: new Date('2026-05-01T12:00:00.000Z'),
+      isPublished: true,
+      publishedAt: new Date('2026-04-01T12:00:00.000Z'),
+      options: [
+        {
+          id: 'option-1',
+          optionText: 'Option A',
+          displayOrder: 1,
+        },
+      ],
+      submissions: [
+        {
+          id: 'submission-1',
+          selectedOptionId: 'option-1',
+          weightUsed: 1,
+          calculationType: 'SPECIALIZED',
+          selfAssessmentScore: null,
           submittedAt: new Date('2026-04-10T12:00:00.000Z'),
           selectedOption: {
             optionText: 'Option A',
@@ -1849,6 +2134,9 @@ describe('VotesService', () => {
         actionType: 'VOTE_ANALYTICS_EXPORT',
         targetType: 'Vote',
         targetId: 'vote-1',
+        afterJson: expect.objectContaining({
+          includeSecretUserId: true,
+        }),
       }),
     );
   });
@@ -1874,6 +2162,7 @@ describe('VotesService', () => {
       createdAt: new Date('2026-04-01T12:00:00.000Z'),
       updatedAt: new Date('2026-04-02T12:00:00.000Z'),
       options: [],
+      weightedQuestions: [],
       displaySettings: {
         id: 'display-1',
         resultVisibilityMode: 'SHOW_BOTH',
@@ -1884,6 +2173,8 @@ describe('VotesService', () => {
         showAgeRangeBreakdown: false,
         showGenderBreakdown: false,
         showExperienceLevelBreakdown: false,
+        showYearsOfExperienceBreakdown: false,
+        showStudyLevelBreakdown: false,
         showRelationshipBreakdown: false,
         showAfterVotingOnly: true,
         showOnlyAfterVoteCloses: true,

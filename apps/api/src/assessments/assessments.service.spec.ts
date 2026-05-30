@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AssessmentsService } from './assessments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PrivacyHashService } from '../common/privacy/privacy-hash.service';
 import {
   AssessmentAgeRangeDto,
   AssessmentBackgroundCategoryDto,
@@ -30,6 +31,9 @@ describe('AssessmentsService', () => {
   let auditService: {
     logAdminAction: jest.Mock;
   };
+  let privacyHashService: {
+    createAssessmentOwnerHash: jest.Mock;
+  };
 
   beforeEach(async () => {
     prismaService = {
@@ -42,8 +46,15 @@ describe('AssessmentsService', () => {
         findMany: jest.fn(),
       },
     };
+
     auditService = {
       logAdminAction: jest.fn(),
+    };
+
+    privacyHashService = {
+      createAssessmentOwnerHash: jest.fn((userId: string) => {
+        return `owner-hash-${userId}`;
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -56,6 +67,10 @@ describe('AssessmentsService', () => {
         {
           provide: AuditService,
           useValue: auditService,
+        },
+        {
+          provide: PrivacyHashService,
+          useValue: privacyHashService,
         },
       ],
     }).compile();
@@ -76,9 +91,9 @@ describe('AssessmentsService', () => {
       assessmentCompleted: true,
       completedAt: originalCompletedAt,
     });
+
     prismaService.assessment.update.mockResolvedValue({
       id: 'assessment-1',
-      userId: 'user-1',
       secretUserId: 'secret-1',
       ageRange: AssessmentAgeRangeDto.AGE_25_34,
       gender: AssessmentGenderDto.FEMALE,
@@ -98,6 +113,22 @@ describe('AssessmentsService', () => {
     });
 
     await service.upsertMyAssessment('user-1', buildAssessmentDto(true));
+
+    expect(privacyHashService.createAssessmentOwnerHash).toHaveBeenCalledWith(
+      'user-1',
+    );
+
+    expect(prismaService.assessment.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { ownerHash: 'owner-hash-user-1' },
+      }),
+    );
+
+    expect(prismaService.assessment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { ownerHash: 'owner-hash-user-1' },
+      }),
+    );
 
     const [[updateCall]] = prismaService.assessment.update.mock.calls as [
       [
@@ -119,9 +150,20 @@ describe('AssessmentsService', () => {
       assessmentCompleted: true,
       completedAt: new Date('2026-04-01T12:00:00.000Z'),
     });
+
     prismaService.assessment.update.mockResolvedValue({});
 
     await service.upsertMyAssessment('user-1', buildAssessmentDto(false));
+
+    expect(privacyHashService.createAssessmentOwnerHash).toHaveBeenCalledWith(
+      'user-1',
+    );
+
+    expect(prismaService.assessment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { ownerHash: 'owner-hash-user-1' },
+      }),
+    );
 
     const [[updateCall]] = prismaService.assessment.update.mock.calls as [
       [
@@ -138,10 +180,51 @@ describe('AssessmentsService', () => {
     expect(updateCall.data.completedAt).toBeNull();
   });
 
-  it('includes specialized weighted-question answers in secret lookup responses', async () => {
+  it('creates a new assessment using ownerHash instead of userId', async () => {
+    prismaService.assessment.findUnique.mockResolvedValue(null);
+
+    prismaService.assessment.create.mockResolvedValue({
+      id: 'assessment-1',
+      secretUserId: 'secret-1',
+      ageRange: AssessmentAgeRangeDto.AGE_25_34,
+      gender: AssessmentGenderDto.FEMALE,
+      city: AssessmentCityDto.BOLOGNA,
+      region: AssessmentRegionDto.EMILIA_ROMAGNA,
+      country: AssessmentCountryDto.ITALY,
+      stakeholderRole: AssessmentStakeholderRoleDto.UNIVERSITY_STUDENT,
+      backgroundCategory: AssessmentBackgroundCategoryDto.EDUCATION,
+      experienceLevel: AssessmentExperienceLevelDto.INTERMEDIATE,
+      yearsOfExperience: 5,
+      studyLevel: AssessmentStudyLevelDto.MASTER_DEGREE,
+      relationshipToArea: AssessmentRelationshipToAreaDto.RESIDENT,
+      assessmentCompleted: true,
+      completedAt: expect.any(Date),
+      createdAt: new Date('2026-03-01T12:00:00.000Z'),
+      updatedAt: new Date('2026-04-02T12:00:00.000Z'),
+    });
+
+    await service.upsertMyAssessment('user-1', buildAssessmentDto(true));
+
+    expect(prismaService.assessment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          ownerHash: 'owner-hash-user-1',
+        }),
+      }),
+    );
+
+    expect(prismaService.assessment.create).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        data: expect.objectContaining({
+          userId: expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it('includes specialized weighted-question answers in secret lookup responses without using userId', async () => {
     prismaService.assessment.findUnique.mockResolvedValue({
       id: 'assessment-1',
-      userId: 'user-1',
       secretUserId: 'secret-1',
       ageRange: AssessmentAgeRangeDto.AGE_25_34,
       gender: AssessmentGenderDto.FEMALE,
@@ -159,6 +242,7 @@ describe('AssessmentsService', () => {
       createdAt: new Date('2026-03-01T12:00:00.000Z'),
       updatedAt: new Date('2026-04-02T12:00:00.000Z'),
     });
+
     prismaService.voteSubmission.findMany.mockResolvedValue([
       {
         id: 'submission-1',
@@ -211,6 +295,26 @@ describe('AssessmentsService', () => {
       'admin-1',
     );
 
+    expect(prismaService.assessment.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { secretUserId: 'secret-1' },
+      }),
+    );
+
+    expect(prismaService.voteSubmission.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          assessmentSecretUserId: 'secret-1',
+          vote: {
+            voteType: 'SPECIALIZED',
+            weightedQuestions: {
+              some: {},
+            },
+          },
+        },
+      }),
+    );
+
     expect(result).toMatchObject({
       secretUserId: 'secret-1',
       specializedVoteSubmissions: [
@@ -244,6 +348,9 @@ describe('AssessmentsService', () => {
         },
       ],
     });
+
+    expect(result).not.toHaveProperty('userId');
+
     expect(auditService.logAdminAction).toHaveBeenCalledWith(
       expect.objectContaining({
         adminUserId: 'admin-1',

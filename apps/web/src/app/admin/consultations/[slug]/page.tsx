@@ -46,7 +46,6 @@ const PIE_CHART_COLORS = [
   "#BCF60C",
   "#FABE28",
   "#008080",
-
   "#E6BEFF",
   "#9A6324",
   "#800000",
@@ -57,7 +56,6 @@ const PIE_CHART_COLORS = [
   "#A9A9A9",
   "#FF1493",
   "#00CED1",
-
   "#7FFF00",
   "#DC143C",
   "#1E90FF",
@@ -68,7 +66,6 @@ const PIE_CHART_COLORS = [
   "#2E8B57",
   "#8B4513",
   "#6A5ACD",
-
   "#20B2AA",
   "#FF69B4",
   "#B8860B",
@@ -79,14 +76,12 @@ const PIE_CHART_COLORS = [
   "#00BFFF",
   "#9932CC",
   "#ADFF2F",
-
   "#FF6347",
   "#40E0D0",
   "#DAA520",
   "#BA55D3",
-  "#228B22"
+  "#228B22",
 ];
-
 
 const RAW_OPTION_COLORS = [
   "#2563eb",
@@ -363,6 +358,8 @@ export default function AdminConsultationDetailPage() {
     user.role,
     PERMISSIONS.ASSESSMENT_SECRET_LOOKUP,
   );
+  const canLookupSpecializedAssessment =
+    canLookupAssessment && vote.voteType === "SPECIALIZED";
 
   async function handleExportExcel() {
     if (!token) {
@@ -1106,7 +1103,7 @@ export default function AdminConsultationDetailPage() {
                         key={participant.submissionId}
                         className="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200"
                       >
-                        {canLookupAssessment ? (
+                        {canLookupSpecializedAssessment ? (
                           <p className="break-words">
                             <span className="font-medium text-slate-900">
                               Secret ID:
@@ -1135,7 +1132,7 @@ export default function AdminConsultationDetailPage() {
                           </span>{" "}
                           {formatWeight(participant.weightUsed)}
                         </p>
-                        {canLookupAssessment &&
+                        {canLookupSpecializedAssessment &&
                         participant.specializedBaseWeightUsed !== null &&
                         typeof participant.specializedBaseWeightUsed !==
                           "undefined" ? (
@@ -1148,7 +1145,7 @@ export default function AdminConsultationDetailPage() {
                             )}
                           </p>
                         ) : null}
-                        {canLookupAssessment &&
+                        {canLookupSpecializedAssessment &&
                         participant.specializedQuestionModifierTotal !== null &&
                         typeof participant.specializedQuestionModifierTotal !==
                           "undefined" ? (
@@ -1181,7 +1178,7 @@ export default function AdminConsultationDetailPage() {
                           </span>{" "}
                           {participant.hasCompletedAssessment ? "Yes" : "No"}
                         </p>
-                        {canLookupAssessment &&
+                        {canLookupSpecializedAssessment &&
                         participant.weightedQuestionAnswers &&
                         participant.weightedQuestionAnswers.length > 0 ? (
                           <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">

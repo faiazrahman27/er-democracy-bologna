@@ -20,6 +20,7 @@ import {
 } from '../common/voting/result-visibility.util';
 import { buildBreakdown } from '../common/voting/analytics.util';
 import { formatStoredValueLabel } from '../assessments/assessment-value-labels';
+import { PrivacyHashService } from '../common/privacy/privacy-hash.service';
 
 const PUBLICLY_ACCESSIBLE_VOTE_STATUSES = ['PUBLISHED', 'CLOSED'] as const;
 const MIN_SPECIALIZED_FINAL_WEIGHT = 0.5;
@@ -95,6 +96,7 @@ export class VotesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly privacyHashService: PrivacyHashService,
   ) {}
 
   async createVote(adminUserId: string, dto: CreateVoteDto) {
@@ -816,11 +818,16 @@ export class VotesService {
       );
     }
 
+    const voterHash = this.privacyHashService.createVoteVoterHash(
+      vote.id,
+      userId,
+    );
+
     const existingSubmission = await this.prisma.voteSubmission.findUnique({
       where: {
-        voteId_userId: {
+        voteId_voterHash: {
           voteId: vote.id,
-          userId,
+          voterHash,
         },
       },
       select: { id: true },
@@ -832,8 +839,10 @@ export class VotesService {
       );
     }
 
+    const ownerHash = this.privacyHashService.createAssessmentOwnerHash(userId);
+
     const assessment = await this.prisma.assessment.findUnique({
-      where: { userId },
+      where: { ownerHash },
       select: {
         secretUserId: true,
         ageRange: true,
@@ -931,9 +940,12 @@ export class VotesService {
       return await this.prisma.voteSubmission.create({
         data: {
           voteId: vote.id,
-          userId,
+          voterHash,
           selectedOptionId: dto.selectedOptionId,
-          ...this.buildAssessmentSnapshotData(assessment),
+          ...this.buildAssessmentSnapshotData(
+            assessment,
+            vote.voteType === 'SPECIALIZED',
+          ),
           selfAssessmentScore:
             vote.voteType === 'SELF_ASSESSMENT'
               ? (dto.selfAssessmentScore ?? null)
@@ -956,7 +968,6 @@ export class VotesService {
         select: {
           id: true,
           voteId: true,
-          userId: true,
           selectedOptionId: true,
           selfAssessmentScore: true,
           weightUsed: true,
@@ -1033,11 +1044,16 @@ export class VotesService {
     let userHasVoted = false;
 
     if (userId) {
+      const voterHash = this.privacyHashService.createVoteVoterHash(
+        vote.id,
+        userId,
+      );
+
       const submission = await this.prisma.voteSubmission.findUnique({
         where: {
-          voteId_userId: {
+          voteId_voterHash: {
             voteId: vote.id,
-            userId,
+            voterHash,
           },
         },
         select: { id: true },
@@ -1254,7 +1270,6 @@ export class VotesService {
         },
         submissions: {
           select: {
-            userId: true,
             ...this.submissionAssessmentSnapshotSelect(),
           },
         },
@@ -1272,9 +1287,22 @@ export class VotesService {
     let userHasVoted = false;
 
     if (userId) {
-      userHasVoted = vote.submissions.some(
-        (submission) => submission.userId === userId,
+      const voterHash = this.privacyHashService.createVoteVoterHash(
+        vote.id,
+        userId,
       );
+
+      const submission = await this.prisma.voteSubmission.findUnique({
+        where: {
+          voteId_voterHash: {
+            voteId: vote.id,
+            voterHash,
+          },
+        },
+        select: { id: true },
+      });
+
+      userHasVoted = !!submission;
     }
 
     const hasAnyPublicAnalyticsEnabled =
@@ -1484,6 +1512,7 @@ export class VotesService {
         id: true,
         slug: true,
         title: true,
+        voteType: true,
         submissions: {
           orderBy: {
             submittedAt: 'desc',
@@ -1531,7 +1560,10 @@ export class VotesService {
       throw new NotFoundException('Vote participants not found');
     }
 
-    if (includeSecretUserId && adminUserId) {
+    const canIncludeSpecializedSecretDetails =
+      includeSecretUserId && vote.voteType === 'SPECIALIZED';
+
+    if (canIncludeSpecializedSecretDetails && adminUserId) {
       await this.auditService.logAdminAction({
         adminUserId,
         actionType: 'VOTE_PARTICIPANTS_VIEW_SECRET',
@@ -1539,6 +1571,7 @@ export class VotesService {
         targetId: vote.id,
         afterJson: {
           slug: vote.slug,
+          voteType: vote.voteType,
           includeSecretUserId: true,
           viewedAt: new Date().toISOString(),
         },
@@ -1548,9 +1581,10 @@ export class VotesService {
     return {
       slug: vote.slug,
       title: vote.title,
+      voteType: vote.voteType,
       participants: vote.submissions.map((submission) => ({
         submissionId: submission.id,
-        ...(includeSecretUserId
+        ...(canIncludeSpecializedSecretDetails
           ? {
               secretUserId: submission.assessmentSecretUserId ?? null,
             }
@@ -1562,7 +1596,7 @@ export class VotesService {
         selfAssessmentScore: submission.selfAssessmentScore,
         submittedAt: submission.submittedAt,
         hasCompletedAssessment: submission.assessmentCompleted,
-        ...(includeSecretUserId
+        ...(canIncludeSpecializedSecretDetails
           ? {
               specializedBaseWeightUsed:
                 submission.specializedBaseWeightUsed ?? null,
@@ -1647,6 +1681,9 @@ export class VotesService {
     if (!vote) {
       throw new NotFoundException('Vote not found');
     }
+
+    const canIncludeSpecializedSecretUserId =
+      includeSecretUserId && vote.voteType === 'SPECIALIZED';
 
     const totalRawVotes = vote.submissions.length;
     const totalWeightedVotes = Number(
@@ -1887,7 +1924,7 @@ export class VotesService {
       const participantsSheet = workbook.addWorksheet('Participants');
       participantsSheet.columns = [
         { header: 'Submission ID', key: 'submissionId', width: 28 },
-        ...(includeSecretUserId
+        ...(canIncludeSpecializedSecretUserId
           ? [{ header: 'Secret User ID', key: 'secretUserId', width: 24 }]
           : []),
         { header: 'Selected Option', key: 'selectedOptionText', width: 36 },
@@ -1947,7 +1984,7 @@ export class VotesService {
       participantsSheet.addRows(
         vote.submissions.map((submission) => ({
           submissionId: submission.id,
-          ...(includeSecretUserId
+          ...(canIncludeSpecializedSecretUserId
             ? {
                 secretUserId: submission.assessmentSecretUserId ?? '',
               }
@@ -2001,8 +2038,9 @@ export class VotesService {
         targetId: vote.id,
         afterJson: {
           slug: vote.slug,
+          voteType: vote.voteType,
           includeParticipantSheet,
-          includeSecretUserId,
+          includeSecretUserId: canIncludeSpecializedSecretUserId,
           includeSensitiveAssessmentDetails,
           exportedAt: new Date().toISOString(),
         },
@@ -2015,9 +2053,14 @@ export class VotesService {
     };
   }
 
-  private buildAssessmentSnapshotData(assessment: AssessmentSnapshot | null) {
+  private buildAssessmentSnapshotData(
+    assessment: AssessmentSnapshot | null,
+    includeSecretUserId: boolean,
+  ) {
     return {
-      assessmentSecretUserId: assessment?.secretUserId ?? null,
+      assessmentSecretUserId: includeSecretUserId
+        ? (assessment?.secretUserId ?? null)
+        : null,
       assessmentAgeRange: assessment?.ageRange ?? null,
       assessmentGender: assessment?.gender ?? null,
       assessmentCity: assessment?.city ?? null,
@@ -2442,8 +2485,8 @@ export class VotesService {
     }
 
     return (
-      target.includes('VoteSubmission_voteId_userId_key') ||
-      (target.includes('voteId') && target.includes('userId'))
+      target.includes('VoteSubmission_voteId_voterHash_key') ||
+      (target.includes('voteId') && target.includes('voterHash'))
     );
   }
 

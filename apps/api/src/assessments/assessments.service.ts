@@ -7,10 +7,10 @@ import {
 } from './dto/upsert-assessment.dto';
 import { generateSecretUserId } from '../common/utils/secret-user-id.util';
 import { AuditService } from '../audit/audit.service';
+import { PrivacyHashService } from '../common/privacy/privacy-hash.service';
 
 const MY_ASSESSMENT_SELECT = {
   id: true,
-  userId: true,
   secretUserId: true,
   ageRange: true,
   gender: true,
@@ -54,18 +54,23 @@ export class AssessmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly privacyHashService: PrivacyHashService,
   ) {}
 
   async getMyAssessment(userId: string) {
+    const ownerHash = this.privacyHashService.createAssessmentOwnerHash(userId);
+
     return this.prisma.assessment.findUnique({
-      where: { userId },
+      where: { ownerHash },
       select: MY_ASSESSMENT_SELECT,
     });
   }
 
   async upsertMyAssessment(userId: string, dto: UpsertAssessmentDto) {
+    const ownerHash = this.privacyHashService.createAssessmentOwnerHash(userId);
+
     const existing = await this.prisma.assessment.findUnique({
-      where: { userId },
+      where: { ownerHash },
       select: {
         id: true,
         secretUserId: true,
@@ -82,7 +87,7 @@ export class AssessmentsService {
 
     if (existing) {
       return this.prisma.assessment.update({
-        where: { userId },
+        where: { ownerHash },
         data: {
           ageRange: normalizedAssessment.ageRange,
           gender: normalizedAssessment.gender,
@@ -104,7 +109,7 @@ export class AssessmentsService {
 
     return this.prisma.assessment.create({
       data: {
-        userId,
+        ownerHash,
         secretUserId: generateSecretUserId(),
         ageRange: normalizedAssessment.ageRange,
         gender: normalizedAssessment.gender,
@@ -130,10 +135,7 @@ export class AssessmentsService {
   ) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { secretUserId },
-      select: {
-        ...PSEUDONYMOUS_ASSESSMENT_SELECT,
-        userId: true,
-      },
+      select: PSEUDONYMOUS_ASSESSMENT_SELECT,
     });
 
     if (!assessment) {
@@ -145,7 +147,7 @@ export class AssessmentsService {
     const specializedVoteSubmissions =
       await this.prisma.voteSubmission.findMany({
         where: {
-          userId: assessment.userId,
+          assessmentSecretUserId: assessment.secretUserId,
           vote: {
             voteType: 'SPECIALIZED',
             weightedQuestions: {
@@ -211,11 +213,8 @@ export class AssessmentsService {
       });
     }
 
-    const { userId: removedUserId, ...pseudonymousAssessment } = assessment;
-    void removedUserId;
-
     return {
-      ...pseudonymousAssessment,
+      ...assessment,
       specializedVoteSubmissions: specializedVoteSubmissions.map(
         (submission) => ({
           submissionId: submission.id,

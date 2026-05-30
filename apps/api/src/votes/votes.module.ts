@@ -4,9 +4,10 @@ import { VotesService } from './votes.service';
 import { SupabaseService } from '../common/supabase/supabase.service';
 import { VoteWeightedPayloadCompatibilityGuard } from './vote-weighted-payload-compatibility.guard';
 import { AuditModule } from '../audit/audit.module';
+import { PrivacyModule } from '../common/privacy/privacy.module';
 
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, PrivacyModule],
   controllers: [VotesController],
   providers: [
     VotesService,

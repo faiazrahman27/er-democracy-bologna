@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { PrivacyHashService } from '../common/privacy/privacy-hash.service';
 
 export type CreateUserInput = {
   fullName: string;
@@ -15,7 +16,10 @@ export type CreateUserInput = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly privacyHashService: PrivacyHashService,
+  ) {}
 
   async createUser(input: CreateUserInput) {
     const normalizedEmail = input.email.trim().toLowerCase();
@@ -101,6 +105,8 @@ export class UsersService {
   }
 
   async exportMyData(userId: string) {
+    const ownerHash = this.privacyHashService.createAssessmentOwnerHash(userId);
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -114,57 +120,6 @@ export class UsersService {
         termsAcceptedAt: true,
         createdAt: true,
         updatedAt: true,
-        assessment: {
-          select: {
-            id: true,
-            ageRange: true,
-            gender: true,
-            city: true,
-            region: true,
-            country: true,
-            stakeholderRole: true,
-            backgroundCategory: true,
-            experienceLevel: true,
-            yearsOfExperience: true,
-            studyLevel: true,
-            relationshipToArea: true,
-            assessmentCompleted: true,
-            completedAt: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-        voteSubmissions: {
-          select: {
-            id: true,
-            selfAssessmentScore: true,
-            weightUsed: true,
-            calculationType: true,
-            submittedAt: true,
-            createdAt: true,
-            vote: {
-              select: {
-                id: true,
-                slug: true,
-                title: true,
-                voteType: true,
-                topicCategory: true,
-                status: true,
-                startAt: true,
-                endAt: true,
-                isPublished: true,
-                publishedAt: true,
-              },
-            },
-            selectedOption: {
-              select: {
-                id: true,
-                optionText: true,
-                displayOrder: true,
-              },
-            },
-          },
-        },
         createdVotes: {
           select: {
             id: true,
@@ -259,9 +214,81 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { ownerHash },
+      select: {
+        id: true,
+        ageRange: true,
+        gender: true,
+        city: true,
+        region: true,
+        country: true,
+        stakeholderRole: true,
+        backgroundCategory: true,
+        experienceLevel: true,
+        yearsOfExperience: true,
+        studyLevel: true,
+        relationshipToArea: true,
+        assessmentCompleted: true,
+        completedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const votes = await this.prisma.vote.findMany({
+      select: {
+        id: true,
+      },
+    });
+
+    const voteSubmissionOwnershipFilters = votes.map((vote) => ({
+      voteId: vote.id,
+      voterHash: this.privacyHashService.createVoteVoterHash(vote.id, userId),
+    }));
+
+    const voteSubmissions =
+      voteSubmissionOwnershipFilters.length > 0
+        ? await this.prisma.voteSubmission.findMany({
+            where: {
+              OR: voteSubmissionOwnershipFilters,
+            },
+            select: {
+              id: true,
+              selfAssessmentScore: true,
+              weightUsed: true,
+              calculationType: true,
+              submittedAt: true,
+              createdAt: true,
+              vote: {
+                select: {
+                  id: true,
+                  slug: true,
+                  title: true,
+                  voteType: true,
+                  topicCategory: true,
+                  status: true,
+                  startAt: true,
+                  endAt: true,
+                  isPublished: true,
+                  publishedAt: true,
+                },
+              },
+              selectedOption: {
+                select: {
+                  id: true,
+                  optionText: true,
+                  displayOrder: true,
+                },
+              },
+            },
+            orderBy: {
+              submittedAt: 'desc',
+            },
+          })
+        : [];
+
     const {
-      assessment,
-      voteSubmissions,
       createdVotes,
       createdArticles,
       authAuditLogs,
@@ -311,6 +338,7 @@ export class UsersService {
       });
 
       // Keep rows referenced by Restrict relations, but remove direct account access.
+      // Assessment and vote submission rows are already detached from User by ownerHash/voterHash.
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -333,6 +361,7 @@ export class UsersService {
           metadataJson: {
             anonymizedAt: new Date().toISOString(),
             retainedParticipationRecords: true,
+            retainedParticipationRecordsUsePrivacyHashes: true,
           },
         },
         select: {

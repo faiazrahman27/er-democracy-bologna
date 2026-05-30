@@ -1,7 +1,7 @@
 import { apiRequest } from '@/lib/api';
 import type { Assessment } from '@/types/assessment';
 
-export type AdminAssessmentSecretInspection = Omit<Assessment, 'userId'> & {
+export type AdminAssessmentSecretInspection = Assessment & {
   specializedVoteSubmissions: Array<{
     submissionId: string;
     submittedAt: string;

@@ -17,7 +17,6 @@ export type SubmitVoteResponse = {
   submission: {
     id: string;
     voteId: string;
-    userId: string;
     selectedOptionId: string;
     selfAssessmentScore: number | null;
     weightUsed: string | number;
