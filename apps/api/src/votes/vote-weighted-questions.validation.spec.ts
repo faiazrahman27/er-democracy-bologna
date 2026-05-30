@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PrivacyHashService } from '../common/privacy/privacy-hash.service';
 import { ResultVisibilityModeDto } from './dto/create-vote-display-settings.dto';
 import { VoteStatusDto, VoteTypeDto } from './dto/create-vote.dto';
 import { VotesService } from './votes.service';
@@ -35,6 +36,17 @@ describe('VotesService weighted-question validation', () => {
           provide: AuditService,
           useValue: {
             logAdminAction: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: PrivacyHashService,
+          useValue: {
+            createAssessmentOwnerHash: jest.fn((userId: string) => {
+              return `owner-hash-${userId}`;
+            }),
+            createVoteVoterHash: jest.fn((voteId: string, userId: string) => {
+              return `voter-hash-${voteId}-${userId}`;
+            }),
           },
         },
       ],

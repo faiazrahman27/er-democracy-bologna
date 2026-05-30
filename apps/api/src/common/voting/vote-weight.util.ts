@@ -3810,7 +3810,7 @@ function getFieldMatch(
     exactPhraseWeight >= 0.72 ||
     matchedRootSignal >= 1.45 ||
     semanticPhraseWeight >= 0.64 ||
-    semanticRootSignal >= 1.12 ||
+    (semanticRootSignal >= 1.12 && semanticCoverage >= 0.07) ||
     (matchedRootCount >= 2 &&
       coverage >= 0.5 &&
       strongestSourceWeight >= 0.72) ||
@@ -3880,7 +3880,8 @@ function getBackgroundInfluence(
     match.semanticPhraseWeight >= 0.64 ||
     match.matchedRootCount >= 2 ||
     match.matchedRootSignal >= 1.45 ||
-    match.semanticRootSignal >= 1.12
+    (match.semanticRootSignal >= 1.12 && match.semanticCoverage >= 0.07) ||
+    (match.semanticPhraseWeight >= 0.28 && match.semanticRootSignal >= 1.12)
   ) {
     applicability = 1;
   } else if (
