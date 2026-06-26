@@ -210,6 +210,7 @@ export default function Footer() {
           sizes="100vw"
           className="absolute -bottom-2 left-0 block h-auto w-full md:-bottom-3"
           priority={false}
+          unoptimized
         />
       </div>
     </footer>
