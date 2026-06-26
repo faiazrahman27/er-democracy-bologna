@@ -30,10 +30,10 @@ export default function Footer() {
   }, [user]);
 
   return (
-    <footer className="mt-20 overflow-hidden bg-white text-slate-700">
+    <footer className="mt-20 bg-white text-slate-700">
       <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-12 pb-0 md:pt-14">
+      <div className="mx-auto max-w-6xl px-6 pt-12 pb-0 md:pt-14">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <Link
@@ -201,14 +201,14 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="relative z-0 mt-6 h-[30vw] min-h-[108px] max-h-[155px] overflow-hidden bg-white md:-mt-20 md:h-[29vw] md:min-h-0 md:max-h-[500px] lg:-mt-28">
+      <div className="mt-6 w-full bg-white md:-mt-10 lg:-mt-16">
         <Image
           src="/footer.png"
           alt=""
           width={5444}
           height={1728}
           sizes="100vw"
-          className="absolute -bottom-2 left-0 block h-auto w-full md:-bottom-3"
+          className="block h-auto w-full"
           priority={false}
           unoptimized
         />
