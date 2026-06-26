@@ -30,17 +30,17 @@ export default function Footer() {
   }, [user]);
 
   return (
-    <footer className="mt-20 bg-white text-slate-700">
+    <footer className="mt-20 overflow-hidden bg-white text-slate-700">
       <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-      <div className="mx-auto max-w-6xl px-6 py-12 md:py-14">
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pt-12 pb-0 md:pt-14">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <Link
               href={isAdminUser ? ROUTES.admin.root : ROUTES.public.home}
               className="group inline-flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
             >
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition-all duration-200 group-hover:shadow-md">
+              <div className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-200 group-hover:shadow-md">
                 <Image
                   src="/branding/ER-Democracy-Bologna-logo.png"
                   alt="ER Democracy Bologna"
@@ -188,7 +188,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-slate-200 pt-6 text-xs text-slate-400 md:flex-row md:items-center md:justify-between">
+        <div className="mt-10 flex flex-col gap-3 pt-6 text-xs text-slate-400 md:flex-row md:items-center md:justify-between">
           <p>
             © {new Date().getFullYear()} ER Democracy Bologna. All rights
             reserved.
@@ -199,6 +199,18 @@ export default function Footer() {
               : 'Designed for transparent and trustworthy civic participation.'}
           </p>
         </div>
+      </div>
+
+      <div className="relative z-0 mt-6 h-[30vw] min-h-[108px] max-h-[155px] overflow-hidden bg-white md:-mt-20 md:h-[29vw] md:min-h-0 md:max-h-[500px] lg:-mt-28">
+        <Image
+          src="/footer.png"
+          alt=""
+          width={5444}
+          height={1728}
+          sizes="100vw"
+          className="absolute -bottom-2 left-0 block h-auto w-full md:-bottom-3"
+          priority={false}
+        />
       </div>
     </footer>
   );
