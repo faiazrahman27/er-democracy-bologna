@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ResponsiveContainer,
@@ -99,22 +99,19 @@ const RAW_OPTION_COLORS = [
 ];
 
 const WEIGHTED_OPTION_COLORS = [
-  "#1d4ed8",
+  "#f97316",
+  "#9333ea",
+  "#059669",
   "#b91c1c",
-  "#15803d",
-  "#b45309",
-  "#6d28d9",
-  "#0f766e",
-  "#ea580c",
-  "#db2777",
+  "#0e7490",
+  "#be123c",
   "#4338ca",
   "#4d7c0f",
-  "#0e7490",
   "#92400e",
+  "#0369a1",
+  "#a21caf",
+  "#7c2d12",
 ];
-
-const RAW_SERIES_LEGEND_COLOR = "#1d4ed8";
-const WEIGHTED_SERIES_LEGEND_COLOR = "#b45309";
 
 export default function AdminConsultationDetailPage() {
   const router = useRouter();
@@ -295,9 +292,13 @@ export default function AdminConsultationDetailPage() {
 
   if (isLoading || pageLoading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <p className="text-sm text-slate-600">Loading consultation...</p>
+          <div className="border-y border-slate-200 py-6">
+            <p className="text-sm font-medium text-slate-500">
+              Loading consultation...
+            </p>
+          </div>
         </div>
       </main>
     );
@@ -309,9 +310,9 @@ export default function AdminConsultationDetailPage() {
 
   if (!hasPermission(user.role, PERMISSIONS.CONSULTATION_VIEW_ADMIN)) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="border-y border-red-200 py-4 text-sm font-bold text-red-700">
             You do not have permission to view this admin consultation page.
           </div>
         </div>
@@ -321,16 +322,16 @@ export default function AdminConsultationDetailPage() {
 
   if (pageError || !vote) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <Link
             href="/admin/consultations"
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
           >
             ← Back to consultation management
           </Link>
 
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-6 border-y border-red-200 py-4 text-sm font-bold text-red-700">
             {pageError ?? "Consultation not found"}
           </div>
         </div>
@@ -360,6 +361,11 @@ export default function AdminConsultationDetailPage() {
   );
   const canLookupSpecializedAssessment =
     canLookupAssessment && vote.voteType === "SPECIALIZED";
+
+  const rawLegendColors = resultsChartData.map((option) => option.rawColor);
+  const weightedLegendColors = resultsChartData.map(
+    (option) => option.weightedColor,
+  );
 
   async function handleExportExcel() {
     if (!token) {
@@ -396,839 +402,602 @@ export default function AdminConsultationDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-      <div className="mx-auto max-w-6xl">
-        <section className="pb-10">
-          <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
+    <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
+      <section className="px-5 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="max-w-4xl">
-              <Link
-                href="/admin/consultations"
-                className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-              >
-                ← Back to consultation management
-              </Link>
-
-              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                <StatusBadge
-                  label={formatEnumLabel(vote.topicCategory)}
-                  tone="muted"
-                />
-                <StatusBadge
-                  label={formatEnumLabel(vote.status)}
-                  tone={deriveWorkflowTone(vote.status)}
-                />
-                {vote.derivedStatus ? (
-                  <StatusBadge
-                    label={formatEnumLabel(vote.derivedStatus)}
-                    tone={deriveStatusTone(vote.derivedStatus)}
-                  />
-                ) : null}
-                <StatusBadge
-                  label={vote.isPublished ? "Published" : "Unpublished"}
-                  tone={vote.isPublished ? "success" : "warning"}
-                />
-              </div>
-
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
-                {vote.title}
-              </h1>
-
-              <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600">
-                {vote.summary}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {canViewAnalytics ? (
-                <button
-                  type="button"
-                  onClick={handleExportExcel}
-                  disabled={isExporting}
-                  className="rounded-xl border border-emerald-300 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-md disabled:opacity-60"
-                >
-                  {isExporting ? "Exporting..." : "Export Excel"}
-                </button>
-              ) : null}
-
-              {canEditConsultation ? (
+          <header className="mt-10">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:items-start">
+              <div className="min-w-0">
                 <Link
-                  href={`/admin/consultations/${vote.slug}/edit`}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
+                  href="/admin/consultations"
+                  className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
                 >
-                  Edit consultation
+                  ← Back to consultations
                 </Link>
-              ) : null}
 
-              <Link
-                href={`/consultations/${vote.slug}`}
-                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
-              >
-                Open public view
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {exportError ? (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {exportError}
-          </div>
-        ) : null}
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
-            {vote.coverImageUrl ? (
-              <div className="mb-8 mx-auto aspect-square w-full max-w-3xl overflow-hidden rounded-3xl bg-slate-100 ring-1 ring-slate-200">
-                <img
-                  src={vote.coverImageUrl}
-                  alt={vote.coverImageAlt ?? vote.title}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ) : null}
-
-            <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Consultation summary
-              </p>
-              <p className="mt-3 text-base leading-8 text-slate-700">
-                {vote.summary}
-              </p>
-            </div>
-
-            <div className="mt-6 min-w-0 rounded-2xl bg-white p-6 ring-1 ring-slate-200">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Voting options
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                    What participants are voting on
-                  </h2>
-                </div>
-                {typeof vote.submissionCount === "number" ? (
-                  <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-                    {vote.submissionCount}{" "}
-                    {vote.submissionCount === 1 ? "submission" : "submissions"}
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-6 grid gap-4">
-                {vote.options?.map((option, index) => (
-                  <div
-                    key={option.id}
-                    className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1 flex shrink-0 items-center gap-2">
-                        <span
-                          className="h-3 w-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              RAW_OPTION_COLORS[
-                                index % RAW_OPTION_COLORS.length
-                              ],
-                          }}
-                          aria-hidden="true"
-                        />
-                        <span
-                          className="h-3 w-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              WEIGHTED_OPTION_COLORS[
-                                index % WEIGHTED_OPTION_COLORS.length
-                              ],
-                          }}
-                          aria-hidden="true"
-                        />
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Option {option.displayOrder}
-                        </p>
-                        <p className="mt-2 break-words text-base font-medium leading-7 text-slate-900">
-                          {option.optionText}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )) ?? (
-                  <p className="text-sm text-slate-600">No options loaded.</p>
-                )}
-              </div>
-            </div>
-
-            {vote.methodologySummary ? (
-              <div className="mt-6 min-w-0 rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Methodology
-                </p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  {vote.methodologySummary}
-                </p>
-              </div>
-            ) : null}
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <InfoCard
-                title="Timing"
-                rows={[
-                  ["Starts", formatDateTime(vote.startAt)],
-                  ["Ends", formatDateTime(vote.endAt)],
-                  ["Updated", formatDateTime(vote.updatedAt)],
-                ]}
-              />
-              <InfoCard
-                title="Publication"
-                rows={[
-                  ["Published", vote.isPublished ? "Yes" : "No"],
-                  [
-                    "Published at",
-                    vote.publishedAt
-                      ? formatDateTime(vote.publishedAt)
-                      : "Not published",
-                  ],
-                  [
-                    "Locked at",
-                    vote.lockedAt
-                      ? formatDateTime(vote.lockedAt)
-                      : "Not locked",
-                  ],
-                ]}
-              />
-            </div>
-          </div>
-
-          <div className="min-w-0 space-y-6">
-            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <h2 className="text-lg font-semibold">Visibility controls</h2>
-              {vote.displaySettings ? (
-                <div className="mt-4 grid min-w-0 gap-3">
-                  <VisibilityRow
-                    label="Result visibility"
-                    value={formatEnumLabel(
-                      vote.displaySettings.resultVisibilityMode,
-                    )}
+                <div className="mt-6 flex flex-wrap items-center gap-2">
+                  <StatusBadge label={formatEnumLabel(vote.voteType)} />
+                  <StatusBadge
+                    label={formatEnumLabel(vote.topicCategory)}
+                    tone="muted"
                   />
-                  <VisibilityRow
-                    label="Participation stats"
-                    value={
-                      vote.displaySettings.showParticipationStats
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Stakeholder breakdown"
-                    value={
-                      vote.displaySettings.showStakeholderBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Background breakdown"
-                    value={
-                      vote.displaySettings.showBackgroundBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Location breakdown"
-                    value={
-                      vote.displaySettings.showLocationBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Age range breakdown"
-                    value={
-                      vote.displaySettings.showAgeRangeBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Gender breakdown"
-                    value={
-                      vote.displaySettings.showGenderBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Experience level breakdown"
-                    value={
-                      vote.displaySettings.showExperienceLevelBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Years of experience breakdown"
-                    value={
-                      vote.displaySettings.showYearsOfExperienceBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Study level breakdown"
-                    value={
-                      vote.displaySettings.showStudyLevelBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Relationship to area breakdown"
-                    value={
-                      vote.displaySettings.showRelationshipBreakdown
-                        ? "Shown"
-                        : "Hidden"
-                    }
-                  />
-                  <VisibilityRow
-                    label="After voting only"
-                    value={
-                      vote.displaySettings.showAfterVotingOnly ? "Yes" : "No"
-                    }
-                  />
-                  <VisibilityRow
-                    label="Only after close"
-                    value={
-                      vote.displaySettings.showOnlyAfterVoteCloses
-                        ? "Yes"
-                        : "No"
-                    }
-                  />
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-slate-600">
-                  No display settings found.
-                </p>
-              )}
-            </div>
-
-            {(vote.coverImageUrl || vote.coverImageAlt) && (
-              <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                <h2 className="text-lg font-semibold">Cover image metadata</h2>
-                <div className="mt-4 grid min-w-0 gap-3">
-                  <VisibilityRow
-                    label="Image URL"
-                    value={vote.coverImageUrl ?? "Not provided"}
-                  />
-                  <VisibilityRow
-                    label="Alt text"
-                    value={vote.coverImageAlt ?? "Not provided"}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-6">
-          {canViewResults ? (
-            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Results
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                    Consultation outcome
-                  </h2>
-                </div>
-              </div>
-
-              {results ? (
-                <>
-                  <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    <StatCard
-                      label="Raw votes"
-                      value={String(results.totals.totalRawVotes)}
+                  {vote.isPublished ? (
+                    <StatusBadge label="Published" tone="success" />
+                  ) : (
+                    <StatusBadge
+                      label={formatEnumLabel(vote.status)}
+                      tone={deriveWorkflowTone(vote.status)}
                     />
-                    <StatCard
-                      label="Weighted votes"
-                      value={String(results.totals.totalWeightedVotes)}
-                      highlight
+                  )}
+                  {vote.derivedStatus ? (
+                    <StatusBadge
+                      label={formatEnumLabel(vote.derivedStatus)}
+                      tone={deriveStatusTone(vote.derivedStatus)}
                     />
-                  </div>
+                  ) : null}
+                </div>
 
-                  {resultsChartData.length > 0 ? (
-                    <div className="mt-6 min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <h3 className="text-base font-semibold tracking-tight text-slate-900">
-                        Raw vs weighted results
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        Compare simple vote counts with weighted vote totals for
-                        each option. Use the series chips and option color key
-                        below to match the chart to each consultation option.
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-3">
-                        <SeriesLegendChip
-                          color={RAW_SERIES_LEGEND_COLOR}
-                          label="Raw votes"
-                        />
-                        <SeriesLegendChip
-                          color={WEIGHTED_SERIES_LEGEND_COLOR}
-                          label="Weighted votes"
-                        />
-                      </div>
-                      <div className="mt-4 h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={resultsChartData}
-                            margin={{ top: 8, right: 12, left: 0, bottom: 40 }}
-                          >
-                            <CartesianGrid
-                              stroke="#e2e8f0"
-                              strokeDasharray="3 3"
-                            />
-                            <XAxis
-                              dataKey="name"
-                              interval={0}
-                              height={50}
-                              tick={{ fill: "#475569", fontSize: 12 }}
-                            />
-                            <YAxis tick={{ fill: "#475569", fontSize: 12 }} />
-                            <Tooltip
-                              formatter={(value, name, entry) => {
-                                const label =
-                                  name === "rawVotes"
-                                    ? "Raw votes"
-                                    : name === "weightedVotes"
-                                      ? "Weighted votes"
-                                      : String(name);
+                <p className="mt-7 text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Consultation detail
+                </p>
 
-                                return [
-                                  String(value),
-                                  `${entry.payload.fullName} — ${label}`,
-                                ];
-                              }}
-                              contentStyle={{
-                                borderRadius: 12,
-                                border: "1px solid #e2e8f0",
-                                boxShadow:
-                                  "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-                              }}
-                            />
-                            <Bar
-                              dataKey="rawVotes"
-                              name="rawVotes"
-                              radius={[6, 6, 0, 0]}
-                            >
-                              {resultsChartData.map((entry, index) => (
-                                <Cell
-                                  key={`raw-cell-${entry.name}-${index}`}
-                                  fill={entry.rawColor}
-                                />
-                              ))}
-                            </Bar>
-                            <Bar
-                              dataKey="weightedVotes"
-                              name="weightedVotes"
-                              radius={[6, 6, 0, 0]}
-                            >
-                              {resultsChartData.map((entry, index) => (
-                                <Cell
-                                  key={`weighted-cell-${entry.name}-${index}`}
-                                  fill={entry.weightedColor}
-                                />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                <h1 className="mt-4 max-w-4xl break-words text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
+                  {vote.title}
+                </h1>
 
-                      <div className="mt-5">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Option color key
-                        </p>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          {results.options.map((option, index) => (
-                            <div
-                              key={`result-key-${option.optionId}`}
-                              className="rounded-2xl bg-slate-50 px-4 py-3 shadow-sm ring-1 ring-slate-200"
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className="mt-1 flex shrink-0 items-center gap-2">
-                                  <ColorDot
-                                    color={
-                                      RAW_OPTION_COLORS[
-                                        index % RAW_OPTION_COLORS.length
-                                      ]
-                                    }
-                                  />
-                                  <ColorDot
-                                    color={
-                                      WEIGHTED_OPTION_COLORS[
-                                        index % WEIGHTED_OPTION_COLORS.length
-                                      ]
-                                    }
-                                  />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    Option {option.displayOrder}
-                                  </p>
-                                  <p className="mt-1 text-xs leading-5 text-slate-600">
-                                    {option.optionText}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                <p className="mt-6 max-w-3xl break-words text-base leading-8 text-slate-600">
+                  {vote.summary}
+                </p>
+              </div>
+
+              <aside className="border-y border-slate-200 py-5 lg:mt-11">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                  Admin actions
+                </p>
+
+                <div className="mt-4 grid gap-3">
+                  {canViewAnalytics ? (
+                    <button
+                      type="button"
+                      onClick={handleExportExcel}
+                      disabled={isExporting}
+                      className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-green-500 hover:text-green-700 hover:shadow-md active:-translate-y-1 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isExporting ? "Exporting..." : "Export Excel"}
+                    </button>
                   ) : null}
 
-                  <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                    <OptionResultPieCard
-                      title="Raw vote distribution"
-                      description="Each slice shows the share of raw votes recorded for an option."
-                      valueLabel="votes"
-                      items={rawPieData}
-                    />
-                    <OptionResultPieCard
-                      title="Weighted vote distribution"
-                      description="Each slice shows the share of the weighted total assigned to an option."
-                      valueLabel="weighted total"
-                      items={weightedPieData}
-                    />
+                  {canEditConsultation ? (
+                    <Link
+                      href={`/admin/consultations/${vote.slug}/edit`}
+                      className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+                    >
+                      Edit consultation
+                    </Link>
+                  ) : null}
+
+                  <Link
+                    href={`/consultations/${vote.slug}`}
+                    className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-green-500 hover:text-green-700 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+                  >
+                    Open public view
+                  </Link>
+                </div>
+              </aside>
+            </div>
+          </header>
+
+          {exportError ? (
+            <div className="mt-8 border-y border-red-200 py-4 text-sm font-bold text-red-700">
+              {exportError}
+            </div>
+          ) : null}
+
+          <section className="mt-12 border-y border-slate-200 py-8">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start">
+              <div className="min-w-0">
+                <SectionHeader
+                  eyebrow="Consultation content"
+                  title="Options and key details"
+                  description="This view focuses on the consultation record, voting options, and admin results. Detailed configuration remains available from the edit page."
+                />
+
+                <div className="mt-8">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                        Voting options
+                      </p>
+                      <h3 className="mt-2 max-w-2xl text-2xl font-black tracking-[-0.045em] text-slate-950">
+                        What participants are voting on
+                      </h3>
+                    </div>
+
+                    {typeof vote.submissionCount === "number" ? (
+                      <p className="text-sm font-black text-green-700">
+                        {vote.submissionCount}{" "}
+                        {vote.submissionCount === 1
+                          ? "submission"
+                          : "submissions"}
+                      </p>
+                    ) : null}
                   </div>
 
-                  <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    {results.options.map((option, index) => (
+                  <div className="mt-5 divide-y divide-slate-200 border-y border-slate-200">
+                    {vote.options?.map((option, index) => (
                       <div
-                        key={option.optionId}
-                        className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200"
+                        key={option.id}
+                        className="py-4 transition duration-200 hover:bg-slate-50/70 active:bg-slate-50"
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                           <div className="mt-1 flex shrink-0 items-center gap-2">
-                            <span
-                              className="h-3 w-3 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  RAW_OPTION_COLORS[
-                                    index % RAW_OPTION_COLORS.length
-                                  ],
-                              }}
-                              aria-hidden="true"
+                            <ColorDot
+                              color={
+                                RAW_OPTION_COLORS[
+                                  index % RAW_OPTION_COLORS.length
+                                ]
+                              }
                             />
-                            <span
-                              className="h-3 w-3 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  WEIGHTED_OPTION_COLORS[
-                                    index % WEIGHTED_OPTION_COLORS.length
-                                  ],
-                              }}
-                              aria-hidden="true"
+                            <ColorDot
+                              color={
+                                WEIGHTED_OPTION_COLORS[
+                                  index % WEIGHTED_OPTION_COLORS.length
+                                ]
+                              }
                             />
                           </div>
 
                           <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                               Option {option.displayOrder}
                             </p>
-                            <p className="mt-2 break-words text-base font-medium leading-7 text-slate-900">
+                            <p className="mt-2 max-w-3xl break-words text-base font-bold leading-7 text-slate-900">
                               {option.optionText}
                             </p>
                           </div>
                         </div>
+                      </div>
+                    )) ?? (
+                      <p className="py-4 text-sm text-slate-600">
+                        No options loaded.
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-                        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-700">
-                          <span className="inline-flex items-center gap-2">
-                            <span
-                              className="h-3 w-3 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  RAW_OPTION_COLORS[
-                                    index % RAW_OPTION_COLORS.length
-                                  ],
-                              }}
-                              aria-hidden="true"
-                            />
-                            <span>
-                              <span className="font-medium text-slate-900">
-                                Raw:
-                              </span>{" "}
-                              {option.rawCount} ({option.rawPercentage}%)
-                            </span>
-                          </span>
+                {vote.methodologySummary ? (
+                  <div className="mt-8 border-t border-slate-200 pt-6">
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                      Methodology
+                    </p>
+                    <p className="mt-3 max-w-3xl break-words text-sm leading-7 text-slate-600">
+                      {vote.methodologySummary}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
 
-                          <span className="inline-flex items-center gap-2">
-                            <span
-                              className="h-3 w-3 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  WEIGHTED_OPTION_COLORS[
-                                    index % WEIGHTED_OPTION_COLORS.length
-                                  ],
-                              }}
-                              aria-hidden="true"
+              <aside className="min-w-0">
+                {vote.coverImageUrl ? (
+                  <div className="flex items-center justify-center bg-slate-50 p-5">
+                    <img
+                      src={vote.coverImageUrl}
+                      alt={vote.coverImageAlt ?? vote.title}
+                      className="block h-auto max-h-[380px] max-w-full object-contain"
+                    />
+                  </div>
+                ) : null}
+
+                <SideSection title="Timing">
+                  <InfoLine label="Starts" value={formatDateTime(vote.startAt)} />
+                  <InfoLine label="Ends" value={formatDateTime(vote.endAt)} />
+                  <InfoLine
+                    label="Updated"
+                    value={formatDateTime(vote.updatedAt)}
+                  />
+                </SideSection>
+              </aside>
+            </div>
+          </section>
+
+          <div className="mt-12 grid gap-14">
+            {canViewResults ? (
+              <section className="border-t border-slate-200 pt-8">
+                <SectionHeader
+                  eyebrow="Results"
+                  title="Consultation outcome"
+                />
+
+                {results ? (
+                  <>
+                    <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:max-w-3xl">
+                      <StatLine
+                        label="Raw votes"
+                        value={String(results.totals.totalRawVotes)}
+                      />
+                      <StatLine
+                        label="Weighted votes"
+                        value={String(results.totals.totalWeightedVotes)}
+                        positive
+                      />
+                    </div>
+
+                    {resultsChartData.length > 0 ? (
+                      <div className="mt-8 border-y border-slate-200 py-6">
+                        <div className="max-w-3xl">
+                          <h3 className="text-2xl font-black tracking-[-0.045em] text-slate-950">
+                            Raw vs weighted results
+                          </h3>
+                          <p className="mt-3 text-sm leading-7 text-slate-600">
+                            Each option keeps its own color in both series. Raw
+                            bars and weighted bars are grouped side by side for
+                            admin comparison.
+                          </p>
+                          <div className="mt-4 flex flex-wrap gap-3">
+                            <PaletteLegendChip
+                              colors={rawLegendColors}
+                              label="Raw votes by option"
                             />
-                            <span>
-                              <span className="font-medium text-slate-900">
-                                Weighted:
-                              </span>{" "}
-                              {option.weightedCount} (
-                              {option.weightedPercentage}%)
-                            </span>
-                          </span>
+                            <PaletteLegendChip
+                              colors={weightedLegendColors}
+                              label="Weighted votes by option"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-6 h-80 w-full min-w-0 overflow-hidden">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={resultsChartData}
+                              barCategoryGap="42%"
+                              barGap={10}
+                              margin={{ top: 8, right: 12, left: 0, bottom: 40 }}
+                            >
+                              <CartesianGrid
+                                stroke="#e2e8f0"
+                                strokeDasharray="3 3"
+                              />
+                              <XAxis
+                                dataKey="name"
+                                interval={0}
+                                height={50}
+                                tick={{ fill: "#475569", fontSize: 12 }}
+                              />
+                              <YAxis tick={{ fill: "#475569", fontSize: 12 }} />
+                              <Tooltip
+                                formatter={(value, name, entry) => {
+                                  const label =
+                                    name === "rawVotes"
+                                      ? "Raw votes"
+                                      : name === "weightedVotes"
+                                        ? "Weighted votes"
+                                        : String(name);
+
+                                  return [
+                                    String(value),
+                                    `${entry.payload.fullName} — ${label}`,
+                                  ];
+                                }}
+                                contentStyle={{
+                                  border: "1px solid #e2e8f0",
+                                  boxShadow:
+                                    "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+                                }}
+                              />
+                              <Bar
+                                dataKey="rawVotes"
+                                name="rawVotes"
+                                maxBarSize={46}
+                              >
+                                {resultsChartData.map((entry, index) => (
+                                  <Cell
+                                    key={`raw-cell-${entry.name}-${index}`}
+                                    fill={entry.rawColor}
+                                  />
+                                ))}
+                              </Bar>
+                              <Bar
+                                dataKey="weightedVotes"
+                                name="weightedVotes"
+                                maxBarSize={46}
+                              >
+                                {resultsChartData.map((entry, index) => (
+                                  <Cell
+                                    key={`weighted-cell-${entry.name}-${index}`}
+                                    fill={entry.weightedColor}
+                                  />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p className="mt-4 text-sm text-slate-600">
-                  No results available.
-                </p>
-              )}
-            </div>
-          ) : null}
+                    ) : null}
 
-          {canViewAnalytics ? (
-            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Analytics
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                  Participation insights
-                </h2>
-              </div>
+                    <div className="mt-8 grid gap-8 xl:grid-cols-2">
+                      <OptionResultPieCard
+                        title="Raw vote distribution"
+                        description="Each slice shows the share of raw votes recorded for an option."
+                        valueLabel="votes"
+                        items={rawPieData}
+                      />
+                      <OptionResultPieCard
+                        title="Weighted vote distribution"
+                        description="Each slice shows the share of the weighted total assigned to an option."
+                        valueLabel="weighted total"
+                        items={weightedPieData}
+                      />
+                    </div>
 
-              {analytics ? (
-                <>
-                  <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    <StatCard
-                      label="Participants"
-                      value={String(analytics.totals.totalParticipants)}
-                    />
-                    <StatCard
-                      label="Weighted total"
-                      value={String(analytics.totals.totalWeightedVotes)}
-                      highlight
-                    />
-                  </div>
+                    <div className="mt-8 divide-y divide-slate-200 border-y border-slate-200">
+                      {results.options.map((option, index) => (
+                        <div
+                          key={option.optionId}
+                          className="py-5 transition duration-200 hover:bg-slate-50/70 active:bg-slate-50"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="mt-1 flex shrink-0 items-center gap-2">
+                              <ColorDot
+                                color={
+                                  RAW_OPTION_COLORS[
+                                    index % RAW_OPTION_COLORS.length
+                                  ]
+                                }
+                              />
+                              <ColorDot
+                                color={
+                                  WEIGHTED_OPTION_COLORS[
+                                    index % WEIGHTED_OPTION_COLORS.length
+                                  ]
+                                }
+                              />
+                            </div>
 
-                  <div className="mt-6 grid gap-6 lg:grid-cols-3">
-                    <BreakdownChartCard
-                      title="Stakeholder breakdown"
-                      description="Shows which stakeholder categories participated in this consultation."
-                      items={stakeholderChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Background breakdown"
-                      description="Shows how participants are distributed across background categories."
-                      items={backgroundChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Location breakdown"
-                      description="Shows which reported locations participants came from."
-                      items={locationChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Age range breakdown"
-                      description="Shows participation by age range."
-                      items={ageRangeChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Gender breakdown"
-                      description="Shows participation by gender."
-                      items={genderChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Experience level breakdown"
-                      description="Shows participation by experience level."
-                      items={experienceLevelChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Years of experience breakdown"
-                      description="Shows participation by years of experience."
-                      items={yearsOfExperienceChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Study level breakdown"
-                      description="Shows participation by study level."
-                      items={studyLevelChartData}
-                    />
-                    <BreakdownChartCard
-                      title="Relationship to area breakdown"
-                      description="Shows how participants relate to the consultation area."
-                      items={relationshipToAreaChartData}
-                    />
-                  </div>
-                </>
-              ) : (
-                <p className="mt-4 text-sm text-slate-600">
-                  No analytics available.
-                </p>
-              )}
-            </div>
-          ) : null}
+                            <div className="min-w-0">
+                              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                                Option {option.displayOrder}
+                              </p>
+                              <p className="mt-2 max-w-4xl break-words text-base font-bold leading-7 text-slate-900">
+                                {option.optionText}
+                              </p>
 
-          {canViewParticipants ? (
-            <div className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Participants
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                  Submission records
-                </h2>
-              </div>
-
-              {participants ? (
-                <div className="mt-4 space-y-3">
-                  {participants.participants.length === 0 ? (
-                    <p className="text-sm text-slate-600">
-                      No participants yet.
-                    </p>
-                  ) : (
-                    participants.participants.map((participant) => (
-                      <div
-                        key={participant.submissionId}
-                        className="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700 ring-1 ring-slate-200"
-                      >
-                        {canLookupSpecializedAssessment ? (
-                          <p className="break-words">
-                            <span className="font-medium text-slate-900">
-                              Secret ID:
-                            </span>{" "}
-                            {participant.secretUserId ? (
-                              <Link
-                                href={`/admin/assessments/${participant.secretUserId}`}
-                                className="break-all font-mono text-blue-600 underline hover:text-blue-800"
-                              >
-                                {participant.secretUserId}
-                              </Link>
-                            ) : (
-                              "Not available"
-                            )}
-                          </p>
-                        ) : null}
-                        <p className="mt-1 break-words">
-                          <span className="font-medium text-slate-900">
-                            Option:
-                          </span>{" "}
-                          {participant.selectedOptionText}
-                        </p>
-                        <p className="mt-1">
-                          <span className="font-medium text-slate-900">
-                            Weight:
-                          </span>{" "}
-                          {formatWeight(participant.weightUsed)}
-                        </p>
-                        {canLookupSpecializedAssessment &&
-                        participant.specializedBaseWeightUsed !== null &&
-                        typeof participant.specializedBaseWeightUsed !==
-                          "undefined" ? (
-                          <p className="mt-1">
-                            <span className="font-medium text-slate-900">
-                              Specialized base weight:
-                            </span>{" "}
-                            {formatWeight(
-                              participant.specializedBaseWeightUsed,
-                            )}
-                          </p>
-                        ) : null}
-                        {canLookupSpecializedAssessment &&
-                        participant.specializedQuestionModifierTotal !== null &&
-                        typeof participant.specializedQuestionModifierTotal !==
-                          "undefined" ? (
-                          <p className="mt-1">
-                            <span className="font-medium text-slate-900">
-                              Question modifier total:
-                            </span>{" "}
-                            {formatSignedWeight(
-                              participant.specializedQuestionModifierTotal,
-                            )}
-                          </p>
-                        ) : null}
-                        <p className="mt-1">
-                          <span className="font-medium text-slate-900">
-                            Calculation:
-                          </span>{" "}
-                          {formatEnumLabel(participant.calculationType)}
-                        </p>
-                        {participant.selfAssessmentScore !== null ? (
-                          <p className="mt-1">
-                            <span className="font-medium text-slate-900">
-                              Self score:
-                            </span>{" "}
-                            {participant.selfAssessmentScore}
-                          </p>
-                        ) : null}
-                        <p className="mt-1">
-                          <span className="font-medium text-slate-900">
-                            Assessment complete:
-                          </span>{" "}
-                          {participant.hasCompletedAssessment ? "Yes" : "No"}
-                        </p>
-                        {canLookupSpecializedAssessment &&
-                        participant.weightedQuestionAnswers &&
-                        participant.weightedQuestionAnswers.length > 0 ? (
-                          <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                              Weighted question answers
-                            </p>
-                            <div className="mt-3 space-y-3">
-                              {participant.weightedQuestionAnswers.map(
-                                (answer) => (
-                                  <div
-                                    key={`${participant.submissionId}-${answer.questionId}`}
-                                    className="rounded-2xl bg-slate-50 px-3 py-3 ring-1 ring-slate-200"
-                                  >
-                                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                                      Question {answer.questionDisplayOrder}
-                                    </p>
-                                    <p className="mt-1 text-sm font-medium text-slate-900">
-                                      {answer.questionPrompt}
-                                    </p>
-                                    <p className="mt-2 text-sm text-slate-700">
-                                      <span className="font-medium text-slate-900">
-                                        Selected answer:
-                                      </span>{" "}
-                                      {answer.selectedOptionText}
-                                    </p>
-                                    <p className="mt-1 text-sm text-slate-700">
-                                      <span className="font-medium text-slate-900">
-                                        Modifier:
-                                      </span>{" "}
-                                      {formatSignedWeight(answer.modifierUsed)}
-                                    </p>
-                                  </div>
-                                ),
-                              )}
+                              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-700">
+                                <span>
+                                  <span className="font-bold text-slate-900">
+                                    Raw:
+                                  </span>{" "}
+                                  {option.rawCount} ({option.rawPercentage}%)
+                                </span>
+                                <span>
+                                  <span className="font-bold text-slate-900">
+                                    Weighted:
+                                  </span>{" "}
+                                  {option.weightedCount} (
+                                  {option.weightedPercentage}%)
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        ) : null}
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-slate-600">
-                  No participant data available.
-                </p>
-              )}
-            </div>
-          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-600">
+                    No results available.
+                  </p>
+                )}
+              </section>
+            ) : null}
+
+            {canViewAnalytics ? (
+              <section className="border-t border-slate-200 pt-8">
+                <SectionHeader
+                  eyebrow="Analytics"
+                  title="Participation insights"
+                />
+
+                {analytics ? (
+                  <>
+                    <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:max-w-3xl">
+                      <StatLine
+                        label="Participants"
+                        value={String(analytics.totals.totalParticipants)}
+                      />
+                      <StatLine
+                        label="Weighted total"
+                        value={String(analytics.totals.totalWeightedVotes)}
+                        positive
+                      />
+                    </div>
+
+                    <div className="mt-8 grid gap-x-10 gap-y-12 md:grid-cols-2">
+                      <BreakdownChartCard
+                        title="Stakeholder breakdown"
+                        description="Shows which stakeholder categories participated in this consultation."
+                        items={stakeholderChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Background breakdown"
+                        description="Shows how participants are distributed across background categories."
+                        items={backgroundChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Location breakdown"
+                        description="Shows which reported locations participants came from."
+                        items={locationChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Age range breakdown"
+                        description="Shows participation by age range."
+                        items={ageRangeChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Gender breakdown"
+                        description="Shows participation by gender."
+                        items={genderChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Experience level breakdown"
+                        description="Shows participation by experience level."
+                        items={experienceLevelChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Years of experience breakdown"
+                        description="Shows participation by years of experience."
+                        items={yearsOfExperienceChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Study level breakdown"
+                        description="Shows participation by study level."
+                        items={studyLevelChartData}
+                      />
+                      <BreakdownChartCard
+                        title="Relationship to area breakdown"
+                        description="Shows how participants relate to the consultation area."
+                        items={relationshipToAreaChartData}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-600">
+                    No analytics available.
+                  </p>
+                )}
+              </section>
+            ) : null}
+
+            {canViewParticipants ? (
+              <section className="border-t border-slate-200 pt-8">
+                <SectionHeader eyebrow="Participants" title="Submission records" />
+
+                {participants ? (
+                  <div className="mt-7 divide-y divide-slate-200 border-y border-slate-200">
+                    {participants.participants.length === 0 ? (
+                      <p className="py-5 text-sm text-slate-600">
+                        No participants yet.
+                      </p>
+                    ) : (
+                      participants.participants.map((participant) => (
+                        <div
+                          key={participant.submissionId}
+                          className="min-w-0 py-5 text-sm text-slate-700 transition duration-200 hover:bg-slate-50/70 active:bg-slate-50"
+                        >
+                          <div className="grid gap-x-8 gap-y-2 md:grid-cols-2 xl:grid-cols-3">
+                            {canLookupSpecializedAssessment ? (
+                              <ParticipantField label="Secret ID">
+                                {participant.secretUserId ? (
+                                  <Link
+                                    href={`/admin/assessments/${participant.secretUserId}`}
+                                    className="break-all font-mono text-green-700 underline underline-offset-4 hover:text-green-800"
+                                  >
+                                    {participant.secretUserId}
+                                  </Link>
+                                ) : (
+                                  "Not available"
+                                )}
+                              </ParticipantField>
+                            ) : null}
+
+                            <ParticipantField label="Option">
+                              {participant.selectedOptionText}
+                            </ParticipantField>
+
+                            <ParticipantField label="Weight">
+                              {formatWeight(participant.weightUsed)}
+                            </ParticipantField>
+
+                            {canLookupSpecializedAssessment &&
+                            participant.specializedBaseWeightUsed !== null &&
+                            typeof participant.specializedBaseWeightUsed !==
+                              "undefined" ? (
+                              <ParticipantField label="Specialized base weight">
+                                {formatWeight(
+                                  participant.specializedBaseWeightUsed,
+                                )}
+                              </ParticipantField>
+                            ) : null}
+
+                            {canLookupSpecializedAssessment &&
+                            participant.specializedQuestionModifierTotal !== null &&
+                            typeof participant.specializedQuestionModifierTotal !==
+                              "undefined" ? (
+                              <ParticipantField label="Question modifier total">
+                                {formatSignedWeight(
+                                  participant.specializedQuestionModifierTotal,
+                                )}
+                              </ParticipantField>
+                            ) : null}
+
+                            <ParticipantField label="Calculation">
+                              {formatEnumLabel(participant.calculationType)}
+                            </ParticipantField>
+
+                            {participant.selfAssessmentScore !== null ? (
+                              <ParticipantField label="Self score">
+                                {participant.selfAssessmentScore}
+                              </ParticipantField>
+                            ) : null}
+
+                            <ParticipantField label="Assessment complete">
+                              {participant.hasCompletedAssessment ? "Yes" : "No"}
+                            </ParticipantField>
+                          </div>
+
+                          {canLookupSpecializedAssessment &&
+                          participant.weightedQuestionAnswers &&
+                          participant.weightedQuestionAnswers.length > 0 ? (
+                            <div className="mt-5 border-t border-slate-200 pt-4">
+                              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                                Weighted question answers
+                              </p>
+                              <div className="mt-3 divide-y divide-slate-200 border-y border-slate-200">
+                                {participant.weightedQuestionAnswers.map(
+                                  (answer) => (
+                                    <div
+                                      key={`${participant.submissionId}-${answer.questionId}`}
+                                      className="py-4"
+                                    >
+                                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                                        Question {answer.questionDisplayOrder}
+                                      </p>
+                                      <p className="mt-1 max-w-3xl text-sm font-bold text-slate-900">
+                                        {answer.questionPrompt}
+                                      </p>
+                                      <p className="mt-2 text-sm text-slate-700">
+                                        <span className="font-bold text-slate-900">
+                                          Selected answer:
+                                        </span>{" "}
+                                        {answer.selectedOptionText}
+                                      </p>
+                                      <p className="mt-1 text-sm text-slate-700">
+                                        <span className="font-bold text-slate-900">
+                                          Modifier:
+                                        </span>{" "}
+                                        {formatSignedWeight(answer.modifierUsed)}
+                                      </p>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-600">
+                    No participant data available.
+                  </p>
+                )}
+              </section>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
@@ -1252,71 +1021,77 @@ function formatSignedWeight(value: string | number) {
   return `${numeric >= 0 ? "+" : ""}${numeric.toFixed(4)}`;
 }
 
-function InfoCard({
+function SectionHeader({
+  eyebrow,
   title,
-  rows,
+  description,
 }: {
+  eyebrow: string;
   title: string;
-  rows: Array<[string, string]>;
+  description?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+    <div className="max-w-3xl">
+      <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
         {title}
       </h2>
-      <div className="mt-4 space-y-3 text-sm text-slate-700">
-        {rows.map(([label, value]) => (
-          <div
-            key={label}
-            className="min-w-0 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {label}
-            </p>
-            <p className="mt-1 break-words text-sm font-medium text-slate-900">
-              {value}
-            </p>
-          </div>
-        ))}
-      </div>
+      {description ? (
+        <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
+      ) : null}
     </div>
   );
 }
 
-function VisibilityRow({ label, value }: { label: string; value: string }) {
+function SideSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="min-w-0 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="mt-6 border-y border-slate-200 py-5 first:mt-0">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+        {title}
+      </p>
+      <div className="mt-4 grid gap-4">{children}</div>
+    </div>
+  );
+}
+
+function InfoLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
-      <p className="mt-1 min-w-0 break-all whitespace-normal text-sm font-medium text-slate-900">
+      <p className="mt-2 min-w-0 break-words text-sm font-bold leading-6 text-slate-900">
         {value}
       </p>
     </div>
   );
 }
 
-function StatCard({
+function StatLine({
   label,
   value,
-  highlight,
+  positive,
 }: {
   label: string;
   value: string;
-  highlight?: boolean;
+  positive?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-2xl px-4 py-4 shadow-sm ring-1 ${
-        highlight ? "bg-green-50 ring-green-200" : "bg-slate-50 ring-slate-200"
-      }`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="border-y border-slate-200 py-4">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
       <p
-        className={`mt-2 text-2xl font-semibold ${
-          highlight ? "text-green-700" : "text-slate-900"
+        className={`mt-2 text-3xl font-black tracking-[-0.05em] ${
+          positive ? "text-green-700" : "text-slate-950"
         }`}
       >
         {value}
@@ -1334,34 +1109,75 @@ function StatusBadge({
 }) {
   const toneClass =
     tone === "success"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "border-green-200 text-green-700"
       : tone === "warning"
-        ? "bg-amber-100 text-amber-700"
+        ? "border-amber-200 text-amber-700"
         : tone === "danger"
-          ? "bg-red-100 text-red-700"
+          ? "border-red-200 text-red-600"
           : tone === "muted"
-            ? "bg-slate-200 text-slate-600"
-            : "bg-slate-100 text-slate-700";
+            ? "border-slate-200 text-slate-500"
+            : "border-slate-200 text-slate-700";
 
-  return <span className={`rounded-full px-3 py-1 ${toneClass}`}>{label}</span>;
+  return (
+    <span
+      className={`border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${toneClass}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 function ColorDot({ color }: { color: string }) {
   return (
     <span
-      className="h-3 w-3 rounded-full"
+      className="h-3 w-3 shrink-0"
       style={{ backgroundColor: color }}
       aria-hidden="true"
     />
   );
 }
 
-function SeriesLegendChip({ color, label }: { color: string; label: string }) {
+function PaletteLegendChip({
+  colors,
+  label,
+}: {
+  colors: string[];
+  label: string;
+}) {
+  const visibleColors = colors.slice(0, 8);
+
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-      <ColorDot color={color} />
+    <span className="inline-flex items-center gap-3 border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">
+      <span className="flex items-center gap-1" aria-hidden="true">
+        {visibleColors.map((color, index) => (
+          <span
+            key={`${label}-${color}-${index}`}
+            className="h-3 w-3 shrink-0"
+            style={{ backgroundColor: color }}
+          />
+        ))}
+      </span>
       {label}
     </span>
+  );
+}
+
+function ParticipantField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0 border-t border-slate-200 pt-3">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 break-words text-sm font-bold leading-6 text-slate-900">
+        {children}
+      </p>
+    </div>
   );
 }
 
@@ -1388,13 +1204,11 @@ function BreakdownPieTooltip({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
+    <div className="border border-slate-200 bg-white px-4 py-3 shadow-xl">
       <div className="flex items-start gap-3">
-        <span className="rounded-full p-0.5 ring-2 ring-white shadow-sm">
-          <ColorDot color={item.color} />
-        </span>
+        <ColorDot color={item.color} />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">{item.label}</p>
+          <p className="text-sm font-bold text-slate-900">{item.label}</p>
           <p className="mt-1 text-xs font-medium text-slate-700">
             {item.count} participants
           </p>
@@ -1424,8 +1238,8 @@ function OptionResultPieCard({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <h3 className="text-base font-semibold tracking-tight text-slate-900">
+      <div className="border-y border-slate-200 py-6">
+        <h3 className="text-2xl font-black tracking-[-0.045em] text-slate-950">
           {title}
         </h3>
         <p className="mt-4 text-sm text-slate-600">No data available.</p>
@@ -1434,22 +1248,24 @@ function OptionResultPieCard({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <h3 className="text-base font-semibold tracking-tight text-slate-900">
+    <div className="border-y border-slate-200 py-6">
+      <h3 className="text-2xl font-black tracking-[-0.045em] text-slate-950">
         {title}
       </h3>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+      <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+        {description}
+      </p>
 
-      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-center">
-        <div className="h-72 w-full">
+      <div className="mt-5 grid gap-5">
+        <div className="h-64 w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={items}
                 dataKey="count"
                 nameKey="label"
-                outerRadius={90}
-                innerRadius={42}
+                outerRadius={86}
+                innerRadius={40}
                 paddingAngle={2}
               >
                 {items.map((item, index) => (
@@ -1467,7 +1283,6 @@ function OptionResultPieCard({
                   `${entry.payload.label}: ${entry.payload.fullLabel}`,
                 ]}
                 contentStyle={{
-                  borderRadius: 12,
                   border: "1px solid #e2e8f0",
                   boxShadow:
                     "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
@@ -1477,21 +1292,18 @@ function OptionResultPieCard({
           </ResponsiveContainer>
         </div>
 
-        <div className="space-y-2">
+        <div className="divide-y divide-slate-200 border-y border-slate-200">
           {items.map((item) => (
-            <div
-              key={`result-pie-legend-${item.label}`}
-              className="rounded-2xl bg-slate-50 px-3 py-3 ring-1 ring-slate-200"
-            >
+            <div key={`result-pie-legend-${item.label}`} className="py-3">
               <div className="flex items-start gap-3">
                 <div className="pt-0.5">
                   <ColorDot color={item.color} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-bold text-slate-900">
                     {item.label}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                  <p className="mt-1 break-words text-xs leading-5 text-slate-600">
                     {item.fullLabel}
                   </p>
                   <p className="mt-1 text-xs font-medium text-slate-700">
@@ -1522,8 +1334,8 @@ function BreakdownChartCard({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <h3 className="text-base font-semibold tracking-tight text-slate-900">
+      <div className="border-y border-slate-200 py-6">
+        <h3 className="text-xl font-black tracking-[-0.04em] text-slate-950">
           {title}
         </h3>
         <p className="mt-4 text-sm text-slate-600">No data available.</p>
@@ -1537,15 +1349,17 @@ function BreakdownChartCard({
   }));
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <h3 className="text-base font-semibold tracking-tight text-slate-900">
+    <div className="min-w-0 border-y border-slate-200 py-6">
+      <h3 className="max-w-md text-xl font-black tracking-[-0.04em] text-slate-950">
         {title}
       </h3>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+      <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+        {description}
+      </p>
 
       <div className="mt-5 grid gap-5">
         <div className="flex justify-center">
-          <div className="aspect-square w-full max-w-[15rem]">
+          <div className="aspect-square w-full max-w-[13.5rem]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                 <Pie
@@ -1554,7 +1368,7 @@ function BreakdownChartCard({
                   nameKey="label"
                   cx="50%"
                   cy="50%"
-                  outerRadius="92%"
+                  outerRadius="90%"
                   paddingAngle={chartItems.length > 1 ? 1 : 0}
                 >
                   {chartItems.map((item) => (
@@ -1584,25 +1398,25 @@ function BreakdownLegendList({ items }: { items: BreakdownChartLegendItem[] }) {
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+    <div className="grid gap-3">
       {items.map((item) => (
         <div
           key={item.label}
-          className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700 shadow-sm"
+          className="min-w-0 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:-translate-y-0.5 active:shadow-md"
           style={{ borderLeftColor: item.color, borderLeftWidth: 6 }}
         >
           <span className="hidden" aria-hidden="true">
             {item.label} — {item.count} ({item.percentage}%)
           </span>
           <div className="min-w-0">
-            <p className="break-words text-sm font-semibold text-slate-900">
+            <p className="break-words text-sm font-bold text-slate-900">
               {item.label}
             </p>
             <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium text-slate-700">
-              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+              <span className="border border-slate-200 bg-white px-2.5 py-1">
                 {item.count} participants
               </span>
-              <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200">
+              <span className="border border-slate-200 bg-white px-2.5 py-1">
                 {item.percentage}%
               </span>
             </div>
