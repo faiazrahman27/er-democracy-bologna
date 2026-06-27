@@ -14,6 +14,51 @@ type HeaderProps = {
   variant?: 'public' | 'admin';
 };
 
+function getPublicViewHref(pathname: string) {
+  if (pathname === ROUTES.admin.root) {
+    return ROUTES.public.home;
+  }
+
+  if (pathname === ROUTES.admin.consultations) {
+    return ROUTES.public.consultations;
+  }
+
+  if (pathname.startsWith(`${ROUTES.admin.consultations}/`)) {
+    const parts = pathname.split('/').filter(Boolean);
+    const consultationSlug = parts[2];
+
+    if (consultationSlug) {
+      return `${ROUTES.public.consultations}/${consultationSlug}`;
+    }
+
+    return ROUTES.public.consultations;
+  }
+
+  if (pathname === ROUTES.admin.articles) {
+    return ROUTES.public.articles;
+  }
+
+  if (pathname.startsWith(`${ROUTES.admin.articles}/`)) {
+    return ROUTES.public.articles;
+  }
+
+  if (
+    pathname === ROUTES.admin.createConsultation ||
+    pathname.startsWith(`${ROUTES.admin.createConsultation}/`)
+  ) {
+    return ROUTES.public.consultations;
+  }
+
+  if (
+    pathname === ROUTES.admin.assessments ||
+    pathname.startsWith(`${ROUTES.admin.assessments}/`)
+  ) {
+    return ROUTES.public.home;
+  }
+
+  return ROUTES.public.home;
+}
+
 export default function Header({ variant = 'public' }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -54,6 +99,10 @@ export default function Header({ variant = 'public' }: HeaderProps) {
       return hasPermission(user.role, item.permission);
     });
   }, [user]);
+
+  const publicViewHref = useMemo(() => {
+    return getPublicViewHref(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -222,7 +271,7 @@ export default function Header({ variant = 'public' }: HeaderProps) {
               </Link>
             ))}
 
-            <Link href={ROUTES.public.consultations} className={subtleActionClass}>
+            <Link href={publicViewHref} className={subtleActionClass}>
               Public view
             </Link>
 
@@ -332,7 +381,7 @@ export default function Header({ variant = 'public' }: HeaderProps) {
               ))}
 
               <Link
-                href={ROUTES.public.consultations}
+                href={publicViewHref}
                 className={`${subtleActionClass} mt-2 w-full`}
                 onClick={closeMobileMenu}
               >
