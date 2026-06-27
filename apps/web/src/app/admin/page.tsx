@@ -56,10 +56,31 @@ export default function AdminPage() {
     userRole,
     PERMISSIONS.CONSULTATION_CREATE,
   );
+  const canEditConsultations = hasPermission(
+    userRole,
+    PERMISSIONS.CONSULTATION_EDIT,
+  );
   const canViewConsultations = hasPermission(
     userRole,
     PERMISSIONS.CONSULTATION_VIEW_ADMIN,
   );
+  const canViewResults = hasPermission(
+    userRole,
+    PERMISSIONS.RESULTS_VIEW_ADMIN,
+  );
+  const canViewAnalytics = hasPermission(
+    userRole,
+    PERMISSIONS.ANALYTICS_VIEW_ADMIN,
+  );
+  const canViewParticipants = hasPermission(
+    userRole,
+    PERMISSIONS.PARTICIPANTS_VIEW_ADMIN,
+  );
+  const canLookupAssessment = hasPermission(
+    userRole,
+    PERMISSIONS.ASSESSMENT_SECRET_LOOKUP,
+  );
+
   const canViewArticles = hasPermission(
     userRole,
     PERMISSIONS.ARTICLE_VIEW_ADMIN,
@@ -68,47 +89,56 @@ export default function AdminPage() {
     userRole,
     PERMISSIONS.ARTICLE_CREATE,
   );
-  const canLookupAssessment = hasPermission(
+  const canEditArticles = hasPermission(userRole, PERMISSIONS.ARTICLE_EDIT);
+  const canDeleteArticles = hasPermission(userRole, PERMISSIONS.ARTICLE_DELETE);
+  const canPublishArticles = hasPermission(
     userRole,
-    PERMISSIONS.ASSESSMENT_SECRET_LOOKUP,
-  );
-  const canViewParticipants = hasPermission(
-    userRole,
-    PERMISSIONS.PARTICIPANTS_VIEW_ADMIN,
-  );
-  const canViewAnalytics = hasPermission(
-    userRole,
-    PERMISSIONS.ANALYTICS_VIEW_ADMIN,
-  );
-  const canViewResults = hasPermission(
-    userRole,
-    PERMISSIONS.RESULTS_VIEW_ADMIN,
+    PERMISSIONS.ARTICLE_PUBLISH,
   );
   const canUploadMedia = hasPermission(userRole, PERMISSIONS.MEDIA_UPLOAD);
 
-  const permissions = [
+  const roleCopy = getRoleCopy(userRole);
+
+  const permissionItems = [
     ['Consultation creation', canCreateConsultation],
-    ['Consultation management', canViewConsultations],
-    ['Article management', canViewArticles],
-    ['Article creation', canCreateArticles],
+    ['Consultation editing', canEditConsultations],
+    ['Consultation admin view', canViewConsultations],
     ['Results access', canViewResults],
     ['Analytics access', canViewAnalytics],
     ['Participant access', canViewParticipants],
     ['Secret assessment lookup', canLookupAssessment],
+    ['Article creation', canCreateArticles],
+    ['Article editing', canEditArticles],
+    ['Article deletion', canDeleteArticles],
+    ['Article publishing', canPublishArticles],
+    ['Article admin view', canViewArticles],
     ['Media upload', canUploadMedia],
   ] as const;
 
-  const systemStatus = [
+  const availablePermissions = permissionItems.filter(([, allowed]) => allowed);
+
+  const workspaceStatus = [
     'Authentication',
     'Role system',
-    'Assessment module',
-    'Vote creation and submission',
-    'Results and analytics routes',
-    'Audit logging',
-    'Article module',
-  ];
-
-  const enabledPermissions = permissions.filter(([, allowed]) => allowed).length;
+    'Personal assessment',
+    canViewConsultations
+      ? canEditConsultations
+        ? 'Consultation management'
+        : 'Consultation review'
+      : null,
+    canCreateConsultation ? 'Consultation creation' : null,
+    canViewResults ? 'Results access' : null,
+    canViewAnalytics ? 'Analytics view' : null,
+    canViewParticipants ? 'Participant review' : null,
+    canLookupAssessment ? 'Assessment lookup' : null,
+    canViewArticles
+      ? canEditArticles || canPublishArticles
+        ? 'Article management'
+        : 'Article review'
+      : null,
+    canCreateArticles ? 'Article creation' : null,
+    canUploadMedia ? 'Media upload' : null,
+  ].filter(Boolean) as string[];
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
@@ -122,11 +152,11 @@ export default function AdminPage() {
             <div className="relative grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
               <div className="min-w-0 px-5 py-8 sm:px-8 md:px-10 md:py-12">
                 <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
-                  Administration
+                  {roleCopy.eyebrow}
                 </p>
 
                 <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
-                  Administrative workspace
+                  {roleCopy.title}
                 </h1>
 
                 <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600">
@@ -134,8 +164,7 @@ export default function AdminPage() {
                   <span className="border-b-2 border-green-600 bg-green-50 px-1.5 py-0.5 font-black text-slate-950">
                     {user.fullName}
                   </span>
-                  . Coordinate consultations, articles, access, and review work
-                  from one focused space.
+                  . {roleCopy.summary}
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -156,7 +185,7 @@ export default function AdminPage() {
                       Session state
                     </p>
                     <p className="mt-3 text-sm leading-6 text-slate-500">
-                      Current access for this admin session.
+                      Current access for this signed-in role.
                     </p>
                   </div>
 
@@ -177,7 +206,11 @@ export default function AdminPage() {
                     value={user.isActive ? 'Active' : 'Inactive'}
                     positive={user.isActive}
                   />
-                  <SessionLine label="Admin access" value="Enabled" positive />
+                  <SessionLine
+                    label="Permissions"
+                    value={`${availablePermissions.length}/${permissionItems.length} enabled`}
+                    positive={availablePermissions.length > 0}
+                  />
                 </div>
               </aside>
             </div>
@@ -190,13 +223,12 @@ export default function AdminPage() {
                   Work routes
                 </p>
                 <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
-                  Continue the work
+                  {roleCopy.routesTitle}
                 </h2>
               </div>
 
               <p className="max-w-md text-sm leading-6 text-slate-500">
-                Core admin paths, shown once, with enough breathing room to stay
-                usable on every screen.
+                {roleCopy.routesIntro}
               </p>
             </div>
 
@@ -205,9 +237,16 @@ export default function AdminPage() {
                 <ActionPath
                   href="/admin/consultations"
                   eyebrow="Consultations"
-                  title="Manage consultations"
-                  description="Review, edit, and administer active consultation work."
-                  accent="tricolor"
+                  title={
+                    canEditConsultations
+                      ? 'Manage consultations'
+                      : 'Review consultations'
+                  }
+                  description={
+                    canEditConsultations
+                      ? 'Review, edit, and administer active consultation work.'
+                      : 'Open consultation records available to this role.'
+                  }
                 />
               ) : null}
 
@@ -217,7 +256,6 @@ export default function AdminPage() {
                   eyebrow="Creation"
                   title="Create consultation"
                   description="Start a new consultation workflow from the admin side."
-                  accent="tricolor"
                 />
               ) : null}
 
@@ -225,9 +263,16 @@ export default function AdminPage() {
                 <ActionPath
                   href="/admin/articles"
                   eyebrow="Articles"
-                  title="Manage articles"
-                  description="Maintain the public content that supports the platform."
-                  accent="tricolor"
+                  title={
+                    canEditArticles || canPublishArticles
+                      ? 'Manage articles'
+                      : 'Review articles'
+                  }
+                  description={
+                    canEditArticles || canPublishArticles
+                      ? 'Maintain the public content that supports the platform.'
+                      : 'Open article records available to this role.'
+                  }
                 />
               ) : null}
 
@@ -236,7 +281,6 @@ export default function AdminPage() {
                 eyebrow="Profile"
                 title="My assessment"
                 description="Open your personal assessment profile and review status."
-                accent="tricolor"
               />
             </div>
           </section>
@@ -256,7 +300,7 @@ export default function AdminPage() {
                 <span className="border-b-2 border-green-600 font-black text-slate-950">
                   {user.fullName}
                 </span>
-                . This identity is currently operating the workspace.
+                . {roleCopy.identityLine}
               </p>
 
               <div className="mt-6 divide-y divide-slate-200 border-y border-slate-200">
@@ -282,24 +326,26 @@ export default function AdminPage() {
                   </p>
 
                   <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950">
-                    Permissions in use
+                    Available permissions
                   </h2>
                 </div>
 
                 <p className="text-sm font-black text-green-700">
-                  {enabledPermissions}/{permissions.length} enabled
+                  {availablePermissions.length}/{permissionItems.length} enabled
                 </p>
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {permissions.map(([label, allowed]) => (
-                  <PermissionPill
-                    key={label}
-                    label={label}
-                    allowed={allowed}
-                  />
-                ))}
-              </div>
+              {availablePermissions.length > 0 ? (
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {availablePermissions.map(([label]) => (
+                    <PermissionPill key={label} label={label} />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-6 border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-500 shadow-sm">
+                  No elevated permissions are enabled for this role.
+                </p>
+              )}
             </div>
           </section>
 
@@ -311,17 +357,17 @@ export default function AdminPage() {
                 </p>
 
                 <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950">
-                  System overview
+                  Workspace overview
                 </h2>
 
                 <p className="mt-4 max-w-md text-sm leading-7 text-slate-600">
-                  A compact readout of the platform areas available from this
-                  admin workspace.
+                  Active platform areas available to this role. Hidden or
+                  unavailable modules are not presented as usable work.
                 </p>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {systemStatus.map((label) => (
+                {workspaceStatus.map((label) => (
                   <StatusPill key={label} label={label} />
                 ))}
               </div>
@@ -331,6 +377,88 @@ export default function AdminPage() {
       </section>
     </main>
   );
+}
+
+function getRoleCopy(role: string) {
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return {
+        eyebrow: 'Full administration',
+        title: 'Platform command workspace',
+        summary:
+          'Full access is enabled across consultations, content, analytics, participants, media, and review workflows.',
+        routesTitle: 'Run the platform',
+        routesIntro:
+          'All core admin paths are available for platform-wide operation.',
+        identityLine:
+          'This account has full administrative scope across the platform.',
+      };
+
+    case 'CONSULTATION_ADMIN':
+      return {
+        eyebrow: 'Consultation administration',
+        title: 'Consultation workspace',
+        summary:
+          'Consultation creation, editing, results, analytics, and participant review are available for this role.',
+        routesTitle: 'Manage consultation work',
+        routesIntro:
+          'Only consultation-related admin paths are shown for this role.',
+        identityLine:
+          'This account is scoped to consultation operations and related review work.',
+      };
+
+    case 'CONTENT_ADMIN':
+      return {
+        eyebrow: 'Content administration',
+        title: 'Content workspace',
+        summary:
+          'Article management, publishing, deletion, creation, and media upload are available for this role.',
+        routesTitle: 'Manage public content',
+        routesIntro:
+          'Only content-related admin paths are shown for this role.',
+        identityLine:
+          'This account is scoped to articles, publishing, and media work.',
+      };
+
+    case 'ANALYTICS_ADMIN':
+      return {
+        eyebrow: 'Analytics administration',
+        title: 'Analytics review workspace',
+        summary:
+          'Consultation viewing, results access, and analytics review are available for this role.',
+        routesTitle: 'Review consultation data',
+        routesIntro:
+          'Read and review paths are shown. Creation and content tools stay hidden.',
+        identityLine:
+          'This account is scoped to results and analytics review.',
+      };
+
+    case 'AUDITOR':
+      return {
+        eyebrow: 'Audit access',
+        title: 'Oversight workspace',
+        summary:
+          'Consultation review, results, analytics, participant access, and secret assessment lookup are available for this role.',
+        routesTitle: 'Review platform activity',
+        routesIntro:
+          'Oversight routes are shown without creation or publishing tools.',
+        identityLine:
+          'This account is scoped to audit and oversight workflows.',
+      };
+
+    default:
+      return {
+        eyebrow: 'Administration',
+        title: 'Administrative workspace',
+        summary:
+          'Available tools are based on the permissions attached to this role.',
+        routesTitle: 'Continue the work',
+        routesIntro:
+          'Only the routes available to this role are shown here.',
+        identityLine:
+          'This account is operating with the permissions attached to its role.',
+      };
+  }
 }
 
 function SessionLine({
@@ -384,13 +512,11 @@ function ActionPath({
   eyebrow,
   title,
   description,
-  accent,
 }: {
   href: string;
   eyebrow: string;
   title: string;
   description: string;
-  accent: 'tricolor';
 }) {
   return (
     <Link
@@ -422,23 +548,13 @@ function ActionPath({
   );
 }
 
-function PermissionPill({
-  label,
-  allowed,
-}: {
-  label: string;
-  allowed: boolean;
-}) {
+function PermissionPill({ label }: { label: string }) {
   return (
     <div className="group flex min-w-0 cursor-default items-center justify-between gap-4 border border-slate-200 bg-white px-4 py-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:-translate-y-0.5 active:border-slate-300 active:bg-white active:shadow-md">
       <p className="min-w-0 text-sm font-bold text-slate-700">{label}</p>
 
-      <span
-        className={`shrink-0 text-xs font-black uppercase tracking-[0.13em] transition duration-200 group-hover:scale-105 group-active:scale-105 ${
-          allowed ? 'text-green-700' : 'text-red-500'
-        }`}
-      >
-        {allowed ? 'Allowed' : 'Locked'}
+      <span className="shrink-0 text-xs font-black uppercase tracking-[0.13em] text-green-700 transition duration-200 group-hover:scale-105 group-active:scale-105">
+        Enabled
       </span>
     </div>
   );

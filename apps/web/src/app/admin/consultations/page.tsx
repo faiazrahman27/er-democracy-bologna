@@ -84,10 +84,12 @@ export default function AdminConsultationsPage() {
 
   if (isLoading || pageLoading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm text-slate-600">Loading consultations...</p>
+          <div className="border-y border-slate-200 py-6">
+            <p className="text-sm font-medium text-slate-500">
+              Loading consultations...
+            </p>
           </div>
         </div>
       </main>
@@ -100,9 +102,9 @@ export default function AdminConsultationsPage() {
 
   if (!hasPermission(user.role, PERMISSIONS.CONSULTATION_VIEW_ADMIN)) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="border-y border-red-200 py-4 text-sm font-bold text-red-700">
             You do not have permission to view admin consultations.
           </div>
         </div>
@@ -120,275 +122,282 @@ export default function AdminConsultationsPage() {
     PERMISSIONS.CONSULTATION_VIEW_ADMIN,
   );
 
+  const pageCopy = getConsultationPageCopy(canCreateConsultation);
+
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-      <div className="mx-auto max-w-6xl">
-        <section className="pb-10">
-          <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
+    <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
+      <section className="px-5 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Consultation administration
+          <section className="mt-10">
+            <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Consultation administration
+                </p>
+
+                <h1 className="mt-5 max-w-4xl text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
+                  {pageCopy.title}
+                </h1>
+
+                <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600">
+                  {pageCopy.summary}
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link
+                    href="/admin"
+                    className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98] sm:w-auto"
+                  >
+                    ← Back to admin
+                  </Link>
+
+                  {canCreateConsultation ? (
+                    <Link
+                      href="/admin/votes"
+                      className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-green-500 hover:text-green-700 hover:shadow-md active:-translate-y-1 active:scale-[0.98] sm:w-auto"
+                    >
+                      Create consultation
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+
+              <aside className="border-y border-slate-200 py-5">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                  List overview
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+                  <OverviewStat
+                    label="Total"
+                    value={String(consultationStats.total)}
+                  />
+                  <OverviewStat
+                    label="Published"
+                    value={String(consultationStats.published)}
+                    positive
+                  />
+                  <OverviewStat
+                    label="Drafts"
+                    value={String(consultationStats.drafts)}
+                  />
+                  <OverviewStat
+                    label="Upcoming"
+                    value={String(consultationStats.upcoming)}
+                  />
+                  <OverviewStat
+                    label="Ongoing"
+                    value={String(consultationStats.ongoing)}
+                    positive
+                  />
+                  <OverviewStat
+                    label="Past"
+                    value={String(consultationStats.past)}
+                  />
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          {pageError ? (
+            <div className="mt-8 border-y border-red-200 py-4 text-sm font-bold text-red-700">
+              {pageError}
+            </div>
+          ) : null}
+
+          {votes.length === 0 ? (
+            <section className="mt-12 border-y border-slate-200 py-8">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                Consultation list
               </p>
-              <h1 className="mt-4 max-w-4xl text-4xl font-semibold tracking-tight md:text-5xl">
-                Manage consultations with clearer content visibility
-              </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-                Review consultations by title, summary, workflow, timing, and
-                publication state. This page is optimized to help admins quickly
-                understand what each consultation is about before opening the
-                detail or public view.
+
+              <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950">
+                No consultations found
+              </h2>
+
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600">
+                There are currently no consultations visible in this admin list.
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link
-                  href="/admin"
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
-                >
-                  ← Back to admin
-                </Link>
-
-                {canCreateConsultation ? (
+              {canCreateConsultation ? (
+                <div className="mt-6">
                   <Link
                     href="/admin/votes"
-                    className="inline-flex items-center justify-center rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md"
+                    className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-green-500 hover:text-green-700 hover:shadow-md active:-translate-y-1 active:scale-[0.98] sm:w-auto"
                   >
                     Create consultation
                   </Link>
-                ) : null}
-              </div>
-            </div>
+                </div>
+              ) : null}
+            </section>
+          ) : (
+            <section className="mt-12 border-t border-slate-200 pt-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                    Consultation list
+                  </p>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <StatCard
-                label="Total listed"
-                value={String(consultationStats.total)}
-              />
-              <StatCard
-                label="Published"
-                value={String(consultationStats.published)}
-              />
-              <StatCard
-                label="Drafts"
-                value={String(consultationStats.drafts)}
-                muted
-              />
-              <StatCard
-                label="Upcoming"
-                value={String(consultationStats.upcoming)}
-              />
-              <StatCard
-                label="Ongoing"
-                value={String(consultationStats.ongoing)}
-                highlight
-              />
-              <StatCard
-                label="Past"
-                value={String(consultationStats.past)}
-              />
-            </div>
-          </div>
-        </section>
+                  <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
+                    Review consultations
+                  </h2>
+                </div>
 
-        {pageError ? (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {pageError}
-          </div>
-        ) : null}
-
-        {votes.length === 0 ? (
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-xl font-semibold">No consultations found</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              There are currently no consultations to display in this list.
-            </p>
-
-            {canCreateConsultation ? (
-              <div className="mt-6">
-                <Link
-                  href="/admin/votes"
-                  className="inline-flex items-center justify-center rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md"
-                >
-                  Create consultation
-                </Link>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <section className="border-t border-slate-200 pt-10">
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Consultation list
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                  Review consultation purpose before opening details
-                </h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                  Each card puts the consultation title and summary first, then
-                  shows operational metadata so admins can scan faster without
-                  changing any existing functionality.
+                <p className="max-w-md text-sm leading-6 text-slate-500">
+                  Title, summary, timing, workflow, and actions stay clear
+                  without adding heavy dashboard boxes.
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Visible in list
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {votes.length}
-                </p>
+              <div className="mt-8 divide-y divide-slate-200 border-y border-slate-200">
+                {votes.map((vote) => (
+                  <ConsultationRecord
+                    key={vote.id}
+                    vote={vote}
+                    canViewAdminDetail={canViewAdminDetail}
+                  />
+                ))}
               </div>
-            </div>
-
-            <div className="grid gap-6">
-              {votes.map((vote) => (
-                <article
-                  key={vote.id}
-                  className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 transition-all duration-200 hover:shadow-md"
-                >
-                  <div className="grid lg:grid-cols-[1.18fr_0.82fr]">
-                    <div className="min-w-0 p-6 md:p-7">
-                      <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                        <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                        <StatusBadge
-                          label={formatEnumLabel(vote.topicCategory)}
-                          tone="muted"
-                        />
-                        {getConsultationStatusBadges(vote).map((badge) => (
-                          <StatusBadge
-                            key={`${vote.id}-${badge.label}`}
-                            label={badge.label}
-                            tone={badge.tone}
-                          />
-                        ))}
-                      </div>
-
-                      <h2 className="mt-5 break-words text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
-                        {vote.title}
-                      </h2>
-
-                      <div className="mt-5 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Consultation summary
-                        </p>
-                        <p className="mt-3 break-words text-sm leading-7 text-slate-700 md:text-[15px]">
-                          {vote.summary}
-                        </p>
-                      </div>
-
-                      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                        <InfoTile
-                          label="Starts"
-                          value={formatDateTime(vote.startAt)}
-                        />
-                        <InfoTile
-                          label="Ends"
-                          value={formatDateTime(vote.endAt)}
-                        />
-                        <InfoTile
-                          label="Derived status"
-                          value={
-                            vote.derivedStatus
-                              ? formatEnumLabel(vote.derivedStatus)
-                              : 'Unknown'
-                          }
-                        />
-                        <InfoTile
-                          label="Workflow status"
-                          value={formatEnumLabel(vote.status)}
-                        />
-                        <InfoTile
-                          label="Submissions"
-                          value={String(vote.submissionCount ?? 0)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex min-w-0 flex-col border-t border-slate-100 bg-slate-50 lg:border-l lg:border-t-0">
-                      {vote.coverImageUrl ? (
-                        <div className="aspect-square overflow-hidden border-b border-slate-100 bg-slate-100">
-                          <img
-                            src={vote.coverImageUrl}
-                            alt={vote.coverImageAlt ?? vote.title}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex aspect-square items-center justify-center border-b border-slate-100 bg-gradient-to-br from-slate-100 via-white to-slate-100 px-6 text-center">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                              Consultation preview
-                            </p>
-                            <p className="mt-3 text-sm leading-6 text-slate-600">
-                              Open the detail page to review results, analytics,
-                              participants, and publication settings.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex flex-col gap-3 px-6 py-5">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Quick actions
-                        </p>
-
-                        <Link
-                          href={`/consultations/${vote.slug}`}
-                          className="inline-flex justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
-                        >
-                          Open public view
-                        </Link>
-
-                        {canViewAdminDetail ? (
-                          <Link
-                            href={`/admin/consultations/${vote.slug}`}
-                            className="inline-flex justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
-                          >
-                            Open admin detail
-                          </Link>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+            </section>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
 
-function StatCard({
+function getConsultationPageCopy(canCreateConsultation: boolean) {
+  if (canCreateConsultation) {
+    return {
+      title: 'Consultation workspace',
+      summary:
+        'Create, review, and manage consultation records in a clear admin view that keeps each record readable.',
+    };
+  }
+
+  return {
+    title: 'Consultation review',
+    summary:
+      'Review consultation records available to your role. Creation controls stay hidden because this account is scoped for review, not setup.',
+  };
+}
+
+function ConsultationRecord({
+  vote,
+  canViewAdminDetail,
+}: {
+  vote: AdminVoteListItem;
+  canViewAdminDetail: boolean;
+}) {
+  const statusBadges = getConsultationStatusBadges(vote);
+
+  return (
+    <article className="group px-4 py-8 transition duration-300 hover:bg-slate-50/70 active:bg-slate-50 sm:px-6 lg:px-8">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] xl:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge label={formatEnumLabel(vote.voteType)} />
+            <StatusBadge
+              label={formatEnumLabel(vote.topicCategory)}
+              tone="muted"
+            />
+            {statusBadges.map((badge) => (
+              <StatusBadge
+                key={`${vote.id}-${badge.label}`}
+                label={badge.label}
+                tone={badge.tone}
+              />
+            ))}
+          </div>
+
+          <h3 className="mt-5 max-w-4xl break-words text-2xl font-black tracking-[-0.045em] text-slate-950 md:text-3xl">
+            {vote.title}
+          </h3>
+
+          <p className="mt-4 max-w-3xl break-words text-sm leading-7 text-slate-600 md:text-base">
+            {vote.summary}
+          </p>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <InfoBlock label="Starts" value={formatDateTime(vote.startAt)} />
+            <InfoBlock label="Ends" value={formatDateTime(vote.endAt)} />
+            <InfoBlock
+              label="Timing"
+              value={
+                vote.derivedStatus
+                  ? formatEnumLabel(vote.derivedStatus)
+                  : 'Unknown'
+              }
+            />
+            <InfoBlock label="Workflow" value={formatEnumLabel(vote.status)} />
+            <InfoBlock
+              label="Submissions"
+              value={String(vote.submissionCount ?? 0)}
+            />
+          </div>
+
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <ActionButton
+              href={`/consultations/${vote.slug}`}
+              label="Open public view"
+              emphasis="green"
+            />
+
+            {canViewAdminDetail ? (
+              <ActionButton
+                href={`/admin/consultations/${vote.slug}`}
+                label="Open admin detail"
+                emphasis="neutral"
+              />
+            ) : null}
+          </div>
+        </div>
+
+        <div className="min-w-0 xl:pt-1">
+          {vote.coverImageUrl ? (
+            <div className="flex w-full items-center justify-center bg-slate-50 px-5 py-5 transition duration-300 group-hover:bg-white sm:px-6">
+              <img
+                src={vote.coverImageUrl}
+                alt={vote.coverImageAlt ?? vote.title}
+                className="block h-auto max-h-[260px] max-w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="border border-slate-200 px-5 py-7 text-center">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                No preview image
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Open the record to review its full consultation details.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function OverviewStat({
   label,
   value,
-  highlight,
-  muted,
+  positive,
 }: {
   label: string;
   value: string;
-  highlight?: boolean;
-  muted?: boolean;
+  positive?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-2xl px-4 py-4 shadow-sm ring-1 ${
-        highlight
-          ? 'bg-green-50 ring-green-200'
-          : muted
-          ? 'bg-slate-100 ring-slate-200'
-          : 'bg-white ring-slate-200'
-      }`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div>
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
+
       <p
-        className={`mt-2 text-2xl font-semibold ${
-          highlight ? 'text-green-700' : 'text-slate-900'
+        className={`mt-2 text-2xl font-black tracking-[-0.04em] ${
+          positive ? 'text-green-700' : 'text-slate-950'
         }`}
       >
         {value}
@@ -397,7 +406,7 @@ function StatCard({
   );
 }
 
-function InfoTile({
+function InfoBlock({
   label,
   value,
 }: {
@@ -405,14 +414,43 @@ function InfoTile({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="border-t border-slate-200 pt-3">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
-      <p className="mt-2 break-words text-sm font-medium leading-6 text-slate-900">
+
+      <p className="mt-2 break-words text-sm font-bold leading-6 text-slate-900">
         {value}
       </p>
     </div>
+  );
+}
+
+function ActionButton({
+  href,
+  label,
+  emphasis,
+}: {
+  href: string;
+  label: string;
+  emphasis: 'green' | 'neutral';
+}) {
+  return (
+    <Link
+      href={href}
+      className={`group/button inline-flex min-h-11 items-center justify-center border bg-white px-4 py-3 text-center text-sm font-black shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md active:-translate-y-1 active:scale-[0.985] ${
+        emphasis === 'green'
+          ? 'border-slate-300 text-slate-800 hover:border-green-500 hover:text-green-700'
+          : 'border-slate-300 text-slate-800 hover:border-slate-500'
+      }`}
+    >
+      <span className="inline-flex items-center gap-2">
+        {label}
+        <span className="transition duration-200 group-hover/button:translate-x-1 group-active/button:translate-x-1">
+          →
+        </span>
+      </span>
+    </Link>
   );
 }
 
@@ -425,16 +463,22 @@ function StatusBadge({
 }) {
   const toneClass =
     tone === 'success'
-      ? 'bg-emerald-100 text-emerald-700'
+      ? 'border-green-200 text-green-700'
       : tone === 'warning'
-      ? 'bg-amber-100 text-amber-700'
-      : tone === 'danger'
-      ? 'bg-red-100 text-red-700'
-      : tone === 'muted'
-      ? 'bg-slate-200 text-slate-600'
-      : 'bg-slate-100 text-slate-700';
+        ? 'border-amber-200 text-amber-700'
+        : tone === 'danger'
+          ? 'border-red-200 text-red-600'
+          : tone === 'muted'
+            ? 'border-slate-200 text-slate-500'
+            : 'border-slate-200 text-slate-700';
 
-  return <span className={`rounded-full px-3 py-1 ${toneClass}`}>{label}</span>;
+  return (
+    <span
+      className={`border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${toneClass}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 function deriveStatusTone(
