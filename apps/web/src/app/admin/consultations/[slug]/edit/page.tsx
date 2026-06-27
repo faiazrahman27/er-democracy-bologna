@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -160,6 +160,7 @@ export default function AdminEditConsultationPage() {
         setShowRelationshipBreakdown(
           vote.displaySettings?.showRelationshipBreakdown ?? false,
         );
+
         const closeOnlyEnabled =
           vote.displaySettings?.showOnlyAfterVoteCloses ?? false;
 
@@ -171,7 +172,9 @@ export default function AdminEditConsultationPage() {
         setShowOnlyAfterVoteCloses(closeOnlyEnabled);
 
         setHasSubmissions((vote.submissionCount ?? 0) > 0);
-        setWeightedQuestions(normalizeWeightedQuestionDrafts(vote.weightedQuestions));
+        setWeightedQuestions(
+          normalizeWeightedQuestionDrafts(vote.weightedQuestions),
+        );
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to load consultation",
@@ -342,10 +345,10 @@ export default function AdminEditConsultationPage() {
 
   if (isLoading || pageLoading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm text-slate-600">
+          <div className="border-y border-slate-200 py-6">
+            <p className="text-sm font-medium text-slate-500">
               Loading consultation editor...
             </p>
           </div>
@@ -360,9 +363,9 @@ export default function AdminEditConsultationPage() {
 
   if (!hasPermission(user.role, PERMISSIONS.CONSULTATION_EDIT)) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-        <div className="mx-auto max-w-5xl">
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="border-y border-red-200 py-4 text-sm font-bold text-red-700">
             You do not have permission to edit this consultation.
           </div>
         </div>
@@ -371,85 +374,109 @@ export default function AdminEditConsultationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-      <div className="mx-auto max-w-6xl">
-        <section className="pb-10">
-          <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
+    <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
+      <section className="px-5 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="max-w-3xl">
-              <Link
-                href={`/admin/consultations/${params.slug}`}
-                className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-              >
-                ← Back to admin consultation
-              </Link>
+          <header className="mt-10">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:items-start">
+              <div className="min-w-0">
+                <Link
+                  href={`/admin/consultations/${params.slug}`}
+                  className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+                >
+                  ← Back to admin consultation
+                </Link>
 
-              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Consultation editor
-              </p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-                Edit Consultation
-              </h1>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Update consultation settings, publication state, workflow
-                status, schedule, and public visibility rules.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusPill
-                label={isPublished ? "Published" : "Unpublished"}
-                tone={isPublished ? "success" : "warning"}
-              />
-              <StatusPill
-                label={
-                  hasSubmissions ? "Has submissions" : "No submissions yet"
-                }
-                tone={hasSubmissions ? "default" : "muted"}
-              />
-              <StatusPill label={status} tone={deriveWorkflowTone(status)} />
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-          {coreFieldsLocked ? (
-            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-              This consultation already has submissions. Core fields are locked.
-              You can still change safe fields such as status, publication
-              state, end date, cover image, and public visibility settings.
-            </div>
-          ) : null}
-
-          {pageError ? (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
-              {pageError}
-            </div>
-          ) : null}
-
-          {successMessage ? (
-            <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-700">
-              {successMessage}
-            </div>
-          ) : null}
-
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-6">
-              <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold">Core information</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    These fields describe the consultation itself.
-                  </p>
+                <div className="mt-6 flex flex-wrap items-center gap-2">
+                  <StatusPill
+                    label={isPublished ? "Published" : "Unpublished"}
+                    tone={isPublished ? "success" : "warning"}
+                  />
+                  <StatusPill
+                    label={
+                      hasSubmissions ? "Has submissions" : "No submissions yet"
+                    }
+                    tone={hasSubmissions ? "default" : "muted"}
+                  />
+                  <StatusPill
+                    label={formatEnumLabel(status)}
+                    tone={deriveWorkflowTone(status)}
+                  />
                 </div>
 
+                <p className="mt-7 text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Consultation editor
+                </p>
+
+                <h1 className="mt-4 max-w-4xl break-words text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
+                  Edit consultation
+                </h1>
+
+                <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600">
+                  Update the consultation record, schedule, publication state,
+                  cover image, and public result visibility.
+                </p>
+              </div>
+
+              <aside className="border-y border-slate-200 py-5 lg:mt-11">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                  Save actions
+                </p>
+
+                <div className="mt-4 grid gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving || isUploadingCover}
+                    className="inline-flex min-h-12 w-full items-center justify-center border border-green-500 bg-white px-5 text-sm font-black text-green-700 shadow-sm transition duration-200 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md active:-translate-y-1 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSaving ? "Saving..." : "Save changes"}
+                  </button>
+
+                  <Link
+                    href={`/admin/consultations/${params.slug}`}
+                    className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+                  >
+                    Cancel
+                  </Link>
+                </div>
+              </aside>
+            </div>
+          </header>
+
+          <section className="mt-10">
+            {coreFieldsLocked ? (
+              <MessageBlock tone="warning">
+                This consultation already has submissions. Core fields are
+                locked. You can still change safe fields such as status,
+                publication state, end date, cover image, and public visibility
+                settings.
+              </MessageBlock>
+            ) : null}
+
+            {pageError ? <MessageBlock tone="danger">{pageError}</MessageBlock> : null}
+
+            {successMessage ? (
+              <MessageBlock tone="success">{successMessage}</MessageBlock>
+            ) : null}
+          </section>
+
+          <div className="mt-10 grid gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] xl:items-start">
+            <div className="grid min-w-0 gap-10">
+              <EditSection
+                eyebrow="Core information"
+                title="Main consultation text"
+                description="These fields describe the public consultation. If the consultation already has submissions, the core text remains locked."
+              >
                 <div className="grid gap-5 md:grid-cols-2">
                   <Field
                     label="Title"
                     value={title}
                     onChange={setTitle}
                     disabled={coreFieldsLocked}
+                    placeholder="Write the public consultation title"
                   />
 
                   <SelectField
@@ -485,6 +512,7 @@ export default function AdminEditConsultationPage() {
                       onChange={setSummary}
                       disabled={coreFieldsLocked}
                       rows={4}
+                      placeholder="Write a short explanation of what people are voting on"
                     />
                   </div>
 
@@ -495,20 +523,17 @@ export default function AdminEditConsultationPage() {
                       onChange={setMethodologySummary}
                       disabled={coreFieldsLocked}
                       rows={5}
+                      placeholder="Explain how votes, weights, or results are calculated"
                     />
                   </div>
                 </div>
-              </section>
+              </EditSection>
 
-              <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold">Schedule</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Control when the consultation opens and closes. Start date
-                    becomes locked after submissions exist.
-                  </p>
-                </div>
-
+              <EditSection
+                eyebrow="Schedule"
+                title="Voting window"
+                description="Control when voting opens and closes. Start date locks after submissions exist."
+              >
                 <div className="grid gap-5 md:grid-cols-2">
                   <DateTimeField
                     label="Start at"
@@ -522,143 +547,126 @@ export default function AdminEditConsultationPage() {
                     onChange={setEndAt}
                   />
                 </div>
-              </section>
+              </EditSection>
 
-              <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold">Cover image</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Upload or replace the public image for this consultation.
-                  </p>
-                </div>
+              <EditSection
+                eyebrow="Media"
+                title="Cover image"
+                description="Upload or replace the public image for this consultation."
+              >
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(220px,300px)] lg:items-start">
+                  <div className="min-w-0">
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-slate-800">
+                          Select image
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          onChange={(event) =>
+                            handleCoverFileChange(
+                              event.target.files?.[0] ?? null,
+                            )
+                          }
+                          className="w-full border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition file:mr-4 file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-slate-800 hover:border-slate-400 focus:border-slate-900"
+                        />
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          Allowed: JPG, PNG, WEBP. Maximum size: 2MB.
+                        </p>
+                      </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Select image
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={(event) =>
-                        handleCoverFileChange(event.target.files?.[0] ?? null)
-                      }
-                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-900"
-                    />
-                    <p className="mt-2 text-xs text-slate-500">
-                      Allowed: JPG, PNG, WEBP. Maximum size: 2MB.
-                    </p>
-                  </div>
-
-                  <Field
-                    label="Cover image alt text"
-                    value={coverImageAlt}
-                    onChange={setCoverImageAlt}
-                  />
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleUploadCoverImage}
-                    disabled={isUploadingCover || !selectedCoverFile}
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60"
-                  >
-                    {isUploadingCover ? "Uploading..." : "Upload cover image"}
-                  </button>
-
-                  {coverUploadMessage ? (
-                    <span className="text-sm text-green-700">
-                      {coverUploadMessage}
-                    </span>
-                  ) : null}
-                </div>
-
-                {coverImageUrl ? (
-                  <div className="mt-5 max-w-md">
-                    <p className="mb-2 text-sm font-medium text-slate-700">
-                      Preview
-                    </p>
-                    <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                      <img
-                        src={coverImageUrl}
-                        alt={coverImageAlt || "Consultation cover preview"}
-                        className="h-full w-full object-cover"
+                      <Field
+                        label="Cover image alt text"
+                        value={coverImageAlt}
+                        onChange={setCoverImageAlt}
+                        placeholder="Describe the image for screen readers"
                       />
                     </div>
-                    <p className="mt-2 break-all text-xs text-slate-500">
-                      {coverImageUrl}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="mt-5 flex aspect-square w-full max-w-md items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
-                    No cover image uploaded yet.
-                  </div>
-                )}
-              </section>
 
-              <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold">Publication</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    A consultation is public only when this flag is enabled and
-                    the workflow status is Published or Closed.
-                  </p>
-                </div>
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleUploadCoverImage}
+                        disabled={isUploadingCover || !selectedCoverFile}
+                        className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-green-500 hover:text-green-700 hover:shadow-md active:-translate-y-1 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isUploadingCover
+                          ? "Uploading..."
+                          : "Upload cover image"}
+                      </button>
 
-                <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                  <label className="flex items-start gap-3 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={isPublished}
-                      onChange={(event) => setIsPublished(event.target.checked)}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        Enable public visibility
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        Draft, Review, and Approved consultations remain hidden
-                        even if this box is checked.
-                      </p>
+                      {coverUploadMessage ? (
+                        <span className="text-sm font-bold text-green-700">
+                          {coverUploadMessage}
+                        </span>
+                      ) : null}
                     </div>
-                  </label>
+                  </div>
+
+                  <div className="min-w-0">
+                    {coverImageUrl ? (
+                      <div>
+                        <p className="mb-2 text-sm font-bold text-slate-800">
+                          Preview
+                        </p>
+                        <div className="flex aspect-[4/3] items-center justify-center border border-slate-200 bg-slate-50 p-4">
+                          <img
+                            src={coverImageUrl}
+                            alt={
+                              coverImageAlt || "Consultation cover preview"
+                            }
+                            className="block h-auto max-h-full max-w-full object-contain"
+                          />
+                        </div>
+                        <p className="mt-2 break-all text-xs leading-5 text-slate-500">
+                          {coverImageUrl}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex aspect-[4/3] items-center justify-center border border-dashed border-slate-300 bg-white px-4 py-5 text-center text-sm text-slate-500">
+                        No cover image uploaded yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </section>
+              </EditSection>
+
+              <EditSection
+                eyebrow="Publication"
+                title="Public visibility"
+                description="A consultation is public only when this flag is enabled and the workflow status is Published or Closed."
+              >
+                <CheckboxField
+                  label="Enable public visibility"
+                  description="Draft, Review, and Approved consultations remain hidden even if this box is checked."
+                  checked={isPublished}
+                  onChange={setIsPublished}
+                />
+              </EditSection>
 
               {voteType === "SPECIALIZED" ? (
-                <section className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                  <div className="mb-5">
-                    <h2 className="text-lg font-semibold">
-                      Specialized weighted questions
-                    </h2>
-                    <p className="mt-2 text-sm text-slate-600">
-                      Configure additional specialized-only questions whose
-                      selected answers adjust the final specialized vote weight.
-                      These questions lock once submissions exist.
-                    </p>
-                  </div>
-
+                <EditSection
+                  eyebrow="Specialized vote"
+                  title="Weighted questions"
+                  description="Configure specialized-only questions whose selected answers adjust the final specialized vote weight. These questions lock once submissions exist."
+                >
                   <WeightedQuestionsEditor
                     value={weightedQuestions}
                     onChange={setWeightedQuestions}
                     disabled={coreFieldsLocked}
                   />
-                </section>
+                </EditSection>
               ) : null}
             </div>
 
-            <div className="space-y-6">
-              <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold">Visibility controls</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Decide what results and analytics the public can see.
-                  </p>
-                </div>
-
-                <div className="space-y-5">
+            <aside className="grid min-w-0 gap-10">
+              <EditSection
+                eyebrow="Visibility controls"
+                title="Public result settings"
+                description="Choose what result and analytics information can appear publicly."
+              >
+                <div className="grid gap-5">
                   <SelectField
                     label="Result visibility"
                     value={resultVisibilityMode}
@@ -759,17 +767,14 @@ export default function AdminEditConsultationPage() {
                     />
                   </div>
                 </div>
-              </section>
+              </EditSection>
 
-              <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold">Edit policy</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Rules that apply when updating this consultation.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
+              <EditSection
+                eyebrow="Edit policy"
+                title="Locked and editable areas"
+                description="These rules reflect the current consultation state."
+              >
+                <div className="grid gap-3">
                   <PolicyItem
                     label="Title, summary, methodology"
                     value={coreFieldsLocked ? "Locked" : "Editable"}
@@ -806,28 +811,31 @@ export default function AdminEditConsultationPage() {
                     tone="success"
                   />
                 </div>
-              </section>
+              </EditSection>
+            </aside>
+          </div>
+
+          <div className="mt-10 border-t border-slate-200 pt-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving || isUploadingCover}
+                className="inline-flex min-h-12 w-full items-center justify-center border border-green-500 bg-white px-5 text-sm font-black text-green-700 shadow-sm transition duration-200 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md active:-translate-y-1 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {isSaving ? "Saving..." : "Save changes"}
+              </button>
+
+              <Link
+                href={`/admin/consultations/${params.slug}`}
+                className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98] sm:w-auto"
+              >
+                Cancel
+              </Link>
             </div>
           </div>
-
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleSave}
-              disabled={isSaving || isUploadingCover}
-              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
-            >
-              {isSaving ? "Saving..." : "Save changes"}
-            </button>
-
-            <Link
-              href={`/admin/consultations/${params.slug}`}
-              className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-            >
-              Cancel
-            </Link>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }
@@ -841,28 +849,84 @@ function toDateTimeLocal(value: string) {
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function EditSection({
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-y border-slate-200 py-7">
+      <div className="mb-6 max-w-3xl">
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+          {eyebrow}
+        </p>
+        <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
+          {title}
+        </h2>
+        {description ? (
+          <p className="mt-3 text-sm leading-7 text-slate-600">
+            {description}
+          </p>
+        ) : null}
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function MessageBlock({
+  tone,
+  children,
+}: {
+  tone: "success" | "warning" | "danger";
+  children: ReactNode;
+}) {
+  const toneClass =
+    tone === "success"
+      ? "border-green-200 text-green-700"
+      : tone === "warning"
+        ? "border-amber-200 text-amber-800"
+        : "border-red-200 text-red-700";
+
+  return (
+    <div className={`mt-4 border-y py-4 text-sm font-bold ${toneClass}`}>
+      {children}
+    </div>
+  );
+}
+
 function Field({
   label,
   value,
   onChange,
   disabled = false,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  placeholder?: string;
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-slate-700">
+    <div className="min-w-0">
+      <label className="mb-2 block text-sm font-bold text-slate-800">
         {label}
       </label>
       <input
         type="text"
         value={value}
         disabled={disabled}
+        placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-900 disabled:bg-slate-100"
+        className="w-full border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
       />
     </div>
   );
@@ -874,24 +938,27 @@ function TextAreaField({
   onChange,
   disabled = false,
   rows = 4,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   rows?: number;
+  placeholder?: string;
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-slate-700">
+    <div className="min-w-0">
+      <label className="mb-2 block text-sm font-bold text-slate-800">
         {label}
       </label>
       <textarea
         value={value}
         rows={rows}
         disabled={disabled}
+        placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-900 disabled:bg-slate-100"
+        className="w-full resize-y border border-slate-300 bg-white px-3 py-3 text-sm leading-7 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
       />
     </div>
   );
@@ -909,8 +976,8 @@ function DateTimeField({
   disabled?: boolean;
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-slate-700">
+    <div className="min-w-0">
+      <label className="mb-2 block text-sm font-bold text-slate-800">
         {label}
       </label>
       <input
@@ -918,7 +985,7 @@ function DateTimeField({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-900 disabled:bg-slate-100"
+        className="w-full border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition hover:border-slate-400 focus:border-slate-900 disabled:bg-slate-100 disabled:text-slate-500"
       />
     </div>
   );
@@ -936,14 +1003,14 @@ function SelectField({
   options: string[];
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-slate-700">
+    <div className="min-w-0">
+      <label className="mb-2 block text-sm font-bold text-slate-800">
         {label}
       </label>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-900"
+        className="w-full border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition hover:border-slate-400 focus:border-slate-900"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -970,10 +1037,10 @@ function CheckboxField({
 }) {
   return (
     <label
-      className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-sm ${
+      className={`flex items-start gap-3 border px-4 py-4 text-sm transition duration-200 ${
         disabled
           ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500"
-          : "border-slate-200 bg-slate-50 text-slate-700"
+          : "cursor-pointer border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:-translate-y-0.5"
       }`}
     >
       <input
@@ -983,9 +1050,9 @@ function CheckboxField({
         onChange={(event) => onChange(event.target.checked)}
         className="mt-0.5"
       />
-      <div>
+      <div className="min-w-0">
         <p
-          className={`font-medium ${
+          className={`font-bold ${
             disabled ? "text-slate-500" : "text-slate-900"
           }`}
         >
@@ -1014,16 +1081,18 @@ function PolicyItem({
 }) {
   const toneClass =
     tone === "success"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "border-green-200 text-green-700"
       : tone === "warning"
-        ? "bg-amber-100 text-amber-700"
-        : "bg-slate-100 text-slate-700";
+        ? "border-amber-200 text-amber-700"
+        : "border-slate-200 text-slate-700";
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-      <span className="text-sm text-slate-700">{label}</span>
+    <div className="flex items-center justify-between gap-4 border border-slate-200 bg-white px-4 py-3">
+      <span className="min-w-0 break-words text-sm text-slate-700">
+        {label}
+      </span>
       <span
-        className={`rounded-full px-3 py-1 text-xs font-medium ${toneClass}`}
+        className={`shrink-0 border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${toneClass}`}
       >
         {value}
       </span>
@@ -1040,17 +1109,19 @@ function StatusPill({
 }) {
   const toneClass =
     tone === "success"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "border-green-200 text-green-700"
       : tone === "warning"
-        ? "bg-amber-100 text-amber-700"
+        ? "border-amber-200 text-amber-700"
         : tone === "danger"
-          ? "bg-red-100 text-red-700"
+          ? "border-red-200 text-red-700"
           : tone === "muted"
-            ? "bg-slate-100 text-slate-700"
-            : "bg-white text-slate-900 ring-1 ring-slate-200";
+            ? "border-slate-200 text-slate-500"
+            : "border-slate-200 text-slate-700";
 
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-medium ${toneClass}`}>
+    <span
+      className={`border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${toneClass}`}
+    >
       {label}
     </span>
   );
