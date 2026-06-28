@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { fetchPublicVoteBySlug } from '@/lib/votes';
-import { formatDateTime, formatEnumLabel } from '@/lib/format';
-import { ConsultationInteractions } from './consultation-interactions';
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { fetchPublicVoteBySlug } from "@/lib/votes";
+import { formatDateTime, formatEnumLabel } from "@/lib/format";
+import { ConsultationInteractions } from "./consultation-interactions";
 
 type PageProps = {
   params: Promise<{
@@ -11,36 +11,48 @@ type PageProps = {
 };
 
 const RAW_OPTION_COLORS = [
-  '#2563eb',
-  '#0ea5e9',
-  '#7c3aed',
-  '#8b5cf6',
-  '#1d4ed8',
-  '#0891b2',
-  '#6366f1',
-  '#4f46e5',
+  "#2563eb",
+  "#dc2626",
+  "#16a34a",
+  "#d97706",
+  "#7c3aed",
+  "#0f766e",
+  "#c2410c",
+  "#be185d",
+  "#4f46e5",
+  "#65a30d",
+  "#0891b2",
+  "#854d0e",
 ];
 
 const WEIGHTED_OPTION_COLORS = [
-  '#16a34a',
-  '#84cc16',
-  '#f59e0b',
-  '#f97316',
-  '#22c55e',
-  '#65a30d',
-  '#d97706',
-  '#ea580c',
+  "#f97316",
+  "#9333ea",
+  "#059669",
+  "#b91c1c",
+  "#0e7490",
+  "#be123c",
+  "#4338ca",
+  "#4d7c0f",
+  "#92400e",
+  "#0369a1",
+  "#a21caf",
+  "#7c2d12",
 ];
 
 const NEUTRAL_OPTION_COLORS = [
-  '#64748b',
-  '#475569',
-  '#6b7280',
-  '#78716c',
-  '#52525b',
-  '#4b5563',
-  '#71717a',
-  '#334155',
+  "#64748b",
+  "#475569",
+  "#6b7280",
+  "#78716c",
+  "#52525b",
+  "#4b5563",
+  "#71717a",
+  "#334155",
+  "#0f172a",
+  "#374151",
+  "#57534e",
+  "#3f3f46",
 ];
 
 export default async function ConsultationDetailPage({ params }: PageProps) {
@@ -56,345 +68,362 @@ export default async function ConsultationDetailPage({ params }: PageProps) {
   const vote = response.vote;
 
   const resultVisibilityMode =
-    vote.displaySettings?.resultVisibilityMode ?? 'HIDE_ALL';
+    vote.displaySettings?.resultVisibilityMode ?? "HIDE_ALL";
   const showAfterVotingOnly = vote.displaySettings?.showAfterVotingOnly ?? false;
   const showOnlyAfterVoteCloses =
     vote.displaySettings?.showOnlyAfterVoteCloses ?? false;
   const closeOnlyGateActive =
-    showOnlyAfterVoteCloses && vote.derivedStatus !== 'PAST';
+    showOnlyAfterVoteCloses && vote.derivedStatus !== "PAST";
   const isVisibilityGated = showAfterVotingOnly || closeOnlyGateActive;
 
   const showRawDots =
     !isVisibilityGated &&
-    (resultVisibilityMode === 'SHOW_RAW_ONLY' ||
-      resultVisibilityMode === 'SHOW_BOTH');
+    (resultVisibilityMode === "SHOW_RAW_ONLY" ||
+      resultVisibilityMode === "SHOW_BOTH");
 
   const showWeightedDots =
     !isVisibilityGated &&
-    (resultVisibilityMode === 'SHOW_WEIGHTED_ONLY' ||
-      resultVisibilityMode === 'SHOW_BOTH');
+    (resultVisibilityMode === "SHOW_WEIGHTED_ONLY" ||
+      resultVisibilityMode === "SHOW_BOTH");
 
   const showNeutralDots =
-    isVisibilityGated || resultVisibilityMode === 'HIDE_ALL';
+    isVisibilityGated || resultVisibilityMode === "HIDE_ALL";
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8">
-          <Link
-            href="/consultations"
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-          >
-            ← Back to consultations
-          </Link>
-        </div>
+    <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
+      <section className="px-5 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-        <section className="pb-12">
-          <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
+          <header className="mt-10">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-start">
+              <div className="min-w-0">
+                <Link
+                  href="/consultations"
+                  className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+                >
+                  ← Back to consultations
+                </Link>
 
-          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <StatusBadge label={formatEnumLabel(vote.voteType)} />
-                <StatusBadge
-                  label={formatEnumLabel(vote.topicCategory)}
-                  tone="muted"
-                />
-                <StatusBadge
-                  label={
-                    vote.derivedStatus
-                      ? formatEnumLabel(vote.derivedStatus)
-                      : 'Unknown'
-                  }
-                  tone={deriveStatusTone(vote.derivedStatus)}
-                />
-              </div>
+                <div className="mt-6 flex flex-wrap items-center gap-2">
+                  <StatusBadge label={formatEnumLabel(vote.voteType)} />
+                  <StatusBadge
+                    label={formatEnumLabel(vote.topicCategory)}
+                    tone="muted"
+                  />
+                  <StatusBadge
+                    label={
+                      vote.derivedStatus
+                        ? formatEnumLabel(vote.derivedStatus)
+                        : "Unknown"
+                    }
+                    tone={deriveStatusTone(vote.derivedStatus)}
+                  />
+                </div>
 
-              <h1 className="mt-5 max-w-4xl break-words text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-                {vote.title}
-              </h1>
-
-              <div className="mt-6 max-w-4xl rounded-3xl bg-white px-6 py-6 shadow-sm ring-1 ring-slate-200">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  What this consultation is about
+                <p className="mt-7 text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Public consultation
                 </p>
-                <p className="mt-4 break-words text-base leading-8 text-slate-700 md:text-lg">
+
+                <h1 className="mt-4 max-w-5xl break-words text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
+                  {vote.title}
+                </h1>
+
+                <p className="mt-6 max-w-4xl break-words text-base leading-8 text-slate-600 md:text-lg">
                   {vote.summary}
                 </p>
               </div>
 
-              {vote.methodologySummary ? (
-                <div className="mt-6 max-w-4xl rounded-2xl bg-white px-6 py-5 shadow-sm ring-1 ring-slate-200 min-w-0">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Methodology
-                  </p>
-                  <p className="mt-3 break-words text-sm leading-7 text-slate-600">
-                    {vote.methodologySummary}
-                  </p>
+              <aside className="border-y border-slate-200 py-5 lg:mt-11">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                  Consultation overview
+                </p>
+
+                <div className="mt-4 grid gap-4">
+                  <OverviewRow
+                    label="Vote type"
+                    value={formatEnumLabel(vote.voteType)}
+                  />
+                  <OverviewRow
+                    label="Topic"
+                    value={formatEnumLabel(vote.topicCategory)}
+                  />
+                  <OverviewRow
+                    label="Status"
+                    value={
+                      vote.derivedStatus
+                        ? formatEnumLabel(vote.derivedStatus)
+                        : "Unknown"
+                    }
+                  />
+                  <OverviewRow
+                    label="Starts"
+                    value={formatDateTime(vote.startAt)}
+                  />
+                  <OverviewRow label="Ends" value={formatDateTime(vote.endAt)} />
                 </div>
-              ) : null}
+              </aside>
             </div>
+          </header>
 
-            <aside className="min-w-0 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Consultation overview
+          {vote.methodologySummary ? (
+            <section className="mt-10 border-y border-slate-200 py-6">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                Methodology
               </p>
+              <p className="mt-4 max-w-4xl break-words text-sm leading-7 text-slate-600">
+                {vote.methodologySummary}
+              </p>
+            </section>
+          ) : null}
 
-              <div className="mt-5 grid gap-4">
-                <OverviewRow
-                  label="Vote type"
-                  value={formatEnumLabel(vote.voteType)}
-                />
-                <OverviewRow
-                  label="Topic category"
-                  value={formatEnumLabel(vote.topicCategory)}
-                />
-                <OverviewRow
-                  label="Status"
-                  value={
-                    vote.derivedStatus
-                      ? formatEnumLabel(vote.derivedStatus)
-                      : 'Unknown'
-                  }
-                />
-                <OverviewRow
-                  label="Starts"
-                  value={formatDateTime(vote.startAt)}
-                />
-                <OverviewRow label="Ends" value={formatDateTime(vote.endAt)} />
-                <OverviewRow
-                  label="Published"
-                  value={
-                    vote.publishedAt
-                      ? formatDateTime(vote.publishedAt)
-                      : 'Not published'
-                  }
+          {vote.coverImageUrl ? (
+            <section className="mt-10 border-y border-slate-200 py-5">
+              <div className="mx-auto flex min-h-[180px] w-full max-w-3xl items-center justify-center bg-slate-50 p-4 sm:min-h-[220px] md:min-h-[260px]">
+                <img
+                  src={vote.coverImageUrl}
+                  alt={vote.coverImageAlt ?? vote.title}
+                  className="block h-auto max-h-[280px] max-w-full object-contain sm:max-h-[320px]"
                 />
               </div>
-            </aside>
-          </div>
-        </section>
+            </section>
+          ) : null}
 
-        {vote.coverImageUrl ? (
-          <section className="border-t border-slate-200 pt-10">
-            <div className="mx-auto aspect-square w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-              <img
-                src={vote.coverImageUrl}
-                alt={vote.coverImageAlt ?? vote.title}
-                className="h-full w-full object-cover"
-              />
+          <section className="mt-12 border-t border-slate-200 pt-8">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] lg:items-start">
+              <div className="min-w-0">
+                <SectionHeader
+                  eyebrow="Your choices"
+                  title="What you are voting for"
+                  description="Review each option carefully before submitting your vote."
+                />
+
+                <div className="mt-8 divide-y divide-slate-200 border-y border-slate-200">
+                  {vote.options.map((option, index) => (
+                    <article
+                      key={option.id}
+                      className="group py-5 transition duration-300 hover:bg-slate-50/70 active:bg-slate-50"
+                    >
+                      <div className="flex min-w-0 items-start gap-4">
+                        <OptionColorMarkers
+                          index={index}
+                          displayOrder={option.displayOrder}
+                          showNeutralDots={showNeutralDots}
+                          showRawDots={showRawDots}
+                          showWeightedDots={showWeightedDots}
+                        />
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                            Option {option.displayOrder}
+                          </p>
+                          <p className="mt-2 max-w-4xl break-words text-base font-bold leading-7 text-slate-950">
+                            {option.optionText}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <aside className="min-w-0">
+                <SectionHeader
+                  eyebrow="Before you vote"
+                  title="Key information"
+                  description="Check the consultation timing and status before making your choice."
+                />
+
+                <div className="mt-8 grid gap-4">
+                  <InfoCard
+                    title="Type"
+                    value={formatEnumLabel(vote.voteType)}
+                  />
+                  <InfoCard
+                    title="Topic"
+                    value={formatEnumLabel(vote.topicCategory)}
+                  />
+                  <InfoCard
+                    title="Status"
+                    value={
+                      vote.derivedStatus
+                        ? formatEnumLabel(vote.derivedStatus)
+                        : "Unknown"
+                    }
+                  />
+                  <InfoCard title="Starts" value={formatDateTime(vote.startAt)} />
+                  <InfoCard title="Ends" value={formatDateTime(vote.endAt)} />
+                  <InfoCard
+                    title="Published"
+                    value={
+                      vote.publishedAt
+                        ? formatDateTime(vote.publishedAt)
+                        : "Not published"
+                    }
+                  />
+                </div>
+              </aside>
             </div>
           </section>
-        ) : null}
 
-        <section className="border-t border-slate-200 pt-10">
-          <div className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr]">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Your choices
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                What you are voting for
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-                Review each option carefully. The same option colors are used
-                consistently in the visible results sections below.
-              </p>
-
-              <div className="mt-6 grid gap-4">
-                {vote.options.map((option, index) => (
-                  <div
-                    key={option.id}
-                    className="rounded-3xl bg-white px-5 py-5 shadow-sm ring-1 ring-slate-200"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="mt-1 flex shrink-0 items-center gap-2">
-                        {showNeutralDots ? (
-                          <span
-                            className="h-3 w-3 rounded-full"
-                            style={{
-                              backgroundColor:
-                                NEUTRAL_OPTION_COLORS[
-                                  index % NEUTRAL_OPTION_COLORS.length
-                                ],
-                            }}
-                            aria-label={`Option color for option ${option.displayOrder}`}
-                          />
-                        ) : (
-                          <>
-                            {showRawDots ? (
-                              <span
-                                className="h-3 w-3 rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    RAW_OPTION_COLORS[
-                                      index % RAW_OPTION_COLORS.length
-                                    ],
-                                }}
-                                aria-label={`Option color for option ${option.displayOrder}`}
-                              />
-                            ) : null}
-
-                            {showWeightedDots ? (
-                              <span
-                                className="h-3 w-3 rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    WEIGHTED_OPTION_COLORS[
-                                      index % WEIGHTED_OPTION_COLORS.length
-                                    ],
-                                }}
-                                aria-label={`Option color for option ${option.displayOrder}`}
-                              />
-                            ) : null}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                          Option {option.displayOrder}
-                        </p>
-                        <p className="mt-2 break-words text-base font-medium leading-7 text-slate-900">
-                          {option.optionText}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Key information
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Before you vote
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                These details summarize the consultation context and timing.
-              </p>
-
-              <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                <InfoCard
-                  title="Type"
-                  value={formatEnumLabel(vote.voteType)}
-                />
-                <InfoCard
-                  title="Topic"
-                  value={formatEnumLabel(vote.topicCategory)}
-                />
-                <InfoCard
-                  title="Status"
-                  value={
-                    vote.derivedStatus
-                      ? formatEnumLabel(vote.derivedStatus)
-                      : 'Unknown'
-                  }
-                />
-                <InfoCard title="Starts" value={formatDateTime(vote.startAt)} />
-                <InfoCard title="Ends" value={formatDateTime(vote.endAt)} />
-                <InfoCard
-                  title="Published"
-                  value={
-                    vote.publishedAt
-                      ? formatDateTime(vote.publishedAt)
-                      : 'Not published'
-                  }
-                />
-              </div>
-            </div>
+          <div className="mt-12 border-t border-slate-200 pt-8">
+            <ConsultationInteractions vote={vote} />
           </div>
-        </section>
-
-        <div className="mt-10">
-          <ConsultationInteractions vote={vote} />
         </div>
-      </div>
+      </section>
     </main>
   );
 }
 
-function InfoCard({
+function SectionHeader({
+  eyebrow,
   title,
-  value,
+  description,
 }: {
+  eyebrow: string;
   title: string;
-  value: string;
+  description?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-200 min-w-0">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="max-w-3xl">
+      <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function InfoCard({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="min-w-0 border-y border-slate-200 py-4">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {title}
       </p>
-      <p className="mt-2 break-words text-sm font-medium leading-6 text-slate-900">
+      <p className="mt-2 break-words text-sm font-bold leading-6 text-slate-900">
         {value}
       </p>
     </div>
   );
 }
 
-function OverviewRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function OverviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0 min-w-0">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="min-w-0 border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
-      <p className="mt-1 break-words text-sm font-medium text-slate-900">
+      <p className="mt-2 break-words text-sm font-bold leading-6 text-slate-900">
         {value}
       </p>
     </div>
+  );
+}
+
+function OptionColorMarkers({
+  index,
+  displayOrder,
+  showNeutralDots,
+  showRawDots,
+  showWeightedDots,
+}: {
+  index: number;
+  displayOrder: number;
+  showNeutralDots: boolean;
+  showRawDots: boolean;
+  showWeightedDots: boolean;
+}) {
+  if (showNeutralDots) {
+    return (
+      <span
+        className="mt-2 block h-3 w-3 shrink-0"
+        style={{
+          backgroundColor:
+            NEUTRAL_OPTION_COLORS[index % NEUTRAL_OPTION_COLORS.length],
+        }}
+        aria-label={`Option color for option ${displayOrder}`}
+      />
+    );
+  }
+
+  return (
+    <span className="mt-2 flex shrink-0 items-center gap-2">
+      {showRawDots ? (
+        <span
+          className="block h-3 w-3"
+          style={{
+            backgroundColor: RAW_OPTION_COLORS[index % RAW_OPTION_COLORS.length],
+          }}
+          aria-label={`Raw result color for option ${displayOrder}`}
+        />
+      ) : null}
+
+      {showWeightedDots ? (
+        <span
+          className="block h-3 w-3"
+          style={{
+            backgroundColor:
+              WEIGHTED_OPTION_COLORS[index % WEIGHTED_OPTION_COLORS.length],
+          }}
+          aria-label={`Weighted result color for option ${displayOrder}`}
+        />
+      ) : null}
+    </span>
   );
 }
 
 function StatusBadge({
   label,
-  tone = 'default',
+  tone = "default",
 }: {
   label: string;
-  tone?: 'default' | 'muted' | 'success' | 'warning' | 'danger';
+  tone?: "default" | "muted" | "success" | "warning" | "danger";
 }) {
   const toneClass =
-    tone === 'success'
-      ? 'bg-emerald-100 text-emerald-700'
-      : tone === 'warning'
-      ? 'bg-amber-100 text-amber-700'
-      : tone === 'danger'
-      ? 'bg-red-100 text-red-700'
-      : tone === 'muted'
-      ? 'bg-slate-200 text-slate-600'
-      : 'bg-slate-100 text-slate-700';
+    tone === "success"
+      ? "border-green-200 text-green-700"
+      : tone === "warning"
+        ? "border-amber-200 text-amber-700"
+        : tone === "danger"
+          ? "border-red-200 text-red-700"
+          : tone === "muted"
+            ? "border-slate-200 text-slate-500"
+            : "border-slate-200 text-slate-700";
 
-  return <span className={`rounded-full px-3 py-1 ${toneClass}`}>{label}</span>;
+  return (
+    <span
+      className={`border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${toneClass}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 function deriveStatusTone(
   status:
-    | 'UPCOMING'
-    | 'ONGOING'
-    | 'PAST'
-    | 'CANCELLED'
-    | 'ARCHIVED'
+    | "UPCOMING"
+    | "ONGOING"
+    | "PAST"
+    | "CANCELLED"
+    | "ARCHIVED"
     | undefined,
-): 'success' | 'warning' | 'muted' | 'danger' {
-  if (status === 'ONGOING') {
-    return 'success';
+): "success" | "warning" | "muted" | "danger" {
+  if (status === "ONGOING") {
+    return "success";
   }
 
-  if (status === 'UPCOMING') {
-    return 'warning';
+  if (status === "UPCOMING") {
+    return "warning";
   }
 
-  if (status === 'CANCELLED') {
-    return 'danger';
+  if (status === "CANCELLED") {
+    return "danger";
   }
 
-  return 'muted';
+  return "muted";
 }
