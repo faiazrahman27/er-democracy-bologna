@@ -1,21 +1,17 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useAuth } from '@/providers/auth-provider';
-import { isAdminRole } from '@/lib/roles';
+import Link from "next/link";
+import { useAuth } from "@/providers/auth-provider";
+import { isAdminRole } from "@/lib/roles";
 
 export function ConsultationsHeroActions() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="flex flex-wrap gap-4">
-        <Link
-          href="/articles"
-          className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
-        >
-          Read articles
-        </Link>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <SecondaryLink href="/articles">Read articles</SecondaryLink>
+        <PrimaryLink href="/login">Sign in to participate</PrimaryLink>
       </div>
     );
   }
@@ -23,36 +19,38 @@ export function ConsultationsHeroActions() {
   const isAuthenticated = !!user;
 
   return (
-    <div className="flex flex-wrap gap-4">
-      <Link
-        href="/articles"
-        className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
-      >
-        Read articles
-      </Link>
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <SecondaryLink href="/articles">Read articles</SecondaryLink>
 
       {!isAuthenticated ? (
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md"
-        >
-          Sign in to participate
-        </Link>
+        <PrimaryLink href="/login">Sign in to participate</PrimaryLink>
       ) : isAdminRole(user.role) ? (
-        <Link
-          href="/admin"
-          className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md"
-        >
-          Open admin dashboard
-        </Link>
+        <PrimaryLink href="/admin">Admin area</PrimaryLink>
       ) : (
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center justify-center rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md"
-        >
-          Open dashboard
-        </Link>
+        <PrimaryLink href="/dashboard">My dashboard</PrimaryLink>
       )}
     </div>
+  );
+}
+
+function PrimaryLink({ href, children }: { href: string; children: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex min-h-12 w-full items-center justify-center border border-green-700 bg-green-700 px-6 text-sm font-black text-white shadow-[0_18px_44px_rgba(22,163,74,0.20)] transition duration-300 hover:-translate-y-1 hover:bg-green-800 hover:shadow-[0_26px_64px_rgba(22,163,74,0.28)] active:-translate-y-1 active:scale-[0.98] active:bg-green-800 sm:w-auto"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function SecondaryLink({ href, children }: { href: string; children: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-6 text-sm font-black text-slate-950 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-green-600 hover:text-green-700 hover:shadow-md active:-translate-y-1 active:scale-[0.98] active:border-green-600 active:text-green-700 sm:w-auto"
+    >
+      {children}
+    </Link>
   );
 }

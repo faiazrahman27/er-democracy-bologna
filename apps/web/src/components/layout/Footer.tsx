@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { useMemo } from 'react';
-import { useAuth } from '@/providers/auth-provider';
-import { isAdminRole } from '@/lib/roles';
-import { hasPermission } from '@/lib/permissions';
-import { ADMIN_NAV, PUBLIC_NAV } from '@/lib/navigation';
-import { ROUTES } from '@/lib/routes';
+import Link from "next/link";
+import Image from "next/image";
+import { useMemo } from "react";
+import { useAuth } from "@/providers/auth-provider";
+import { isAdminRole } from "@/lib/roles";
+import { hasPermission } from "@/lib/permissions";
+import { ADMIN_NAV, PUBLIC_NAV } from "@/lib/navigation";
+import { ROUTES } from "@/lib/routes";
 
 export default function Footer() {
   const { user } = useAuth();
@@ -30,189 +30,179 @@ export default function Footer() {
   }, [user]);
 
   return (
-    <footer className="mt-20 bg-white text-slate-700">
+    <footer className="mt-20 bg-white text-slate-800">
       <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-      <div className="mx-auto max-w-6xl px-6 pt-12 pb-0 md:pt-14">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
-          <div>
-            <Link
-              href={isAdminUser ? ROUTES.admin.root : ROUTES.public.home}
-              className="group inline-flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5"
-            >
-              <div className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-200 group-hover:shadow-md">
+      <section className="bg-white px-5 py-14 sm:px-6 md:py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
+            <section className="min-w-0">
+              <Link
+                href={isAdminUser ? ROUTES.admin.root : ROUTES.public.home}
+                className="group inline-flex max-w-full items-center gap-4"
+              >
                 <Image
                   src="/branding/ER-Democracy-Bologna-logo.png"
                   alt="ER Democracy Bologna"
-                  width={80}
-                  height={80}
-                  className="object-contain"
+                  width={84}
+                  height={84}
+                  className="h-16 w-16 shrink-0 object-contain transition duration-300 group-hover:scale-[1.03] sm:h-20 sm:w-20"
                 />
-              </div>
 
-              <div>
-                <p className="text-base font-semibold text-slate-900">
-                  ER Democracy Bologna
+                <div className="min-w-0">
+                  <p className="break-words text-xl font-black tracking-[-0.04em] text-slate-950 sm:text-2xl">
+                    ER Democracy Bologna
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-green-700">
+                    {isAdminUser
+                      ? "Management area"
+                      : "Civic participation platform"}
+                  </p>
+                </div>
+              </Link>
+
+              <p className="mt-7 max-w-xl text-base leading-8 text-slate-600">
+                {isAdminUser
+                  ? "Manage consultations, review participation activity, and keep public information clear."
+                  : "A clear place to browse public articles and consultations, understand the context, and participate when a process is open."}
+              </p>
+
+              <div className="mt-8 border-t border-slate-200 pt-6">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Contact
                 </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {isAdminUser
-                    ? 'Administrative control surface'
-                    : 'Secure civic participation platform'}
-                </p>
+
+                <a
+                  href="mailto:admin@er-democracy-bologna.xyz"
+                  className="mt-3 inline-flex break-all text-sm font-bold text-slate-950 transition duration-300 hover:text-green-700 active:text-green-700"
+                >
+                  admin@er-democracy-bologna.xyz
+                </a>
               </div>
-            </Link>
+            </section>
 
-            <p className="mt-5 max-w-md text-sm leading-7 text-slate-600">
-              {isAdminUser
-                ? 'Administrative access for consultation management, assessment review, analytics oversight, and governance workflows.'
-                : 'A modern platform for transparent consultations, public participation, and trusted digital democratic processes.'}
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              {isAdminUser ? 'Administration' : 'Platform'}
-            </h3>
-
-            <div className="mt-4 space-y-3 text-sm">
+            <FooterColumn title={isAdminUser ? "Management" : "Platform"}>
               {isAdminUser ? (
                 <>
                   {visibleAdminNav.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="block transition-colors duration-200 hover:text-slate-900"
-                    >
+                    <FooterLink key={item.href} href={item.href}>
                       {item.label}
-                    </Link>
+                    </FooterLink>
                   ))}
 
-                  <Link
-                    href={ROUTES.user.assessment}
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
+                  <FooterLink href={ROUTES.user.assessment}>
                     My assessment
-                  </Link>
+                  </FooterLink>
 
-                  <Link
-                    href={ROUTES.public.consultations}
-                    className="block transition-colors duration-200 hover:text-slate-900"
-                  >
+                  <FooterLink href={ROUTES.public.consultations}>
                     Public consultations
-                  </Link>
+                  </FooterLink>
                 </>
               ) : (
                 <>
                   {PUBLIC_NAV.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="block transition-colors duration-200 hover:text-slate-900"
-                    >
+                    <FooterLink key={item.href} href={item.href}>
                       {item.label}
-                    </Link>
+                    </FooterLink>
                   ))}
 
                   {isAuthenticated ? (
                     <>
-                      <Link
-                        href={ROUTES.user.dashboard}
-                        className="block transition-colors duration-200 hover:text-slate-900"
-                      >
+                      <FooterLink href={ROUTES.user.dashboard}>
                         Dashboard
-                      </Link>
+                      </FooterLink>
 
-                      <Link
-                        href={ROUTES.user.assessment}
-                        className="block transition-colors duration-200 hover:text-slate-900"
-                      >
+                      <FooterLink href={ROUTES.user.assessment}>
                         Assessment
-                      </Link>
+                      </FooterLink>
                     </>
                   ) : (
                     <>
-                      <Link
-                        href={ROUTES.public.login}
-                        className="block transition-colors duration-200 hover:text-slate-900"
-                      >
-                        Login
-                      </Link>
+                      <FooterLink href={ROUTES.public.login}>Login</FooterLink>
 
-                      <Link
-                        href={ROUTES.public.register}
-                        className="block font-medium text-slate-900 transition-colors duration-200 hover:text-green-700"
-                      >
+                      <FooterLink href={ROUTES.public.register}>
                         Sign up
-                      </Link>
+                      </FooterLink>
                     </>
                   )}
                 </>
               )}
-            </div>
+            </FooterColumn>
+
+            <FooterColumn title="Legal">
+              <FooterLink href="/privacy">Privacy</FooterLink>
+              <FooterLink href={ROUTES.public.terms}>Terms</FooterLink>
+              <FooterLink href="/cookies">Cookies</FooterLink>
+              <FooterLink href={ROUTES.public.contact}>Contact</FooterLink>
+            </FooterColumn>
           </div>
 
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              {isAdminUser ? 'Reference' : 'Legal'}
-            </h3>
+          <div className="mt-12 grid gap-4 border-t border-slate-200 pt-6 text-sm text-slate-500 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <p>
+              © {new Date().getFullYear()} ER Democracy Bologna. All rights
+              reserved.
+            </p>
 
-            <div className="mt-4 space-y-3 text-sm">
-              <Link
-                href="/privacy"
-                className="block transition-colors duration-200 hover:text-slate-900"
-              >
-                Privacy
-              </Link>
-
-              <Link
-                href={ROUTES.public.terms}
-                className="block transition-colors duration-200 hover:text-slate-900"
-              >
-                Terms
-              </Link>
-
-              <Link
-                href="/cookies"
-                className="block transition-colors duration-200 hover:text-slate-900"
-              >
-                Cookies
-              </Link>
-
-              <Link
-                href={ROUTES.public.contact}
-                className="block transition-colors duration-200 hover:text-slate-900"
-              >
-                Contact
-              </Link>
-            </div>
+            <p className="font-medium text-slate-500">
+              Transparent civic participation.
+            </p>
           </div>
         </div>
+      </section>
 
-        <div className="mt-10 flex flex-col gap-3 pt-6 text-xs text-slate-400 md:flex-row md:items-center md:justify-between">
-          <p>
-            © {new Date().getFullYear()} ER Democracy Bologna. All rights
-            reserved.
-          </p>
-          <p>
-            {isAdminUser
-              ? 'Administrative workspace for secure and accountable civic operations.'
-              : 'Designed for transparent and trustworthy civic participation.'}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6 w-full bg-white md:-mt-10 lg:-mt-16">
+      <section className="w-full overflow-hidden bg-white" aria-hidden="true">
         <Image
           src="/footer.png"
           alt=""
           width={5444}
           height={1728}
           sizes="100vw"
-          className="block h-auto w-full"
+          className="block h-auto w-full select-none"
           priority={false}
           unoptimized
         />
-      </div>
+      </section>
     </footer>
+  );
+}
+
+function FooterColumn({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="min-w-0">
+      <h3 className="text-xs font-black uppercase tracking-[0.24em] text-green-700">
+        {title}
+      </h3>
+
+      <div className="mt-5 grid gap-2">{children}</div>
+    </section>
+  );
+}
+
+function FooterLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-h-11 items-center justify-between border-b border-slate-200 text-sm font-bold text-slate-700 transition duration-300 hover:border-green-600 hover:text-green-700 active:border-green-600 active:text-green-700"
+    >
+      <span>{children}</span>
+      <span
+        aria-hidden="true"
+        className="text-lg font-black text-slate-300 transition duration-300 group-hover:translate-x-1 group-hover:text-green-700"
+      >
+        →
+      </span>
+    </Link>
   );
 }

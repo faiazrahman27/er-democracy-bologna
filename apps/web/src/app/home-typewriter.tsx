@@ -14,7 +14,7 @@ export function HomeTypewriter({ text }: { text: string }) {
 
       if (index <= text.length) {
         index += 1;
-        timeoutId = setTimeout(typeNextLetter, 58);
+        timeoutId = setTimeout(typeNextLetter, 52);
         return;
       }
 
@@ -32,7 +32,7 @@ export function HomeTypewriter({ text }: { text: string }) {
 
   return (
     <div
-      className="inline-flex max-w-full items-center bg-transparent text-left text-[clamp(1.7rem,7vw,4.75rem)] font-black uppercase leading-none tracking-[-0.055em] text-white"
+      className="inline-flex max-w-full items-baseline bg-transparent text-left text-[clamp(1.7rem,7vw,4.75rem)] font-black uppercase leading-none tracking-[-0.055em] text-white"
       aria-label={text}
     >
       <span className="min-h-[1em] break-words bg-transparent">
@@ -41,11 +41,13 @@ export function HomeTypewriter({ text }: { text: string }) {
 
       <span
         aria-hidden="true"
-        className="ml-[0.08em] inline-block h-[1em] w-[0.075em] min-w-[4px] self-center bg-white"
+        className="ml-[0.04em] inline-block bg-transparent leading-none text-white"
         style={{
           animation: "typewriterCursorBlink 0.72s ease-in-out infinite",
         }}
-      />
+      >
+        |
+      </span>
 
       <style>
         {`

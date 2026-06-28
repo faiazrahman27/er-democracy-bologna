@@ -1,109 +1,122 @@
 import Link from "next/link";
 import { fetchPublicArticles } from "@/lib/articles";
-import { formatDateTime } from "@/lib/format";
+
+function formatArticleDate(value: string | null) {
+  if (!value) {
+    return "Recently published";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
 export default async function ArticlesPage() {
   const articles = await fetchPublicArticles();
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
-      <section className="px-5 py-10 sm:px-6 md:py-14">
-        <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen overflow-x-hidden bg-white text-slate-950">
+      <section className="bg-white px-5 py-12 sm:px-6 sm:py-16 md:py-20">
+        <div className="mx-auto max-w-7xl">
           <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-          <header className="mt-10">
-            <div className="max-w-4xl">
-              <Link
-                href="/"
-                className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
-              >
-                ← Back to home
-              </Link>
+          <header className="mx-auto mt-12 max-w-4xl text-center">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-green-600 hover:text-green-700 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+            >
+              ← Back to home
+            </Link>
 
-              <p className="mt-7 text-xs font-black uppercase tracking-[0.24em] text-slate-500">
-                Articles
-              </p>
+            <p className="mt-8 text-xs font-black uppercase tracking-[0.28em] text-green-700">
+              Articles
+            </p>
 
-              <h1 className="mt-4 max-w-4xl break-words text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
-                Public updates and guides
-              </h1>
+            <h1 className="mt-4 break-words text-4xl font-black tracking-[-0.065em] text-slate-950 sm:text-5xl md:text-6xl">
+              Public updates and civic stories
+            </h1>
 
-              <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600">
-                Read updates, methodology notes, and participation guidance from
-                ER Democracy Bologna.
-              </p>
-            </div>
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-600 md:text-lg md:leading-9">
+              Read announcements, explainers, guides, and public updates from ER
+              Democracy Bologna.
+            </p>
           </header>
 
-          <section className="mt-12 border-t border-slate-200 pt-8">
+          <section className="mt-14">
             {articles.length === 0 ? (
-              <div className="border-y border-slate-200 py-8">
+              <div className="border-y border-slate-200 py-12 text-center">
                 <h2 className="text-2xl font-black tracking-[-0.045em] text-slate-950">
-                  No published articles
+                  No published articles yet
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-                  Public content will appear here once it is published.
+
+                <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+                  Articles will appear here once they are published.
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-200 border-y border-slate-200">
+              <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {articles.map((article) => (
                   <article
                     key={article.id}
-                    className="group py-7 transition duration-300 hover:bg-slate-50/70 active:bg-slate-50"
+                    className="group cursor-pointer border border-slate-200 bg-white shadow-none transition duration-300 hover:-translate-y-1 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.12)] active:-translate-y-1 active:scale-[0.99]"
                   >
-                    <div className="grid gap-6 lg:grid-cols-[minmax(160px,240px)_minmax(0,1fr)] lg:items-start">
-                      <Link
-                        href={`/articles/${article.slug}`}
-                        className="flex min-h-[180px] items-center justify-center border border-slate-200 bg-slate-50 p-4 transition duration-300 group-hover:bg-white"
-                        aria-label={`Read ${article.title}`}
-                      >
+                    <Link
+                      href={`/articles/${article.slug}`}
+                      aria-label={`Read ${article.title}`}
+                      className="block"
+                    >
+                      <div className="relative overflow-hidden bg-slate-100">
                         {article.coverImageUrl ? (
                           <img
                             src={article.coverImageUrl}
                             alt={article.coverImageAlt || article.title}
-                            className="block h-auto max-h-[240px] max-w-full object-contain"
+                            className="aspect-square h-64 w-full object-cover transition duration-700 group-hover:scale-[1.035] sm:h-72 md:h-80"
+                            loading="lazy"
                           />
                         ) : (
-                          <div className="px-4 text-center text-sm font-bold text-slate-400">
-                            Article image coming soon
+                          <div className="flex aspect-square h-64 w-full items-center justify-center bg-slate-100 px-6 text-center sm:h-72 md:h-80">
+                            <span className="text-sm font-bold text-slate-400">
+                              Article image coming soon
+                            </span>
                           </div>
                         )}
-                      </Link>
 
-                      <div className="min-w-0 lg:pr-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <StatusPill label="Published article" />
-                          <span className="border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
-                            {article.publishedAt
-                              ? formatDateTime(article.publishedAt)
-                              : "Recently published"}
-                          </span>
-                        </div>
+                        <p className="absolute left-0 top-0 border-b border-r border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950 sm:text-xs">
+                          #Article
+                        </p>
+                      </div>
 
-                        <h2 className="mt-4 max-w-4xl break-words text-2xl font-black tracking-[-0.045em] text-slate-950 md:text-3xl">
-                          <Link
-                            href={`/articles/${article.slug}`}
-                            className="transition hover:text-green-700"
-                          >
-                            {article.title}
-                          </Link>
+                      <div className="px-4 pb-5 pt-5 sm:px-5 sm:pb-6">
+                        <h2 className="break-words text-xl font-black tracking-[-0.045em] text-slate-950 transition duration-300 group-hover:text-green-700 md:text-2xl">
+                          {article.title}
                         </h2>
 
-                        <p className="mt-4 max-w-4xl break-words text-sm leading-7 text-slate-600">
+                        <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
                           {article.summary}
                         </p>
 
-                        <div className="mt-6">
-                          <Link
-                            href={`/articles/${article.slug}`}
-                            className="inline-flex min-h-11 items-center justify-center border border-green-500 bg-white px-4 text-sm font-black text-green-700 shadow-sm transition duration-200 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
-                          >
-                            Read article
-                          </Link>
+                        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="inline-flex items-center text-sm font-black text-slate-950 transition duration-300 group-hover:text-green-700">
+                            <span className="relative mr-3 inline-flex h-10 w-10 items-center justify-center overflow-hidden border border-slate-300 bg-white transition duration-300 group-hover:border-green-700 group-hover:bg-green-700 group-hover:text-white">
+                              <span className="transition duration-500 group-hover:translate-x-8 group-hover:opacity-0">
+                                →
+                              </span>
+                              <span className="absolute -left-6 transition duration-500 group-hover:left-1/2 group-hover:-translate-x-1/2">
+                                →
+                              </span>
+                            </span>
+                            Read more
+                          </span>
+
+                          <span className="flex items-center gap-3 text-xs font-medium text-slate-500">
+                            {formatArticleDate(article.publishedAt)}
+                            <span className="w-10 border-t border-slate-300 transition duration-300 group-hover:w-16 group-hover:border-green-600" />
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   </article>
                 ))}
               </div>
@@ -112,13 +125,5 @@ export default async function ArticlesPage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function StatusPill({ label }: { label: string }) {
-  return (
-    <span className="border border-green-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-green-700">
-      {label}
-    </span>
   );
 }
