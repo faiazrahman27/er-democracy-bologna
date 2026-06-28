@@ -235,7 +235,7 @@ export default function DashboardPage() {
 
                 <p className="mt-6 max-w-3xl break-words text-base leading-8 text-slate-600">
                   Continue participation, update your assessment profile, read
-                  public content, and manage your account from one place.
+                  articles, and manage your account from one place.
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -284,7 +284,7 @@ export default function DashboardPage() {
                 <SectionHeader
                   eyebrow="Participation"
                   title="Your next steps"
-                  description="Use these actions to move directly into the main participation areas."
+                  description="Use these links to open the main pages."
                 />
 
                 <div className="mt-8 divide-y divide-slate-200 border-y border-slate-200">

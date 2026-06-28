@@ -197,7 +197,7 @@ export default function AdminArticlesPage() {
                 </div>
 
                 <p className="mt-7 text-xs font-black uppercase tracking-[0.24em] text-slate-500">
-                  Content admin
+                  Articles
                 </p>
 
                 <h1 className="mt-4 max-w-4xl break-words text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
@@ -247,14 +247,13 @@ export default function AdminArticlesPage() {
           <section className="mt-12 border-t border-slate-200 pt-8">
             <div className="max-w-3xl">
               <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
-                Article list
+                Articles
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
-                Public content records
+                Article records
               </h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                The admin view follows the public article card style, with
-                status, slug, dates, and management actions kept visible.
+                Review articles, publication status, dates, and available actions.
               </p>
             </div>
 
@@ -264,8 +263,7 @@ export default function AdminArticlesPage() {
                   No articles found
                 </h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-                  Create the first article to populate the public content
-                  section.
+                  Create the first article to show it in the articles section.
                 </p>
 
                 {canCreate ? (

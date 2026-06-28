@@ -28,7 +28,7 @@ const TERMS_SECTIONS = [
   {
     title: "4. Acceptable use",
     body: [
-      "You must use the platform responsibly and lawfully. You must not misuse the platform, interfere with its operation, attempt unauthorized access, bypass access controls, manipulate participation flows, impersonate another person, or submit fraudulent, misleading, abusive, unlawful, or harmful material.",
+      "You must use the platform responsibly and lawfully. You must not misuse the platform, interfere with its operation, attempt unauthorized access, bypass access controls, manipulate voting or participation, impersonate another person, or submit fraudulent, misleading, abusive, unlawful, or harmful material.",
       "You must not introduce malicious code, conduct credential attacks, scrape restricted areas, overload the service, or use the platform in a way that could damage the platform, other users, consultation integrity, or public trust.",
     ],
   },

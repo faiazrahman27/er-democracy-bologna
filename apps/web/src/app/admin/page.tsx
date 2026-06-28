@@ -255,7 +255,7 @@ export default function AdminPage() {
                   href="/admin/votes"
                   eyebrow="Creation"
                   title="Create consultation"
-                  description="Start a new consultation workflow from the admin side."
+                  description="Create a new consultation."
                 />
               ) : null}
 
@@ -270,7 +270,7 @@ export default function AdminPage() {
                   }
                   description={
                     canEditArticles || canPublishArticles
-                      ? 'Maintain the public content that supports the platform.'
+                      ? 'Manage articles and published updates.'
                       : 'Open article records available to this role.'
                   }
                 />
@@ -386,12 +386,12 @@ function getRoleCopy(role: string) {
         eyebrow: 'Full administration',
         title: 'Platform command workspace',
         summary:
-          'Full access is enabled across consultations, content, analytics, participants, media, and review workflows.',
+          'This role can manage consultations, articles, results, participants, and media.',
         routesTitle: 'Run the platform',
         routesIntro:
           'All core admin paths are available for platform-wide operation.',
         identityLine:
-          'This account has full administrative scope across the platform.',
+          'This account has full administrative access.',
       };
 
     case 'CONSULTATION_ADMIN':
@@ -404,33 +404,33 @@ function getRoleCopy(role: string) {
         routesIntro:
           'Only consultation-related admin paths are shown for this role.',
         identityLine:
-          'This account is scoped to consultation operations and related review work.',
+          'This account can manage consultations.',
       };
 
     case 'CONTENT_ADMIN':
       return {
-        eyebrow: 'Content administration',
+        eyebrow: 'Articles',
         title: 'Content workspace',
         summary:
           'Article management, publishing, deletion, creation, and media upload are available for this role.',
-        routesTitle: 'Manage public content',
+        routesTitle: 'Manage articles',
         routesIntro:
           'Only content-related admin paths are shown for this role.',
         identityLine:
-          'This account is scoped to articles, publishing, and media work.',
+          'This account can manage articles, publishing, and media.',
       };
 
     case 'ANALYTICS_ADMIN':
       return {
         eyebrow: 'Analytics administration',
-        title: 'Analytics review workspace',
+        title: 'Results and analytics',
         summary:
-          'Consultation viewing, results access, and analytics review are available for this role.',
+          'Consultation viewing, results, and analytics are available for this role.',
         routesTitle: 'Review consultation data',
         routesIntro:
-          'Read and review paths are shown. Creation and content tools stay hidden.',
+          'Viewing tools are available. Creation tools are hidden for this role.',
         identityLine:
-          'This account is scoped to results and analytics review.',
+          'This account can view results and analytics.',
       };
 
     case 'AUDITOR':
@@ -443,7 +443,7 @@ function getRoleCopy(role: string) {
         routesIntro:
           'Oversight routes are shown without creation or publishing tools.',
         identityLine:
-          'This account is scoped to audit and oversight workflows.',
+          'This account can view audit and oversight areas.',
       };
 
     default:
@@ -456,7 +456,7 @@ function getRoleCopy(role: string) {
         routesIntro:
           'Only the routes available to this role are shown here.',
         identityLine:
-          'This account is operating with the permissions attached to its role.',
+          'This account can use the permissions attached to its role.',
       };
   }
 }

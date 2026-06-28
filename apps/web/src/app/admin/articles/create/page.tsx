@@ -211,7 +211,7 @@ export default function CreateArticlePage() {
                     href="/admin/articles"
                     className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
                   >
-                    Article list
+                    Articles
                   </Link>
                 </div>
               </aside>
@@ -431,7 +431,7 @@ export default function CreateArticlePage() {
                 href="/admin/articles"
                 className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98] sm:w-auto"
               >
-                Article list
+                Articles
               </Link>
             </div>
           </div>

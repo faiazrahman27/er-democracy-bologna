@@ -2,18 +2,101 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { isAdminRole } from "@/lib/roles";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { ADMIN_NAV, PUBLIC_NAV } from "@/lib/navigation";
 import { ROUTES } from "@/lib/routes";
+
+type FooterProfile = {
+  label: string;
+  description: string;
+  closing: string;
+  linkColumnTitle: string;
+};
+
+function getFooterProfile(
+  role: string | null | undefined,
+  isAuthenticated: boolean,
+): FooterProfile {
+  if (role === "SUPER_ADMIN") {
+    return {
+      label: "Super admin",
+      description:
+        "Full access to consultations, articles, results, and admin sections.",
+      closing: "Full platform access.",
+      linkColumnTitle: "Admin access",
+    };
+  }
+
+  if (role === "CONSULTATION_ADMIN") {
+    return {
+      label: "Consultation admin",
+      description:
+        "Create and update consultations, check results, and keep voting pages ready.",
+      closing: "Consultation tools.",
+      linkColumnTitle: "Consultations",
+    };
+  }
+
+  if (role === "CONTENT_ADMIN") {
+    return {
+      label: "Content admin",
+      description:
+        "Create and update articles and media shown on the public site.",
+      closing: "Content tools.",
+      linkColumnTitle: "Articles",
+    };
+  }
+
+  if (role === "ANALYTICS_ADMIN") {
+    return {
+      label: "Results admin",
+      description: "View consultation results and platform reports.",
+      closing: "Results access.",
+      linkColumnTitle: "Results",
+    };
+  }
+
+  if (role === "AUDITOR") {
+    return {
+      label: "Audit access",
+      description:
+        "View consultations, results, reports, and assessment lookup pages.",
+      closing: "Read-only admin access.",
+      linkColumnTitle: "Audit access",
+    };
+  }
+
+  if (isAuthenticated) {
+    return {
+      label: "Signed-in participant",
+      description:
+        "Browse consultations, read articles, and use your dashboard when participation requires an account.",
+      closing: "Participant access.",
+      linkColumnTitle: "Your area",
+    };
+  }
+
+  return {
+    label: "Civic participation platform",
+    description:
+      "Browse public consultations and articles. Sign in when a voting step requires an account.",
+    closing: "Public civic participation.",
+    linkColumnTitle: "Explore",
+  };
+}
 
 export default function Footer() {
   const { user } = useAuth();
 
   const isAuthenticated = !!user;
   const isAdminUser = !!user && isAdminRole(user.role);
+
+  const footerProfile = useMemo(() => {
+    return getFooterProfile(user?.role, isAuthenticated);
+  }, [user?.role, isAuthenticated]);
 
   const visibleAdminNav = useMemo(() => {
     if (!user) {
@@ -28,6 +111,12 @@ export default function Footer() {
       return hasPermission(user.role, item.permission);
     });
   }, [user]);
+
+  const canCreateArticle = hasPermission(user?.role, PERMISSIONS.ARTICLE_CREATE);
+  const canUseAssessmentLookup = hasPermission(
+    user?.role,
+    PERMISSIONS.ASSESSMENT_SECRET_LOOKUP,
+  );
 
   return (
     <footer className="mt-20 bg-white text-slate-800">
@@ -54,17 +143,13 @@ export default function Footer() {
                     ER Democracy Bologna
                   </p>
                   <p className="mt-1 text-sm font-semibold text-green-700">
-                    {isAdminUser
-                      ? "Management area"
-                      : "Civic participation platform"}
+                    {footerProfile.label}
                   </p>
                 </div>
               </Link>
 
               <p className="mt-7 max-w-xl text-base leading-8 text-slate-600">
-                {isAdminUser
-                  ? "Manage consultations, review participation activity, and keep public information clear."
-                  : "A clear place to browse public articles and consultations, understand the context, and participate when a process is open."}
+                {footerProfile.description}
               </p>
 
               <div className="mt-8 border-t border-slate-200 pt-6">
@@ -81,7 +166,7 @@ export default function Footer() {
               </div>
             </section>
 
-            <FooterColumn title={isAdminUser ? "Management" : "Platform"}>
+            <FooterColumn title={footerProfile.linkColumnTitle}>
               {isAdminUser ? (
                 <>
                   {visibleAdminNav.map((item) => (
@@ -90,12 +175,24 @@ export default function Footer() {
                     </FooterLink>
                   ))}
 
-                  <FooterLink href={ROUTES.user.assessment}>
-                    My assessment
-                  </FooterLink>
+                  {canCreateArticle ? (
+                    <FooterLink href="/admin/articles/create">
+                      Create article
+                    </FooterLink>
+                  ) : null}
 
+                  {canUseAssessmentLookup ? (
+                    <FooterLink href={ROUTES.admin.assessments}>
+                      Assessment lookup
+                    </FooterLink>
+                  ) : null}
+
+                  <FooterLink href={ROUTES.public.home}>Public home</FooterLink>
                   <FooterLink href={ROUTES.public.consultations}>
                     Public consultations
+                  </FooterLink>
+                  <FooterLink href={ROUTES.public.articles}>
+                    Public articles
                   </FooterLink>
                 </>
               ) : (
@@ -130,7 +227,7 @@ export default function Footer() {
             </FooterColumn>
 
             <FooterColumn title="Legal">
-              <FooterLink href="/privacy">Privacy</FooterLink>
+              <FooterLink href={ROUTES.public.privacy}>Privacy</FooterLink>
               <FooterLink href={ROUTES.public.terms}>Terms</FooterLink>
               <FooterLink href="/cookies">Cookies</FooterLink>
               <FooterLink href={ROUTES.public.contact}>Contact</FooterLink>
@@ -144,7 +241,7 @@ export default function Footer() {
             </p>
 
             <p className="font-medium text-slate-500">
-              Transparent civic participation.
+              {footerProfile.closing}
             </p>
           </div>
         </div>
@@ -171,7 +268,7 @@ function FooterColumn({
   children,
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="min-w-0">
@@ -189,7 +286,7 @@ function FooterLink({
   children,
 }: {
   href: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <Link

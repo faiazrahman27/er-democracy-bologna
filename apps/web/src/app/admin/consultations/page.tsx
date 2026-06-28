@@ -246,8 +246,7 @@ export default function AdminConsultationsPage() {
                 </div>
 
                 <p className="max-w-md text-sm leading-6 text-slate-500">
-                  Title, summary, timing, workflow, and actions stay clear
-                  without adding heavy dashboard boxes.
+                  Use the list below to open, edit, or review each consultation.
                 </p>
               </div>
 
@@ -273,14 +272,14 @@ function getConsultationPageCopy(canCreateConsultation: boolean) {
     return {
       title: 'Consultation workspace',
       summary:
-        'Create, review, and manage consultation records in a clear admin view that keeps each record readable.',
+        'Create, review, and manage consultations from this admin page.',
     };
   }
 
   return {
     title: 'Consultation review',
     summary:
-      'Review consultation records available to your role. Creation controls stay hidden because this account is scoped for review, not setup.',
+      'Review the consultations available for your role.',
   };
 }
 

@@ -635,7 +635,7 @@ export default function AdminEditConsultationPage() {
               <EditSection
                 eyebrow="Publication"
                 title="Public visibility"
-                description="A consultation is public only when this flag is enabled and the workflow status is Published or Closed."
+                description="A consultation is public only when publishing is enabled and the status is Published or Closed."
               >
                 <CheckboxField
                   label="Enable public visibility"
@@ -776,7 +776,7 @@ export default function AdminEditConsultationPage() {
               >
                 <div className="grid gap-3">
                   <PolicyItem
-                    label="Title, summary, methodology"
+                    label="Title, summary, details"
                     value={coreFieldsLocked ? "Locked" : "Editable"}
                     tone={coreFieldsLocked ? "warning" : "success"}
                   />

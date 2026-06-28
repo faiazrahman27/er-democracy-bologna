@@ -43,7 +43,7 @@ const PRIVACY_SECTIONS = [
       "To publish and manage consultations, record participation, apply consultation rules, calculate results, and display participation outputs where enabled.",
       "To receive, review, moderate, and manage proposals, comments, forms, or other submissions.",
       "To operate, maintain, secure, test, troubleshoot, and improve the platform.",
-      "To prevent fraud, misuse, unauthorized access, manipulation of participation flows, and activity that could harm users or platform integrity.",
+      "To prevent fraud, misuse, unauthorized access, manipulation of voting or participation, and activity that could harm users or platform integrity.",
       "To respond to support, privacy, legal, or administrative requests.",
       "To comply with legal obligations, preserve necessary records, and protect the legitimate interests of the platform and its users.",
     ],

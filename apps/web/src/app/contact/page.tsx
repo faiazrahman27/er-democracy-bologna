@@ -47,7 +47,7 @@ export default function ContactPage() {
             <section className="grid min-w-0 gap-5">
               <ContactBlock
                 title="General inquiries"
-                body="For questions about ER Democracy Bologna, platform usage, consultations, public content, or participation flows."
+                body="For questions about ER Democracy Bologna, consultations, articles, voting, or account access."
               />
 
               <ContactBlock

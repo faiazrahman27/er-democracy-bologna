@@ -471,7 +471,7 @@ export default function AdminVotesPage() {
               <CreateSection
                 eyebrow="Workflow and schedule"
                 title="Status and voting window"
-                description="Choose the workflow state and the period when voting should be available."
+                description="Choose the status and the period when voting should be available."
               >
                 <div className="grid gap-5 md:grid-cols-2">
                   <SelectField
@@ -501,7 +501,7 @@ export default function AdminVotesPage() {
                   />
                   <CheckboxField
                     label="Publish this consultation immediately"
-                    description="The consultation is publicly reachable only when publication and workflow settings allow it."
+                    description="The consultation is public only when publishing is enabled and the status allows it."
                     checked={isPublished}
                     onChange={setIsPublished}
                   />
