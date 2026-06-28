@@ -14,12 +14,15 @@
 }
 
 html {
+  overflow-x: hidden;
   background: #ffffff;
   color: var(--foreground);
+  scroll-behavior: smooth;
 }
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
   background: #ffffff;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;

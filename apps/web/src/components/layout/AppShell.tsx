@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import CookieConsentBanner from '@/components/legal/CookieConsentBanner';
-import { useAuth } from '@/providers/auth-provider';
-import { isAdminRole } from '@/lib/roles';
-import { ROUTES } from '@/lib/routes';
+import { usePathname } from "next/navigation";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import PlatformMotion from "@/components/layout/PlatformMotion";
+import CookieConsentBanner from "@/components/legal/CookieConsentBanner";
+import { useAuth } from "@/providers/auth-provider";
+import { isAdminRole } from "@/lib/roles";
+import { ROUTES } from "@/lib/routes";
 
 export default function AppShell({
   children,
@@ -27,9 +28,11 @@ export default function AppShell({
 
   return (
     <>
-      <Header variant={isAdminUser ? 'admin' : 'public'} />
+      <PlatformMotion />
 
-      <main className="min-h-screen">{children}</main>
+      <Header variant={isAdminUser ? "admin" : "public"} />
+
+      {children}
 
       {!isAuthRoute ? <Footer /> : null}
 
