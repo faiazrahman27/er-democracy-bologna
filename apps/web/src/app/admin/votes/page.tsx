@@ -787,7 +787,7 @@ export default function AdminVotesPage() {
               <CreateSection
                 eyebrow="Setup checklist"
                 title="Required before create"
-                description="The create action still uses the same validation and API payload."
+                description="Use this to quickly see what is still missing before pressing Create consultation."
               >
                 <div className="grid gap-3">
                   <ChecklistItem
