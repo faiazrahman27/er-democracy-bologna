@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -18,9 +18,8 @@ export default function AdminAssessmentDetailPage() {
   const params = useParams<{ secretUserId: string }>();
   const { user, token, isLoading } = useAuth();
 
-  const [assessment, setAssessment] = useState<AdminAssessmentSecretInspection | null>(
-    null,
-  );
+  const [assessment, setAssessment] =
+    useState<AdminAssessmentSecretInspection | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
 
@@ -74,9 +73,13 @@ export default function AdminAssessmentDetailPage() {
 
   if (isLoading || pageLoading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <p className="text-sm text-slate-600">Loading assessment record...</p>
+          <div className="border-y border-slate-200 py-6">
+            <p className="text-sm font-medium text-slate-500">
+              Loading assessment record...
+            </p>
+          </div>
         </div>
       </main>
     );
@@ -88,10 +91,10 @@ export default function AdminAssessmentDetailPage() {
 
   if (!hasPermission(user.role, PERMISSIONS.ASSESSMENT_SECRET_LOOKUP)) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            You do not have permission to inspect pseudonymous assessment data.
+          <div className="border-y border-red-200 py-4 text-sm font-bold text-red-700">
+            You do not have permission to view this assessment record.
           </div>
         </div>
       </main>
@@ -100,16 +103,16 @@ export default function AdminAssessmentDetailPage() {
 
   if (pageError) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <Link
             href="/admin/consultations"
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
           >
-            ← Back to consultation management
+            ← Back to consultations
           </Link>
 
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-8 border-y border-red-200 py-4 text-sm font-bold text-red-700">
             {pageError}
           </div>
         </div>
@@ -119,16 +122,16 @@ export default function AdminAssessmentDetailPage() {
 
   if (!assessment) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <Link
             href="/admin/consultations"
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
           >
-            ← Back to consultation management
+            ← Back to consultations
           </Link>
 
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 shadow-sm">
+          <div className="mt-8 border-y border-slate-200 py-5 text-sm font-bold text-slate-700">
             No assessment record was found for this secret user ID.
           </div>
         </div>
@@ -137,308 +140,333 @@ export default function AdminAssessmentDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8">
-          <Link
-            href="/admin/consultations"
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-          >
-            ← Back to consultation management
-          </Link>
-        </div>
+    <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
+      <section className="px-5 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-        <section className="pb-10">
-          <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
+          <header className="mt-10">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-start">
+              <div className="min-w-0">
+                <Link
+                  href="/admin/consultations"
+                  className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+                >
+                  ← Back to consultations
+                </Link>
 
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-            <div>
-              <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-                  Pseudonymous assessment
-                </span>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700">
-                  Secret lookup
-                </span>
+                <div className="mt-6 flex flex-wrap items-center gap-2">
+                  <StatusBadge label="Pseudonymous record" tone="default" />
+                  <StatusBadge
+                    label={
+                      assessment.assessmentCompleted
+                        ? "Assessment completed"
+                        : "Assessment not completed"
+                    }
+                    tone={assessment.assessmentCompleted ? "success" : "warning"}
+                  />
+                </div>
+
+                <p className="mt-7 text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Assessment record
+                </p>
+
+                <h1 className="mt-4 max-w-4xl break-all text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
+                  {assessment.secretUserId}
+                </h1>
+
+                <p className="mt-6 max-w-3xl text-base leading-8 text-slate-600">
+                  This page shows assessment details connected to this
+                  pseudonymous participant record. It does not show personal
+                  identity details such as name or email.
+                </p>
               </div>
 
-              <h1 className="mt-5 text-3xl font-semibold tracking-tight md:text-4xl">
-                {assessment.secretUserId}
-              </h1>
+              <aside className="border-y border-slate-200 py-5 lg:mt-11">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                  Record timing
+                </p>
 
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-                This page contains only pseudonymous assessment data for
-                governance review and analysis. Personal identity details such
-                as full name and email are not shown here.
-              </p>
+                <div className="mt-4 grid gap-4">
+                  <InfoLine
+                    label="Completed at"
+                    value={
+                      assessment.completedAt
+                        ? formatDateTime(assessment.completedAt)
+                        : "Not completed"
+                    }
+                  />
+                  <InfoLine
+                    label="Created"
+                    value={formatDateTime(assessment.createdAt)}
+                  />
+                  <InfoLine
+                    label="Updated"
+                    value={formatDateTime(assessment.updatedAt)}
+                  />
+                </div>
+              </aside>
             </div>
+          </header>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <StatCard
+          <section className="mt-12 border-y border-slate-200 py-8">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <StatLine
                 label="Assessment status"
                 value={assessment.assessmentCompleted ? "Completed" : "Draft"}
-                highlight={assessment.assessmentCompleted}
+                positive={assessment.assessmentCompleted}
               />
-              <StatCard
+              <StatLine
                 label="Completed at"
                 value={
                   assessment.completedAt
                     ? formatDateTime(assessment.completedAt)
                     : "Not completed"
                 }
-                muted={!assessment.completedAt}
               />
-              <StatCard
+              <StatLine
                 label="Created"
                 value={formatDateTime(assessment.createdAt)}
               />
-              <StatCard
+              <StatLine
                 label="Updated"
                 value={formatDateTime(assessment.updatedAt)}
               />
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="border-t border-slate-200 pt-10">
-          <div className="grid gap-6 md:grid-cols-2">
-            <InfoCard
-              title="Assessment status"
-              rows={[
-                [
-                  "Assessment completed",
-                  assessment.assessmentCompleted ? "Yes" : "No",
-                ],
-                [
-                  "Completed at",
-                  assessment.completedAt
-                    ? formatDateTime(assessment.completedAt)
-                    : "Not completed",
-                ],
-                ["Created at", formatDateTime(assessment.createdAt)],
-                ["Updated at", formatDateTime(assessment.updatedAt)],
-              ]}
+          <section className="mt-12 border-t border-slate-200 pt-8">
+            <SectionHeader
+              eyebrow="Profile"
+              title="Assessment details"
+              description="These fields describe the participant profile used for consultation weighting and analytics."
             />
 
-            <InfoCard
-              title="Location profile"
-              rows={[
-                ["Country", formatAssessmentEnumValue(assessment.country)],
-                ["Region", formatAssessmentEnumValue(assessment.region)],
-                ["City", formatAssessmentEnumValue(assessment.city)],
-              ]}
-            />
-          </div>
-        </section>
+            <div className="mt-8 grid gap-8 lg:grid-cols-2">
+              <InfoGroup
+                title="Assessment status"
+                rows={[
+                  [
+                    "Assessment completed",
+                    assessment.assessmentCompleted ? "Yes" : "No",
+                  ],
+                  [
+                    "Completed at",
+                    assessment.completedAt
+                      ? formatDateTime(assessment.completedAt)
+                      : "Not completed",
+                  ],
+                  ["Created at", formatDateTime(assessment.createdAt)],
+                  ["Updated at", formatDateTime(assessment.updatedAt)],
+                ]}
+              />
 
-        <section className="border-t border-slate-200 pt-10">
-          <div className="grid gap-6 md:grid-cols-2">
-            <InfoCard
-              title="Participant profile"
-              rows={[
-                ["Age range", formatAssessmentEnumValue(assessment.ageRange)],
-                ["Gender", formatAssessmentEnumValue(assessment.gender)],
-                [
-                  "Stakeholder role",
-                  formatAssessmentEnumValue(assessment.stakeholderRole),
-                ],
-                [
-                  "Background category",
-                  formatAssessmentEnumValue(assessment.backgroundCategory),
-                ],
-                [
-                  "Years of experience",
-                  formatAssessmentEnumValue(assessment.yearsOfExperience),
-                ],
-                [
-                  "Study level",
-                  formatAssessmentEnumValue(assessment.studyLevel),
-                ],
-              ]}
-            />
+              <InfoGroup
+                title="Location profile"
+                rows={[
+                  ["Country", formatAssessmentEnumValue(assessment.country)],
+                  ["Region", formatAssessmentEnumValue(assessment.region)],
+                  ["City", formatAssessmentEnumValue(assessment.city)],
+                ]}
+              />
 
-            <InfoCard
-              title="Experience and relationship"
-              rows={[
-                [
-                  "Experience level",
-                  formatAssessmentEnumValue(assessment.experienceLevel),
-                ],
-                [
-                  "Relationship to area",
-                  formatAssessmentEnumValue(assessment.relationshipToArea),
-                ],
-              ]}
-            />
-          </div>
-        </section>
+              <InfoGroup
+                title="Participant profile"
+                rows={[
+                  ["Age range", formatAssessmentEnumValue(assessment.ageRange)],
+                  ["Gender", formatAssessmentEnumValue(assessment.gender)],
+                  [
+                    "Stakeholder role",
+                    formatAssessmentEnumValue(assessment.stakeholderRole),
+                  ],
+                  [
+                    "Background category",
+                    formatAssessmentEnumValue(assessment.backgroundCategory),
+                  ],
+                  [
+                    "Years of experience",
+                    formatAssessmentEnumValue(assessment.yearsOfExperience),
+                  ],
+                  [
+                    "Study level",
+                    formatAssessmentEnumValue(assessment.studyLevel),
+                  ],
+                ]}
+              />
 
-        <section className="border-t border-slate-200 pt-10">
-          <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Review context
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Administrative use
-              </h2>
-
-              <div className="mt-5 space-y-4 text-sm leading-7 text-slate-600">
-                <p>
-                  This view is intended for lawful governance review, analytics
-                  interpretation, and audit-oriented administrative workflows.
-                </p>
-                <p>
-                  The record is pseudonymous and should be interpreted within
-                  the limits of your administrative role and permissions.
-                </p>
-                <p>
-                  Use this page carefully when reviewing consultation
-                  participation patterns or profile-based governance logic.
-                </p>
-              </div>
+              <InfoGroup
+                title="Experience and relationship"
+                rows={[
+                  [
+                    "Experience level",
+                    formatAssessmentEnumValue(assessment.experienceLevel),
+                  ],
+                  [
+                    "Relationship to area",
+                    formatAssessmentEnumValue(assessment.relationshipToArea),
+                  ],
+                ]}
+              />
             </div>
+          </section>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-800">
-                Privacy boundary
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-amber-900">
-                Pseudonymous data only
-              </h2>
+          <section className="mt-12 border-t border-slate-200 pt-8">
+            <div className="grid gap-8 lg:grid-cols-2">
+              <PlainPanel
+                eyebrow="Review context"
+                title="How to use this page"
+                tone="default"
+              >
+                <p>
+                  Use this record to review how a pseudonymous participant’s
+                  profile and weighted answers affected specialized
+                  consultation results.
+                </p>
+                <p>
+                  The information should be read together with the consultation
+                  result and participant submission records.
+                </p>
+                <p>
+                  Keep review focused on participation patterns, weights, and
+                  assessment completeness.
+                </p>
+              </PlainPanel>
 
-              <div className="mt-5 space-y-4 text-sm leading-7 text-amber-800">
+              <PlainPanel
+                eyebrow="Privacy note"
+                title="Pseudonymous data only"
+                tone="warning"
+              >
                 <p>
                   Personal identity details such as full name and email are not
                   shown on this page.
                 </p>
                 <p>
-                  Do not use this assessment view to infer, reconstruct, or
-                  disclose private identity.
+                  Do not use this page to identify, infer, or disclose a private
+                  identity.
                 </p>
                 <p>
-                  Access should remain limited to lawful review, platform
-                  governance, and authorized audit workflows.
+                  Access should remain limited to authorized review of
+                  consultation participation and assessment records.
                 </p>
+              </PlainPanel>
+            </div>
+          </section>
+
+          <section className="mt-12 border-t border-slate-200 pt-8">
+            <SectionHeader
+              eyebrow="Specialized vote review"
+              title="Weighted-question answers"
+              description="These records show how selected answers adjusted final specialized vote weights for this pseudonymous participant."
+            />
+
+            {assessment.specializedVoteSubmissions.length === 0 ? (
+              <div className="mt-8 border-y border-slate-200 py-5 text-sm font-bold text-slate-600">
+                No specialized vote submissions with weighted questions were
+                found for this secret user ID.
               </div>
-            </div>
-          </div>
-        </section>
+            ) : (
+              <div className="mt-8 divide-y divide-slate-200 border-y border-slate-200">
+                {assessment.specializedVoteSubmissions.map((submission) => (
+                  <article
+                    key={submission.submissionId}
+                    className="py-6 transition duration-200 hover:bg-slate-50/70 active:bg-slate-50"
+                  >
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)] lg:items-start">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                          Specialized submission
+                        </p>
 
-        <section className="border-t border-slate-200 pt-10">
-          <div className="mb-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Specialized vote inspection
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-              Stored weighted-question answers
-            </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              These records show how weighted-question answers adjusted final
-              specialized vote weights for this pseudonymous participant.
-            </p>
-          </div>
+                        <h3 className="mt-3 max-w-4xl break-words text-2xl font-black tracking-[-0.045em] text-slate-950 md:text-3xl">
+                          <Link
+                            href={`/admin/consultations/${submission.vote.slug}`}
+                            className="transition hover:text-green-700"
+                          >
+                            {submission.vote.title}
+                          </Link>
+                        </h3>
 
-          {assessment.specializedVoteSubmissions.length === 0 ? (
-            <div className="rounded-2xl bg-white px-4 py-4 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-              No specialized vote submissions with weighted questions were found
-              for this secret user ID.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {assessment.specializedVoteSubmissions.map((submission) => (
-                <div
-                  key={submission.submissionId}
-                  className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                        Specialized submission
-                      </p>
-                      <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">
-                        <Link
-                          href={`/admin/consultations/${submission.vote.slug}`}
-                          className="hover:text-slate-700"
-                        >
-                          {submission.vote.title}
-                        </Link>
-                      </h3>
-                      <p className="mt-2 text-sm text-slate-600">
-                        Submitted {formatDateTime(submission.submittedAt)}
-                      </p>
-                    </div>
+                        <p className="mt-3 text-sm font-medium text-slate-600">
+                          Submitted {formatDateTime(submission.submittedAt)}
+                        </p>
 
-                    <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200">
-                      <p>
-                        <span className="font-medium text-slate-900">
-                          Final weight:
-                        </span>{" "}
-                        {formatWeight(submission.weightUsed)}
-                      </p>
-                      {submission.specializedBaseWeightUsed !== null ? (
-                        <p className="mt-1">
-                          <span className="font-medium text-slate-900">
-                            Base weight:
-                          </span>{" "}
-                          {formatWeight(submission.specializedBaseWeightUsed)}
-                        </p>
-                      ) : null}
-                      {submission.specializedQuestionModifierTotal !== null ? (
-                        <p className="mt-1">
-                          <span className="font-medium text-slate-900">
-                            Modifier total:
-                          </span>{" "}
-                          {formatSignedWeight(
-                            submission.specializedQuestionModifierTotal,
-                          )}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
-                    <p className="text-sm text-slate-700">
-                      <span className="font-medium text-slate-900">
-                        Selected consultation option:
-                      </span>{" "}
-                      {submission.selectedOptionText}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {submission.weightedQuestionAnswers.map((answer) => (
-                      <div
-                        key={`${submission.submissionId}-${answer.questionId}`}
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
-                      >
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                          Question {answer.questionDisplayOrder}
-                        </p>
-                        <p className="mt-2 text-sm font-medium leading-7 text-slate-900">
-                          {answer.questionPrompt}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-700">
-                          <span className="font-medium text-slate-900">
-                            Selected answer:
-                          </span>{" "}
-                          {answer.selectedOptionText}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-700">
-                          <span className="font-medium text-slate-900">
-                            Modifier:
-                          </span>{" "}
-                          {formatSignedWeight(answer.modifierUsed)}
-                        </p>
+                        <div className="mt-5 border-y border-slate-200 py-4">
+                          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                            Selected consultation option
+                          </p>
+                          <p className="mt-2 break-words text-sm font-bold leading-6 text-slate-900">
+                            {submission.selectedOptionText}
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+
+                      <div className="border-y border-slate-200 py-5">
+                        <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                          Weight summary
+                        </p>
+
+                        <div className="mt-4 grid gap-4">
+                          <InfoLine
+                            label="Final weight"
+                            value={formatWeight(submission.weightUsed)}
+                          />
+
+                          {submission.specializedBaseWeightUsed !== null ? (
+                            <InfoLine
+                              label="Base weight"
+                              value={formatWeight(
+                                submission.specializedBaseWeightUsed,
+                              )}
+                            />
+                          ) : null}
+
+                          {submission.specializedQuestionModifierTotal !== null ? (
+                            <InfoLine
+                              label="Modifier total"
+                              value={formatSignedWeight(
+                                submission.specializedQuestionModifierTotal,
+                              )}
+                            />
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 divide-y divide-slate-200 border-y border-slate-200">
+                      {submission.weightedQuestionAnswers.map((answer) => (
+                        <div
+                          key={`${submission.submissionId}-${answer.questionId}`}
+                          className="py-5"
+                        >
+                          <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                            Question {answer.questionDisplayOrder}
+                          </p>
+
+                          <p className="mt-2 max-w-4xl break-words text-sm font-bold leading-7 text-slate-900">
+                            {answer.questionPrompt}
+                          </p>
+
+                          <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <InfoLine
+                              label="Selected answer"
+                              value={answer.selectedOptionText}
+                            />
+                            <InfoLine
+                              label="Modifier"
+                              value={formatSignedWeight(answer.modifierUsed)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </section>
     </main>
   );
 }
@@ -461,33 +489,60 @@ function formatSignedWeight(value: string | number) {
   return `${numeric >= 0 ? "+" : ""}${numeric.toFixed(4)}`;
 }
 
-function StatCard({
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="max-w-3xl">
+      <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function InfoLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 min-w-0 break-words text-sm font-bold leading-6 text-slate-900">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function StatLine({
   label,
   value,
-  highlight,
-  muted,
+  positive,
 }: {
   label: string;
   value: string;
-  highlight?: boolean;
-  muted?: boolean;
+  positive?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-2xl px-4 py-5 shadow-sm ring-1 ${
-        highlight
-          ? "bg-green-50 ring-green-200"
-          : muted
-            ? "bg-slate-100 ring-slate-200"
-            : "bg-white ring-slate-200"
-      }`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="border-y border-slate-200 py-4">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
       <p
-        className={`mt-2 text-base font-semibold ${
-          highlight ? "text-green-700" : "text-slate-900"
+        className={`mt-2 break-words text-2xl font-black tracking-[-0.045em] ${
+          positive ? "text-green-700" : "text-slate-950"
         }`}
       >
         {value}
@@ -496,7 +551,7 @@ function StatCard({
   );
 }
 
-function InfoCard({
+function InfoGroup({
   title,
   rows,
 }: {
@@ -504,24 +559,76 @@ function InfoCard({
   rows: Array<[string, string]>;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+    <div className="min-w-0 border-y border-slate-200 py-6">
+      <h3 className="text-xl font-black tracking-[-0.04em] text-slate-950">
         {title}
-      </h2>
+      </h3>
 
-      <div className="mt-4 space-y-3 text-sm text-slate-700">
+      <div className="mt-5 grid gap-4">
         {rows.map(([label, value]) => (
-          <div
-            key={label}
-            className="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {label}
-            </p>
-            <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
-          </div>
+          <InfoLine key={label} label={label} value={value} />
         ))}
       </div>
     </div>
+  );
+}
+
+function PlainPanel({
+  eyebrow,
+  title,
+  tone,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  tone: "default" | "warning";
+  children: ReactNode;
+}) {
+  const toneClass =
+    tone === "warning"
+      ? "border-amber-200 text-amber-900"
+      : "border-slate-200 text-slate-900";
+
+  return (
+    <div className={`border-y py-6 ${toneClass}`}>
+      <p className="text-xs font-black uppercase tracking-[0.22em] opacity-70">
+        {eyebrow}
+      </p>
+
+      <h3 className="mt-3 text-2xl font-black tracking-[-0.045em]">
+        {title}
+      </h3>
+
+      <div className="mt-5 grid gap-4 text-sm leading-7 text-slate-600">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "success" | "warning" | "danger" | "muted" | "default";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "border-green-200 text-green-700"
+      : tone === "warning"
+        ? "border-amber-200 text-amber-700"
+        : tone === "danger"
+          ? "border-red-200 text-red-700"
+          : tone === "muted"
+            ? "border-slate-200 text-slate-500"
+            : "border-slate-200 text-slate-700";
+
+  return (
+    <span
+      className={`border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${toneClass}`}
+    >
+      {label}
+    </span>
   );
 }
