@@ -6,12 +6,12 @@ import { usePathname } from "next/navigation";
 const platformMotionStyles = `
   .platform-motion-ready .platform-reveal {
     opacity: 0;
-    transform: translate3d(0, 34px, 0) scale(0.985);
+    transform: translate3d(0, 32px, 0) scale(0.985);
     filter: blur(8px);
     transition:
-      opacity 760ms cubic-bezier(0.2, 0.72, 0.18, 1),
-      transform 760ms cubic-bezier(0.2, 0.72, 0.18, 1),
-      filter 760ms cubic-bezier(0.2, 0.72, 0.18, 1);
+      opacity 720ms cubic-bezier(0.2, 0.72, 0.18, 1),
+      transform 720ms cubic-bezier(0.2, 0.72, 0.18, 1),
+      filter 720ms cubic-bezier(0.2, 0.72, 0.18, 1);
     will-change: opacity, transform, filter;
   }
 
@@ -23,12 +23,19 @@ const platformMotionStyles = `
 
   @media (max-width: 760px) {
     .platform-motion-ready .platform-reveal {
-      transform: translate3d(0, 24px, 0) scale(0.99);
-      filter: blur(6px);
+      opacity: 0;
+      transform: translate3d(0, 42px, 0) scale(0.975);
+      filter: blur(7px);
       transition:
-        opacity 620ms cubic-bezier(0.2, 0.72, 0.18, 1),
-        transform 620ms cubic-bezier(0.2, 0.72, 0.18, 1),
-        filter 620ms cubic-bezier(0.2, 0.72, 0.18, 1);
+        opacity 680ms cubic-bezier(0.2, 0.72, 0.18, 1),
+        transform 680ms cubic-bezier(0.2, 0.72, 0.18, 1),
+        filter 680ms cubic-bezier(0.2, 0.72, 0.18, 1);
+    }
+
+    .platform-motion-ready .platform-reveal.platform-reveal-visible {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: blur(0);
     }
   }
 
@@ -45,32 +52,40 @@ const platformMotionStyles = `
 `;
 
 const revealSelector = [
-  "main > section",
-  "main > article",
-  "main > div",
-  "main section",
+  "main h1",
+  "main h2",
+  "main h3",
+  "main p",
   "main article",
   "main aside",
-  "main header",
   "main form",
+  "main img",
   "main .grid > *",
   "main [data-platform-reveal]",
-  "footer > section",
-  "footer section > div",
+  "footer section > *",
+  "footer img",
 ].join(", ");
 
 function isUsableElement(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
 
-  return rect.width > 0 && rect.height > 0;
+  if (rect.width <= 0 || rect.height <= 0) {
+    return false;
+  }
+
+  if (element.closest('[data-no-platform-motion="true"]')) {
+    return false;
+  }
+
+  return true;
 }
 
-function isInsideViewport(element: HTMLElement) {
+function isInMotionRange(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
   const viewportHeight =
     window.innerHeight || document.documentElement.clientHeight;
 
-  return rect.top < viewportHeight * 0.96 && rect.bottom > viewportHeight * 0.04;
+  return rect.top < viewportHeight * 0.94 && rect.bottom > viewportHeight * 0.06;
 }
 
 export default function PlatformMotion() {
@@ -84,10 +99,18 @@ export default function PlatformMotion() {
 
     let observer: IntersectionObserver | null = null;
     let scheduledFrame = 0;
-    const revealElements = new Set<HTMLElement>();
     const timers: number[] = [];
+    const revealElements = new Set<HTMLElement>();
 
     root.classList.add("platform-motion-ready");
+
+    function setVisibility(element: HTMLElement) {
+      if (isInMotionRange(element)) {
+        element.classList.add("platform-reveal-visible");
+      } else {
+        element.classList.remove("platform-reveal-visible");
+      }
+    }
 
     function prepareElement(element: HTMLElement) {
       if (revealElements.has(element)) {
@@ -98,25 +121,16 @@ export default function PlatformMotion() {
         return;
       }
 
-      if (element.closest('[data-no-platform-motion="true"]')) {
-        return;
-      }
-
       revealElements.add(element);
       element.classList.add("platform-reveal");
 
-      if (prefersReducedMotion.matches || !observer) {
+      if (prefersReducedMotion.matches) {
         element.classList.add("platform-reveal-visible");
         return;
       }
 
-      observer.observe(element);
-
-      if (isInsideViewport(element)) {
-        window.requestAnimationFrame(() => {
-          element.classList.add("platform-reveal-visible");
-        });
-      }
+      observer?.observe(element);
+      setVisibility(element);
     }
 
     function scanPage() {
@@ -129,6 +143,10 @@ export default function PlatformMotion() {
       elements.forEach((element) => {
         prepareElement(element);
       });
+
+      revealElements.forEach((element) => {
+        setVisibility(element);
+      });
     }
 
     function scheduleScan() {
@@ -139,15 +157,13 @@ export default function PlatformMotion() {
       scheduledFrame = window.requestAnimationFrame(scanPage);
     }
 
-    if (prefersReducedMotion.matches || !("IntersectionObserver" in window)) {
-      observer = null;
-    } else {
+    if (!prefersReducedMotion.matches && "IntersectionObserver" in window) {
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             const target = entry.target as HTMLElement;
 
-            if (entry.isIntersecting || entry.intersectionRatio > 0) {
+            if (entry.isIntersecting) {
               target.classList.add("platform-reveal-visible");
             } else {
               target.classList.remove("platform-reveal-visible");
@@ -156,7 +172,7 @@ export default function PlatformMotion() {
         },
         {
           root: null,
-          rootMargin: "0px 0px -4% 0px",
+          rootMargin: "0px 0px -2% 0px",
           threshold: 0.01,
         },
       );
@@ -167,6 +183,8 @@ export default function PlatformMotion() {
       timers.push(timer);
     });
 
+    window.addEventListener("scroll", scheduleScan, { passive: true });
+    window.addEventListener("touchmove", scheduleScan, { passive: true });
     window.addEventListener("resize", scheduleScan);
     window.addEventListener("orientationchange", scheduleScan);
     window.addEventListener("pageshow", scheduleScan);
@@ -182,6 +200,8 @@ export default function PlatformMotion() {
         window.clearTimeout(timer);
       });
 
+      window.removeEventListener("scroll", scheduleScan);
+      window.removeEventListener("touchmove", scheduleScan);
       window.removeEventListener("resize", scheduleScan);
       window.removeEventListener("orientationchange", scheduleScan);
       window.removeEventListener("pageshow", scheduleScan);
