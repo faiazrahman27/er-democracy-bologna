@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { fetchMyAssessment, saveMyAssessment } from "@/lib/assessments";
@@ -174,9 +174,13 @@ export default function AssessmentPage() {
 
   if (isLoading || isPageLoading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-        <div className="mx-auto max-w-5xl">
-          <p className="text-sm text-slate-600">Loading assessment...</p>
+      <main className="min-h-screen bg-white px-5 py-12 text-slate-900 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="border-y border-slate-200 py-6">
+            <p className="text-sm font-medium text-slate-500">
+              Loading assessment...
+            </p>
+          </div>
         </div>
       </main>
     );
@@ -186,306 +190,333 @@ export default function AssessmentPage() {
     return null;
   }
 
+  const completedFieldCount = [
+    form.ageRange,
+    form.gender,
+    form.city,
+    form.stakeholderRole,
+    form.backgroundCategory,
+    form.experienceLevel,
+    form.yearsOfExperience,
+    form.studyLevel,
+    form.relationshipToArea,
+  ].filter((value) => value !== "").length;
+
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-900">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-8">
-          <Link
-            href={isAdminRole(user.role) ? "/admin" : "/dashboard"}
-            className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-          >
-            ← Back
-          </Link>
-        </div>
+    <main className="min-h-screen overflow-x-hidden bg-white text-slate-900">
+      <section className="px-5 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
 
-        <section className="pb-10">
-          <div className="mb-8 h-[2px] w-full bg-gradient-to-r from-green-600 via-white to-red-600" />
+          <header className="mt-10">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:items-start">
+              <div className="min-w-0">
+                <Link
+                  href={isAdminRole(user.role) ? "/admin" : "/dashboard"}
+                  className="inline-flex min-h-11 items-center justify-center border border-slate-300 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98]"
+                >
+                  ← Back
+                </Link>
 
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Assessment Profile
-              </p>
+                <div className="mt-6 flex flex-wrap items-center gap-2">
+                  <StatusBadge
+                    label={form.assessmentCompleted ? "Completed" : "Draft"}
+                    tone={form.assessmentCompleted ? "success" : "warning"}
+                  />
+                  <StatusBadge
+                    label={user.emailVerified ? "Email verified" : "Email not verified"}
+                    tone={user.emailVerified ? "success" : "muted"}
+                  />
+                </div>
 
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
-                Build your participation profile
-              </h1>
+                <p className="mt-7 text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Assessment profile
+                </p>
 
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-                Complete your assessment profile for specialized consultations,
-                analytics grouping, and pseudonymous governance review.
-              </p>
-            </div>
+                <h1 className="mt-4 max-w-4xl break-words text-4xl font-black tracking-[-0.06em] text-slate-950 sm:text-5xl md:text-6xl">
+                  Build your participation profile
+                </h1>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <StatCard
-                label="Profile status"
-                value={form.assessmentCompleted ? "Completed" : "Draft"}
-                highlight={form.assessmentCompleted}
-              />
-              <StatCard
-                label="Account type"
-                value={isAdminRole(user.role) ? "Admin" : "User"}
-              />
-              <StatCard
-                label="Email status"
-                value={user.emailVerified ? "Verified" : "Not verified"}
-                muted={!user.emailVerified}
-              />
-              <StatCard label="Assessment access" value="Available" muted />
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Profile form
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-              Assessment details
-            </h2>
-
-            {secretUserId ? (
-              <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                <span className="font-medium text-slate-900">
-                  Secret user ID:
-                </span>{" "}
-                {secretUserId}
+                <p className="mt-6 max-w-3xl break-words text-base leading-8 text-slate-600">
+                  Complete this profile so specialized consultations can use the
+                  right participation context for your account.
+                </p>
               </div>
-            ) : null}
 
-            <div className="mt-8 grid gap-5 md:grid-cols-2">
-              <SelectField
-                label="Age range"
-                value={form.ageRange}
-                options={AGE_RANGE_OPTIONS}
-                onChange={(value) =>
-                  updateField(
-                    "ageRange",
-                    value as AssessmentFormState["ageRange"],
-                  )
-                }
-              />
-              <SelectField
-                label="Gender"
-                value={form.gender}
-                options={GENDER_OPTIONS}
-                onChange={(value) =>
-                  updateField("gender", value as AssessmentFormState["gender"])
-                }
-              />
-              <SelectField
-                label="City"
-                value={form.city}
-                options={CITY_OPTIONS}
-                onChange={(value) =>
-                  updateField("city", value as AssessmentFormState["city"])
-                }
-              />
-              <ReadOnlyField label="Region" value={ASSESSMENT_REGION_LABEL} />
-              <ReadOnlyField label="Country" value={ASSESSMENT_COUNTRY_LABEL} />
-              <SelectField
-                label="Stakeholder role"
-                value={form.stakeholderRole}
-                options={STAKEHOLDER_ROLE_OPTIONS}
-                onChange={(value) =>
-                  updateField(
-                    "stakeholderRole",
-                    value as AssessmentFormState["stakeholderRole"],
-                  )
-                }
-              />
-              <SelectField
-                label="Background category"
-                value={form.backgroundCategory}
-                options={BACKGROUND_CATEGORY_OPTIONS}
-                onChange={(value) =>
-                  updateField(
-                    "backgroundCategory",
-                    value as AssessmentFormState["backgroundCategory"],
-                  )
-                }
-              />
-              <SelectField
-                label="Experience level"
-                value={form.experienceLevel}
-                options={EXPERIENCE_LEVEL_OPTIONS}
-                onChange={(value) =>
-                  updateField(
-                    "experienceLevel",
-                    value as AssessmentFormState["experienceLevel"],
-                  )
-                }
-              />
-              <NumberField
-                label="Years of experience"
-                value={form.yearsOfExperience}
-                min={0}
-                max={MAX_YEARS_OF_EXPERIENCE}
-                onChange={(value) => updateField("yearsOfExperience", value)}
-              />
-              <SelectField
-                label="Study level"
-                value={form.studyLevel}
-                options={STUDY_LEVEL_OPTIONS}
-                onChange={(value) =>
-                  updateField(
-                    "studyLevel",
-                    value as AssessmentFormState["studyLevel"],
-                  )
-                }
-              />
-              <div className="md:col-span-2">
+              <aside className="border-y border-slate-200 py-5 lg:mt-11">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+                  Profile status
+                </p>
+
+                <div className="mt-4 grid gap-4">
+                  <StatLine
+                    label="Fields completed"
+                    value={`${completedFieldCount}/9`}
+                    tone={completedFieldCount === 9 ? "success" : "warning"}
+                  />
+                  <StatLine
+                    label="Account type"
+                    value={isAdminRole(user.role) ? "Admin" : "User"}
+                  />
+                  <StatLine
+                    label="Assessment"
+                    value={form.assessmentCompleted ? "Completed" : "Draft"}
+                    tone={form.assessmentCompleted ? "success" : "muted"}
+                  />
+                </div>
+              </aside>
+            </div>
+          </header>
+
+          <section className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start">
+            <div className="min-w-0 border-y border-slate-200 py-8">
+              <div className="max-w-3xl">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
+                  Profile form
+                </p>
+                <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-slate-950 md:text-4xl">
+                  Assessment details
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Fill in the fields that best describe your current
+                  participation context.
+                </p>
+              </div>
+
+              {secretUserId ? (
+                <div className="mt-6 border-y border-slate-200 py-4 text-sm text-slate-700">
+                  <span className="font-black text-slate-900">
+                    Profile reference:
+                  </span>{" "}
+                  <span className="break-all">{secretUserId}</span>
+                </div>
+              ) : null}
+
+              <div className="mt-8 grid gap-5 md:grid-cols-2">
                 <SelectField
-                  label="Relationship to area"
-                  value={form.relationshipToArea}
-                  options={RELATIONSHIP_TO_AREA_OPTIONS}
+                  label="Age range"
+                  value={form.ageRange}
+                  options={AGE_RANGE_OPTIONS}
                   onChange={(value) =>
                     updateField(
-                      "relationshipToArea",
-                      value as AssessmentFormState["relationshipToArea"],
+                      "ageRange",
+                      value as AssessmentFormState["ageRange"],
                     )
                   }
                 />
-              </div>
-            </div>
 
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <label className="flex items-start gap-3 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={form.assessmentCompleted}
-                  onChange={(event) =>
-                    updateField("assessmentCompleted", event.target.checked)
+                <SelectField
+                  label="Gender"
+                  value={form.gender}
+                  options={GENDER_OPTIONS}
+                  onChange={(value) =>
+                    updateField("gender", value as AssessmentFormState["gender"])
                   }
-                  className="mt-0.5"
                 />
-                <span>
-                  Mark this assessment as completed. Specialized consultations
-                  will require this to be enabled.
-                </span>
-              </label>
+
+                <SelectField
+                  label="City"
+                  value={form.city}
+                  options={CITY_OPTIONS}
+                  onChange={(value) =>
+                    updateField("city", value as AssessmentFormState["city"])
+                  }
+                />
+
+                <ReadOnlyField label="Region" value={ASSESSMENT_REGION_LABEL} />
+
+                <ReadOnlyField label="Country" value={ASSESSMENT_COUNTRY_LABEL} />
+
+                <SelectField
+                  label="Stakeholder role"
+                  value={form.stakeholderRole}
+                  options={STAKEHOLDER_ROLE_OPTIONS}
+                  onChange={(value) =>
+                    updateField(
+                      "stakeholderRole",
+                      value as AssessmentFormState["stakeholderRole"],
+                    )
+                  }
+                />
+
+                <SelectField
+                  label="Background category"
+                  value={form.backgroundCategory}
+                  options={BACKGROUND_CATEGORY_OPTIONS}
+                  onChange={(value) =>
+                    updateField(
+                      "backgroundCategory",
+                      value as AssessmentFormState["backgroundCategory"],
+                    )
+                  }
+                />
+
+                <SelectField
+                  label="Experience level"
+                  value={form.experienceLevel}
+                  options={EXPERIENCE_LEVEL_OPTIONS}
+                  onChange={(value) =>
+                    updateField(
+                      "experienceLevel",
+                      value as AssessmentFormState["experienceLevel"],
+                    )
+                  }
+                />
+
+                <NumberField
+                  label="Years of experience"
+                  value={form.yearsOfExperience}
+                  min={0}
+                  max={MAX_YEARS_OF_EXPERIENCE}
+                  onChange={(value) => updateField("yearsOfExperience", value)}
+                />
+
+                <SelectField
+                  label="Study level"
+                  value={form.studyLevel}
+                  options={STUDY_LEVEL_OPTIONS}
+                  onChange={(value) =>
+                    updateField(
+                      "studyLevel",
+                      value as AssessmentFormState["studyLevel"],
+                    )
+                  }
+                />
+
+                <div className="md:col-span-2">
+                  <SelectField
+                    label="Relationship to area"
+                    value={form.relationshipToArea}
+                    options={RELATIONSHIP_TO_AREA_OPTIONS}
+                    onChange={(value) =>
+                      updateField(
+                        "relationshipToArea",
+                        value as AssessmentFormState["relationshipToArea"],
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="mt-7 border-y border-slate-200 py-5">
+                <label className="flex min-w-0 items-start gap-3 text-sm leading-7 text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.assessmentCompleted}
+                    onChange={(event) =>
+                      updateField("assessmentCompleted", event.target.checked)
+                    }
+                    className="mt-1 shrink-0"
+                  />
+                  <span className="min-w-0 break-words">
+                    Mark this profile as completed. Some specialized
+                    consultations may require a completed profile before
+                    participation.
+                  </span>
+                </label>
+              </div>
+
+              {error ? <MessageBlock tone="danger">{error}</MessageBlock> : null}
+
+              {successMessage ? (
+                <MessageBlock tone="success">{successMessage}</MessageBlock>
+              ) : null}
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="inline-flex min-h-12 w-full items-center justify-center border border-green-500 bg-white px-5 text-sm font-black text-green-700 shadow-sm transition duration-200 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md active:-translate-y-1 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {isSaving ? "Saving..." : "Save assessment"}
+                </button>
+
+                <Link
+                  href="/consultations"
+                  className="inline-flex min-h-12 w-full items-center justify-center border border-slate-300 bg-white px-5 text-sm font-black text-slate-800 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-400 hover:shadow-md active:-translate-y-1 active:scale-[0.98] sm:w-auto"
+                >
+                  Browse consultations
+                </Link>
+              </div>
             </div>
 
-            {error ? (
-              <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            ) : null}
-
-            {successMessage ? (
-              <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                {successMessage}
-              </div>
-            ) : null}
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md disabled:opacity-60"
+            <aside className="grid min-w-0 gap-8">
+              <SidePanel
+                eyebrow="Why it matters"
+                title="Specialized participation"
               >
-                {isSaving ? "Saving..." : "Save assessment"}
-              </button>
+                <p>
+                  Your profile helps match your participation context to
+                  consultations that use specialized questions.
+                </p>
+                <p>
+                  You can save now and update the profile later when your
+                  situation changes.
+                </p>
+              </SidePanel>
 
-              <Link
-                href="/consultations"
-                className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md"
-              >
-                Browse consultations
-              </Link>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Why this matters
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Specialized participation
-              </h2>
-
-              <div className="mt-5 space-y-4 text-sm leading-7 text-slate-600">
-                <p>
-                  Your assessment profile supports specialized consultations and
-                  helps structure participation in a more relevant way.
-                </p>
-                <p>
-                  Information from this form may also be used for grouped
-                  analytics and pseudonymous governance review, depending on the
-                  consultation rules.
-                </p>
-                <p>
-                  You can save your profile and update it later whenever your
-                  participation context changes.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Guidance
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-                Before you complete it
-              </h2>
-
-              <div className="mt-5 space-y-4 text-sm leading-7 text-slate-600">
-                <p>
-                  Fill in the fields that best describe your current context.
-                </p>
-                <p>
-                  Keep your answers consistent so consultation weighting and
-                  analytics grouping remain meaningful.
-                </p>
-                <p>
-                  Years of experience and study level also influence
-                  specialized-weight calculations when the consultation context
-                  is closely aligned with your profile.
-                </p>
-                <p>
-                  Only mark the assessment as completed when you are satisfied
-                  that the information is ready to use.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
+              <SidePanel eyebrow="Before saving" title="Quick check">
+                <div className="grid gap-3">
+                  <CheckLine label="Age range" complete={form.ageRange !== ""} />
+                  <CheckLine label="Gender" complete={form.gender !== ""} />
+                  <CheckLine label="City" complete={form.city !== ""} />
+                  <CheckLine
+                    label="Stakeholder role"
+                    complete={form.stakeholderRole !== ""}
+                  />
+                  <CheckLine
+                    label="Background"
+                    complete={form.backgroundCategory !== ""}
+                  />
+                  <CheckLine
+                    label="Experience"
+                    complete={form.experienceLevel !== ""}
+                  />
+                  <CheckLine
+                    label="Years"
+                    complete={form.yearsOfExperience !== ""}
+                  />
+                  <CheckLine label="Study level" complete={form.studyLevel !== ""} />
+                  <CheckLine
+                    label="Relationship"
+                    complete={form.relationshipToArea !== ""}
+                  />
+                </div>
+              </SidePanel>
+            </aside>
+          </section>
+        </div>
+      </section>
     </main>
   );
 }
 
-function StatCard({
+function StatLine({
   label,
   value,
-  highlight,
-  muted,
+  tone = "default",
 }: {
   label: string;
   value: string;
-  highlight?: boolean;
-  muted?: boolean;
+  tone?: "success" | "warning" | "muted" | "default";
 }) {
+  const valueClass =
+    tone === "success"
+      ? "text-green-700"
+      : tone === "warning"
+        ? "text-amber-700"
+        : tone === "muted"
+          ? "text-slate-500"
+          : "text-slate-950";
+
   return (
-    <div
-      className={`rounded-2xl px-4 py-5 shadow-sm ring-1 ${
-        highlight
-          ? "bg-green-50 ring-green-200"
-          : muted
-            ? "bg-slate-100 ring-slate-200"
-            : "bg-white ring-slate-200"
-      }`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="min-w-0 border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-slate-500">
         {label}
       </p>
       <p
-        className={`mt-2 text-xl font-semibold ${
-          highlight ? "text-green-700" : "text-slate-900"
-        }`}
+        className={`mt-2 break-words text-2xl font-black tracking-[-0.045em] ${valueClass}`}
       >
         {value}
       </p>
@@ -507,10 +538,10 @@ function SelectField({
   const inputId = label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div>
+    <div className="min-w-0">
       <label
         htmlFor={inputId}
-        className="mb-2 block text-sm font-medium text-slate-700"
+        className="mb-2 block text-sm font-bold text-slate-800"
       >
         {label}
       </label>
@@ -518,7 +549,7 @@ function SelectField({
         id={inputId}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-green-600"
+        className="w-full border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition hover:border-slate-400 focus:border-slate-900"
       >
         <option value="">Select an option</option>
         {options.map((option) => (
@@ -547,10 +578,10 @@ function NumberField({
   const inputId = label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div>
+    <div className="min-w-0">
       <label
         htmlFor={inputId}
-        className="mb-2 block text-sm font-medium text-slate-700"
+        className="mb-2 block text-sm font-bold text-slate-800"
       >
         {label}
       </label>
@@ -564,9 +595,9 @@ function NumberField({
         onChange={(event) =>
           onChange(event.target.value === "" ? "" : Number(event.target.value))
         }
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-green-600"
+        className="w-full border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition hover:border-slate-400 focus:border-slate-900"
       />
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs leading-5 text-slate-500">
         Enter a whole number between {min} and {max}.
       </p>
     </div>
@@ -577,10 +608,10 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
   const inputId = label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div>
+    <div className="min-w-0">
       <label
         htmlFor={inputId}
-        className="mb-2 block text-sm font-medium text-slate-700"
+        className="mb-2 block text-sm font-bold text-slate-800"
       >
         {label}
       </label>
@@ -589,8 +620,93 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
         type="text"
         value={value}
         readOnly
-        className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-700 outline-none"
+        className="w-full border border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-700 outline-none"
       />
     </div>
+  );
+}
+
+function MessageBlock({
+  tone,
+  children,
+}: {
+  tone: "success" | "danger";
+  children: ReactNode;
+}) {
+  const toneClass =
+    tone === "success" ? "border-green-200 text-green-700" : "border-red-200 text-red-700";
+
+  return (
+    <div className={`mt-6 border-y py-4 text-sm font-bold ${toneClass}`}>
+      {children}
+    </div>
+  );
+}
+
+function SidePanel({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-y border-slate-200 py-6">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-2xl font-black tracking-[-0.045em] text-slate-950">
+        {title}
+      </h2>
+      <div className="mt-5 grid gap-4 text-sm leading-7 text-slate-600">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function CheckLine({ label, complete }: { label: string; complete: boolean }) {
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-4 border border-slate-200 bg-white px-4 py-3">
+      <span className="min-w-0 break-words text-sm text-slate-700">
+        {label}
+      </span>
+      <span
+        className={`shrink-0 border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${
+          complete
+            ? "border-green-200 text-green-700"
+            : "border-amber-200 text-amber-700"
+        }`}
+      >
+        {complete ? "Ready" : "Needed"}
+      </span>
+    </div>
+  );
+}
+
+function StatusBadge({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "success" | "warning" | "muted" | "default";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "border-green-200 text-green-700"
+      : tone === "warning"
+        ? "border-amber-200 text-amber-700"
+        : tone === "muted"
+          ? "border-slate-200 text-slate-500"
+          : "border-slate-200 text-slate-700";
+
+  return (
+    <span
+      className={`border bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.12em] ${toneClass}`}
+    >
+      {label}
+    </span>
   );
 }
