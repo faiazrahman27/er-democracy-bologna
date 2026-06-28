@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fetchPublicArticles } from "@/lib/articles";
+import { fetchPublicArticles, type ArticleItem } from "@/lib/articles";
 
 function formatArticleDate(value: string | null) {
   if (!value) {
@@ -11,6 +11,35 @@ function formatArticleDate(value: string | null) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function cleanArticleText(value: string) {
+  return value
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[#>*_`~[\]-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getArticlePreview(article: ArticleItem) {
+  const bodyText = cleanArticleText(article.content || "");
+  const fallbackText = cleanArticleText(article.summary || "");
+  const source = bodyText || fallbackText;
+
+  if (!source) {
+    return "Open the article to read the full public update.";
+  }
+
+  if (source.length <= 150) {
+    return source;
+  }
+
+  return `${source.slice(0, 150).trimEnd()}...`;
+}
+
+function formatSlugTag(slug: string) {
+  return `#${slug}`;
 }
 
 export default async function ArticlesPage() {
@@ -39,7 +68,7 @@ export default async function ArticlesPage() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-600 md:text-lg md:leading-9">
-              Read announcements, explainers, guides, and public updates from ER
+              Read announcements, explainers, guides, and updates from ER
               Democracy Bologna.
             </p>
           </header>
@@ -83,8 +112,10 @@ export default async function ArticlesPage() {
                           </div>
                         )}
 
-                        <p className="absolute left-0 top-0 border-b border-r border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950 sm:text-xs">
-                          #Article
+                        <p className="absolute left-0 top-0 max-w-[85%] border-b border-r border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-950 sm:text-xs">
+                          <span className="block truncate">
+                            {formatSlugTag(article.slug)}
+                          </span>
                         </p>
                       </div>
 
@@ -94,7 +125,7 @@ export default async function ArticlesPage() {
                         </h2>
 
                         <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
-                          {article.summary}
+                          {getArticlePreview(article)}
                         </p>
 
                         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
