@@ -44,30 +44,56 @@ main.overflow-x-hidden {
   border-radius: 0 !important;
 }
 
-/* Global image rule:
-   show the full image everywhere in page content.
-   This overrides object-cover crops from Tailwind without breaking Next/Image fill sizing. */
-main img {
+/* Keep the homepage hero image untouched.
+   The hero uses /images/hero.jpg and should stay object-cover. */
+main img[src*="hero"] {
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+/* All other page photos show the full image instead of being cropped.
+   This affects homepage section photos, articles, consultations, admin previews, etc.
+   Header/footer logos are outside main, so they are not affected. */
+main img:not([src*="hero"]) {
   object-fit: contain !important;
   object-position: center center !important;
 }
 
 /* Keep normal responsive behavior for non-fill images. */
-main img:not([data-nimg="fill"]) {
+main img:not([data-nimg="fill"]):not([src*="hero"]) {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-/* Remove separate photo-panel feeling around direct image wrappers. */
-main :where(div, figure):has(> img) {
-  background-color: transparent;
+/* Remove the separate photo-panel look around direct image wrappers.
+   This removes grey/white boxed backgrounds, borders, and photo-only shadows. */
+main :where(div, figure):has(> img:not([src*="hero"])) {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
-/* Cleaner contained image areas on mobile. */
+/* Remove side padding that can make contained images look like they sit inside a white box. */
+main :where(div, figure):has(> img:not([src*="hero"])) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Mobile: keep full images visible without tall boxed panels. */
 @media (max-width: 760px) {
-  main img {
+  main img:not([src*="hero"]) {
     object-fit: contain !important;
     object-position: center center !important;
+  }
+
+  main img.object-contain:not([src*="hero"]) {
+    max-height: 280px;
+  }
+
+  main :where(div, figure):has(> img:not([src*="hero"])) {
+    min-height: auto !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
   }
 }
