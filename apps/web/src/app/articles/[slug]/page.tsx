@@ -12,7 +12,7 @@ async function getPublicArticle(slug: string) {
 }
 
 function formatSlugTag(slug: string) {
-  return `#${slug}`;
+  return `#${slug.toUpperCase()}`;
 }
 
 function splitArticleContent(content: string) {
@@ -55,15 +55,15 @@ export default async function ArticleDetailPage({
             <section className="grid gap-10 border-y border-slate-200 py-8 md:grid-cols-[minmax(260px,0.82fr)_minmax(0,1.18fr)] md:items-center lg:py-12">
               <div className="min-w-0">
                 <div className="mx-auto w-full max-w-[28rem] border border-slate-200 bg-white transition duration-300 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:max-w-none">
-                  <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-transparent">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-slate-200 bg-slate-100">
                     {article.coverImageUrl ? (
                       <img
                         src={article.coverImageUrl}
                         alt={article.coverImageAlt ?? article.title}
-                        className="h-full w-full object-contain"
+                        className="article-fill-image"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-slate-50 px-6 text-center">
+                      <div className="flex h-full w-full items-center justify-center px-6 text-center">
                         <span className="text-sm font-bold text-slate-400">
                           Article image coming soon
                         </span>

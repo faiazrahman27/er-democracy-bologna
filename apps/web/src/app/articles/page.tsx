@@ -39,7 +39,7 @@ function getArticlePreview(article: ArticleItem) {
 }
 
 function formatSlugTag(slug: string) {
-  return `#${slug}`;
+  return `#${slug.toUpperCase()}`;
 }
 
 export default async function ArticlesPage() {
@@ -89,23 +89,23 @@ export default async function ArticlesPage() {
                 {articles.map((article) => (
                   <article
                     key={article.id}
-                    className="group flex h-full min-w-0 cursor-pointer flex-col border border-slate-200 bg-white shadow-none transition duration-300 hover:-translate-y-1 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.12)] active:-translate-y-1 active:scale-[0.99]"
+                    className="group flex h-full min-w-0 flex-col border border-slate-200 bg-white shadow-none transition duration-300 hover:-translate-y-1 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.12)] active:-translate-y-1 active:scale-[0.99]"
                   >
                     <Link
                       href={`/articles/${article.slug}`}
                       aria-label={`Read ${article.title}`}
                       className="flex h-full flex-col"
                     >
-                      <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-transparent">
+                      <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-slate-200 bg-slate-100">
                         {article.coverImageUrl ? (
                           <img
                             src={article.coverImageUrl}
                             alt={article.coverImageAlt || article.title}
-                            className="h-full w-full object-contain transition duration-700 group-hover:scale-[1.012]"
+                            className="article-fill-image transition duration-700 group-hover:scale-[1.03]"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-slate-50 px-6 text-center">
+                          <div className="flex h-full w-full items-center justify-center px-6 text-center">
                             <span className="text-sm font-bold text-slate-400">
                               Article image coming soon
                             </span>
@@ -124,7 +124,7 @@ export default async function ArticlesPage() {
                           {article.title}
                         </h2>
 
-                        <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-600">
+                        <p className="mt-3 line-clamp-4 text-sm leading-7 text-slate-600">
                           {getArticlePreview(article)}
                         </p>
 

@@ -44,50 +44,46 @@ main.overflow-x-hidden {
   border-radius: 0 !important;
 }
 
-/* Keep the homepage hero image untouched. */
+/* Keep the homepage hero image untouched */
 main img[src*="hero"] {
   object-fit: cover !important;
   object-position: center center !important;
 }
 
-/* All other page photos show the full image instead of being cropped. */
-main img:not([src*="hero"]) {
+/* Only contained preview-style images should stay full-visible without crop */
+main img.object-contain:not([src*="hero"]) {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
   object-fit: contain !important;
   object-position: center center !important;
 }
 
-/* Do not force height:auto globally.
-   Fixed image frames need their height to stay consistent across cards/screens. */
-main img:not([data-nimg="fill"]):not([src*="hero"]) {
-  display: block;
-  max-width: 100%;
-}
-
-/* Remove the separate photo-panel look around direct image wrappers. */
-main :where(div, figure):has(> img:not([src*="hero"])) {
+/* Remove the obvious grey/boxed photo panel only for contained preview images */
+main :where(div, figure):has(> img.object-contain:not([src*="hero"])) {
   background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
-}
-
-/* Remove side padding that can make contained images look boxed. */
-main :where(div, figure):has(> img:not([src*="hero"])) {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-/* Mobile: keep full images visible without tall boxed panels. */
-@media (max-width: 760px) {
-  main img:not([src*="hero"]) {
-    object-fit: contain !important;
-    object-position: center center !important;
-  }
+/* Utility for full-bleed article/media frames */
+main img.article-fill-image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  display: block;
+}
 
+@media (max-width: 760px) {
   main img.object-contain:not([src*="hero"]) {
     max-height: 280px;
   }
 
-  main :where(div, figure):has(> img:not([src*="hero"])) {
+  main :where(div, figure):has(> img.object-contain:not([src*="hero"])) {
     min-height: auto !important;
     padding-top: 0.75rem !important;
     padding-bottom: 0.75rem !important;
