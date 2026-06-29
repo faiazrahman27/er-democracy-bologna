@@ -166,25 +166,25 @@ export default function Header({ variant = "public" }: HeaderProps) {
   ].join(" ");
 
   const navLinkClass =
-    "inline-flex min-h-10 items-center whitespace-nowrap px-1 text-sm font-bold text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:text-green-700 active:text-green-700";
+    "inline-flex min-h-10 items-center whitespace-nowrap px-1 text-sm font-medium text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:text-green-700 active:text-green-700";
 
   const subtleActionClass =
-    "inline-flex min-h-11 items-center justify-center whitespace-nowrap border border-slate-300 bg-white px-5 text-sm font-black text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-0.5 hover:border-green-600 hover:bg-white hover:text-green-700 hover:shadow-[0_16px_38px_rgba(15,23,42,0.12)] active:-translate-y-0.5 active:scale-[0.98]";
+    "inline-flex min-h-11 items-center justify-center whitespace-nowrap border border-slate-300 bg-white px-5 text-sm font-medium text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-0.5 hover:border-green-600 hover:bg-white hover:text-green-700 hover:shadow-[0_16px_38px_rgba(15,23,42,0.12)] active:-translate-y-0.5 active:scale-[0.98]";
 
   const primaryActionClass =
-    "inline-flex min-h-11 items-center justify-center whitespace-nowrap border border-green-700 bg-green-700 px-5 text-sm font-black text-white shadow-[0_16px_34px_rgba(22,163,74,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-green-800 hover:shadow-[0_20px_46px_rgba(22,163,74,0.30)] active:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60";
+    "inline-flex min-h-11 items-center justify-center whitespace-nowrap border border-green-700 bg-green-700 px-5 text-sm font-medium text-white shadow-[0_16px_34px_rgba(22,163,74,0.22)] transition duration-300 hover:-translate-y-0.5 hover:bg-green-800 hover:shadow-[0_20px_46px_rgba(22,163,74,0.30)] active:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60";
 
   const darkActionClass =
-    "inline-flex min-h-11 items-center justify-center whitespace-nowrap border border-slate-900 bg-slate-900 px-5 text-sm font-black text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-slate-800 active:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60";
+    "inline-flex min-h-11 items-center justify-center whitespace-nowrap border border-slate-900 bg-slate-900 px-5 text-sm font-medium text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-slate-800 active:-translate-y-0.5 active:scale-[0.98] disabled:opacity-60";
 
   const mobileMenuButtonClass =
     "inline-flex h-12 w-12 shrink-0 list-none items-center justify-center border border-white/60 bg-white/62 text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_12px_30px_rgba(15,23,42,0.10)] backdrop-blur-2xl transition duration-300 hover:border-green-500/60 hover:bg-white hover:text-green-700 active:scale-[0.98] lg:hidden [&::-webkit-details-marker]:hidden";
 
   const mobileMenuLinkClass =
-    "group flex min-h-14 items-center justify-between border-b border-slate-200 bg-white px-6 text-sm font-black text-slate-800 transition duration-300 hover:bg-green-50 hover:text-green-700 active:bg-green-50 active:text-green-700";
+    "group flex min-h-14 items-center justify-between border-b border-slate-200 bg-white px-6 text-sm font-medium text-slate-800 transition duration-300 hover:bg-green-50 hover:text-green-700 active:bg-green-50 active:text-green-700";
 
   const mobileMenuArrowClass =
-    "text-lg font-black text-slate-300 transition duration-300 group-hover:translate-x-1 group-hover:text-green-700";
+    "text-lg font-medium text-slate-300 transition duration-300 group-hover:translate-x-1 group-hover:text-green-700";
 
   const mobileButtonWrapClass = "grid gap-3 bg-white p-4 sm:grid-cols-2";
 
@@ -201,7 +201,7 @@ export default function Header({ variant = "public" }: HeaderProps) {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
         <Link
           href={isAdminVariant ? adminHomeHref : ROUTES.public.home}
-          className="group flex min-w-0 shrink items-center gap-3 sm:gap-4"
+          className="group flex min-w-0 shrink items-center gap-3 overflow-visible sm:gap-4"
         >
           <Image
             src="/branding/ER-Democracy-Bologna-logo.png"
@@ -212,11 +212,9 @@ export default function Header({ variant = "public" }: HeaderProps) {
             priority
           />
 
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-base font-black text-slate-950 sm:text-lg">
-              ER Democracy Bologna
-            </p>
-            <p className="truncate text-sm font-medium text-slate-500">
+          <div className="min-w-0 overflow-visible py-1">
+            <p className="site-brand-title">ER Democracy Bologna</p>
+            <p className="site-brand-subtitle text-slate-500">
               {isAdminVariant ? "Administration" : "Digital voting platform"}
             </p>
           </div>

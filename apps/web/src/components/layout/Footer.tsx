@@ -128,7 +128,7 @@ export default function Footer() {
             <section className="min-w-0">
               <Link
                 href={isAdminUser ? ROUTES.admin.root : ROUTES.public.home}
-                className="group inline-flex max-w-full items-center gap-4"
+                className="group inline-flex max-w-full items-center gap-4 overflow-visible"
               >
                 <Image
                   src="/branding/ER-Democracy-Bologna-logo.png"
@@ -138,28 +138,24 @@ export default function Footer() {
                   className="h-16 w-16 shrink-0 object-contain transition duration-300 group-hover:scale-[1.03] sm:h-20 sm:w-20"
                 />
 
-                <div className="min-w-0">
-                  <p className="break-words text-xl font-black tracking-[-0.04em] text-slate-950 sm:text-2xl">
-                    ER Democracy Bologna
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-green-700">
+                <div className="min-w-0 overflow-visible py-1">
+                  <p className="footer-brand-title">ER Democracy Bologna</p>
+                  <p className="footer-brand-subtitle mt-1 text-green-700">
                     {footerProfile.label}
                   </p>
                 </div>
               </Link>
 
-              <p className="mt-7 max-w-xl text-base leading-8 text-slate-600">
+              <p className="body-copy mt-7 max-w-xl text-slate-600">
                 {footerProfile.description}
               </p>
 
               <div className="mt-8 border-t border-slate-200 pt-6">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">
-                  Contact
-                </p>
+                <p className="micro text-slate-500">Contact</p>
 
                 <a
                   href="mailto:admin@er-democracy-bologna.xyz"
-                  className="mt-3 inline-flex break-all text-sm font-bold text-slate-950 transition duration-300 hover:text-green-700 active:text-green-700"
+                  className="mt-3 inline-flex break-all text-sm font-medium text-slate-950 transition duration-300 hover:text-green-700 active:text-green-700"
                 >
                   admin@er-democracy-bologna.xyz
                 </a>
@@ -272,9 +268,7 @@ function FooterColumn({
 }) {
   return (
     <section className="min-w-0">
-      <h3 className="text-xs font-black uppercase tracking-[0.24em] text-green-700">
-        {title}
-      </h3>
+      <h3 className="micro text-green-700">{title}</h3>
 
       <div className="mt-5 grid gap-2">{children}</div>
     </section>
@@ -291,12 +285,12 @@ function FooterLink({
   return (
     <Link
       href={href}
-      className="group flex min-h-11 items-center justify-between border-b border-slate-200 text-sm font-bold text-slate-700 transition duration-300 hover:border-green-600 hover:text-green-700 active:border-green-600 active:text-green-700"
+      className="group flex min-h-11 items-center justify-between border-b border-slate-200 text-sm font-medium text-slate-700 transition duration-300 hover:border-green-600 hover:text-green-700 active:border-green-600 active:text-green-700"
     >
       <span>{children}</span>
       <span
         aria-hidden="true"
-        className="text-lg font-black text-slate-300 transition duration-300 group-hover:translate-x-1 group-hover:text-green-700"
+        className="text-lg font-medium text-slate-300 transition duration-300 group-hover:translate-x-1 group-hover:text-green-700"
       >
         →
       </span>

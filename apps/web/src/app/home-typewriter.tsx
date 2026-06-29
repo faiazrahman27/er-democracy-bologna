@@ -60,29 +60,11 @@ export function HomeTypewriter({ text }: HomeTypewriterProps) {
               opacity: 0;
             }
           }
-
-          .home-typewriter-line {
-            font-size: clamp(3.25rem, 8.4vw, 10.5rem) !important;
-            line-height: 0.82 !important;
-            letter-spacing: -0.055em !important;
-            white-space: nowrap !important;
-            word-break: keep-all !important;
-            overflow-wrap: normal !important;
-            hyphens: none !important;
-          }
-
-          @media (max-width: 760px) {
-            .home-typewriter-line {
-              font-size: clamp(2.35rem, 10.8vw, 4.9rem) !important;
-              line-height: 0.88 !important;
-              letter-spacing: -0.045em !important;
-            }
-          }
         `}
       </style>
 
       <div
-        className="hero-title home-typewriter-line inline-flex max-w-[calc(100vw-2.5rem)] items-baseline overflow-visible bg-transparent text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.62)] sm:max-w-[calc(100vw-3rem)] lg:max-w-[calc(100vw-5rem)]"
+        className="home-typewriter-line inline-flex max-w-[calc(100vw-2.5rem)] items-baseline overflow-visible bg-transparent text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.62)] sm:max-w-[calc(100vw-3rem)] lg:max-w-[calc(100vw-5rem)]"
         aria-label={text}
       >
         <span className="inline-block overflow-visible whitespace-nowrap bg-transparent">
@@ -95,7 +77,7 @@ export function HomeTypewriter({ text }: HomeTypewriterProps) {
             className="ml-[0.025em] inline-block shrink-0 bg-transparent text-white"
             style={{
               animation: "homeTypewriterCursorBlink 0.8s step-end infinite",
-              lineHeight: 0.82,
+              lineHeight: 1,
             }}
           >
             |
