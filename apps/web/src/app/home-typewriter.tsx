@@ -2,57 +2,106 @@
 
 import { useEffect, useState } from "react";
 
-export function HomeTypewriter({ text }: { text: string }) {
-  const [shownText, setShownText] = useState("");
-  const [showCursor, setShowCursor] = useState(true);
+type HomeTypewriterProps = {
+  text: string;
+};
+
+export function HomeTypewriter({ text }: HomeTypewriterProps) {
+  const [visibleText, setVisibleText] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
-    let index = 0;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    setShownText("");
-    setShowCursor(true);
+    setVisibleText("");
+    setIsComplete(false);
 
-    function typeNextLetter() {
-      index += 1;
-      setShownText(text.slice(0, index));
+    timeoutId = setTimeout(() => {
+      let index = 0;
 
-      if (index < text.length) {
-        timeoutId = setTimeout(typeNextLetter, 58);
-        return;
-      }
+      intervalId = setInterval(() => {
+        index += 1;
+        setVisibleText(text.slice(0, index));
 
-      timeoutId = setTimeout(() => {
-        setShowCursor(false);
-      }, 420);
-    }
+        if (index >= text.length) {
+          if (intervalId) {
+            clearInterval(intervalId);
+          }
 
-    timeoutId = setTimeout(typeNextLetter, 260);
+          timeoutId = setTimeout(() => {
+            setIsComplete(true);
+          }, 280);
+        }
+      }, 52);
+    }, 120);
 
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
   }, [text]);
 
   return (
-    <div
-      className="inline-flex max-w-full items-baseline bg-transparent text-left font-mono text-[clamp(1.35rem,5.4vw,4.35rem)] font-black uppercase leading-none tracking-[-0.065em] text-white drop-shadow-[0_12px_34px_rgba(0,0,0,0.58)]"
-      aria-label={text}
-    >
-      <span className="min-h-[1em] max-w-[calc(100vw-4rem)] overflow-visible whitespace-nowrap bg-transparent">
-        {shownText}
-      </span>
+    <div className="max-w-full overflow-visible bg-transparent text-left">
+      <style>
+        {`
+          @keyframes homeTypewriterCursorBlink {
+            0%, 49% {
+              opacity: 1;
+            }
 
-      {showCursor ? (
-        <span
-          aria-hidden="true"
-          className="ml-[0.06em] inline-block shrink-0 bg-transparent leading-none text-white"
-        >
-          |
+            50%, 100% {
+              opacity: 0;
+            }
+          }
+
+          .home-typewriter-line {
+            font-size: clamp(3.25rem, 8.4vw, 10.5rem) !important;
+            line-height: 0.82 !important;
+            letter-spacing: -0.055em !important;
+            white-space: nowrap !important;
+            word-break: keep-all !important;
+            overflow-wrap: normal !important;
+            hyphens: none !important;
+          }
+
+          @media (max-width: 760px) {
+            .home-typewriter-line {
+              font-size: clamp(2.35rem, 10.8vw, 4.9rem) !important;
+              line-height: 0.88 !important;
+              letter-spacing: -0.045em !important;
+            }
+          }
+        `}
+      </style>
+
+      <div
+        className="hero-title home-typewriter-line inline-flex max-w-[calc(100vw-2.5rem)] items-baseline overflow-visible bg-transparent text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.62)] sm:max-w-[calc(100vw-3rem)] lg:max-w-[calc(100vw-5rem)]"
+        aria-label={text}
+      >
+        <span className="inline-block overflow-visible whitespace-nowrap bg-transparent">
+          {visibleText}
         </span>
-      ) : null}
+
+        {!isComplete ? (
+          <span
+            aria-hidden="true"
+            className="ml-[0.025em] inline-block shrink-0 bg-transparent text-white"
+            style={{
+              animation: "homeTypewriterCursorBlink 0.8s step-end infinite",
+              lineHeight: 0.82,
+            }}
+          >
+            |
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
