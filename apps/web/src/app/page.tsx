@@ -1,51 +1,52 @@
 import Image from "next/image";
 import Link from "next/link";
 import { HomeHeroActions } from "./home-hero-actions";
+import { HomeTypewriter } from "./home-typewriter";
 
 const TYPEWRITER_TEXT = "ER Democracy Bologna";
 
 const QUICK_PATHS = [
   {
     title: "Open a consultation",
-    body: "Read the public question, the available choices, the deadline, and how voting works.",
+    body: "Read the question, the choices, the deadline, and who can take part.",
   },
   {
-    title: "Submit your vote",
-    body: "Follow the voting method shown on that consultation page and take part clearly.",
+    title: "Understand the vote",
+    body: "Each consultation explains the voting method before you submit your choice.",
   },
   {
-    title: "Check the results",
-    body: "Return after publication to see vote totals, weighted outcomes, or next steps.",
+    title: "Follow the result",
+    body: "After publication, see the outcome, vote totals, and next steps in one place.",
   },
 ];
 
 const PLATFORM_AREAS = [
   {
     title: "Consultations",
-    body: "The main participation area. Each consultation explains the question, choices, deadline, eligibility, and voting method.",
+    body: "Open public questions where you can read the context, compare the available choices, and participate when voting is available.",
   },
   {
     title: "Results",
-    body: "Published outcomes help people understand what was submitted, how votes were counted, and what happens next.",
+    body: "Published outcomes show what people chose, how votes were counted, and what happens after the consultation closes.",
   },
   {
     title: "Articles",
-    body: "Public updates, announcements, explainers, and civic stories that help people stay informed.",
+    body: "Updates, announcements, guides, and civic explainers help you understand the platform and the topics being discussed.",
   },
 ];
 
 const VOTE_TYPES = [
   {
     title: "General vote",
-    body: "The simplest format. A participant selects an option, and each valid vote counts equally.",
+    body: "A direct vote. You choose one available option, and each valid vote counts equally.",
   },
   {
     title: "Specialized vote",
-    body: "Used when a topic needs more context. Participant assessment or extra questions can help explain the final voting weight.",
+    body: "Used when a topic needs more context. Extra questions or assessment answers can help explain how the final voting weight is calculated.",
   },
   {
     title: "Self-assessment vote",
-    body: "The participant selects an option and also gives a self-assessment score, showing how strongly they relate to the issue.",
+    body: "You choose an option and also give a self-assessment score, such as how connected, informed, or affected you are by the topic.",
   },
 ];
 
@@ -64,26 +65,28 @@ export default function HomePage() {
           priority
         />
 
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/78 via-slate-950/42 to-slate-950/12" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/74 via-transparent to-slate-950/18" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/82 via-slate-950/46 to-slate-950/16" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/78 via-slate-950/10 to-slate-950/22" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_42%,rgba(22,163,74,0.28),transparent_34%),radial-gradient(circle_at_78%_18%,rgba(255,255,255,0.12),transparent_30%)]" />
 
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col px-5 pb-10 pt-24 sm:px-6 md:pb-14 lg:px-10 xl:px-14">
           <div className="flex justify-start">
-            <HeroTypewriter text={TYPEWRITER_TEXT} />
+            <HomeTypewriter text={TYPEWRITER_TEXT} />
           </div>
 
           <div className="mt-auto max-w-6xl">
-            <p className="text-xs font-black uppercase tracking-[0.32em] text-green-300">
+            <p className="text-xs font-black uppercase tracking-[0.32em] text-green-300 drop-shadow-[0_10px_24px_rgba(0,0,0,0.55)]">
               Civic participation for Bologna
             </p>
 
-            <h1 className="mt-5 max-w-5xl break-words text-4xl font-black tracking-[-0.07em] text-white sm:text-5xl md:text-6xl lg:text-7xl">
-              Public consultations with clearer voting and results.
+            <h1 className="mt-5 max-w-5xl break-words text-4xl font-black tracking-[-0.07em] text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.62)] sm:text-5xl md:text-6xl lg:text-7xl">
+              Read the issue, understand the vote, follow the result.
             </h1>
 
-            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-100 md:text-lg md:leading-9">
-              ER Democracy Bologna helps people understand open consultations,
-              choose the right voting path, and follow what happens afterwards.
+            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-100 drop-shadow-[0_10px_28px_rgba(0,0,0,0.55)] md:text-lg md:leading-9">
+              ER Democracy Bologna helps people take part in public
+              consultations with clear questions, clear voting methods, and
+              clear results after the process closes.
             </p>
 
             <div className="mt-8">
@@ -94,11 +97,11 @@ export default function HomePage() {
           <div className="mt-14 grid gap-4 border-t border-white/20 pt-6 sm:grid-cols-3">
             {QUICK_PATHS.map((item) => (
               <article key={item.title} className="min-w-0">
-                <h2 className="break-words text-lg font-black tracking-[-0.03em] text-white">
+                <h2 className="break-words text-lg font-black tracking-[-0.03em] text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.55)]">
                   {item.title}
                 </h2>
 
-                <p className="mt-2 max-w-sm text-sm leading-7 text-slate-200">
+                <p className="mt-2 max-w-sm text-sm leading-7 text-slate-200 drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)]">
                   {item.body}
                 </p>
               </article>
@@ -116,7 +119,8 @@ export default function HomePage() {
               </p>
 
               <h2 className="mt-3 max-w-3xl break-words text-3xl font-black tracking-[-0.055em] text-slate-950 sm:text-4xl md:text-5xl">
-                A clear place for participation, outcomes, and public updates.
+                One place to read consultations, vote clearly, and understand
+                what happened.
               </h2>
             </section>
 
@@ -158,13 +162,13 @@ export default function HomePage() {
             </p>
 
             <h2 className="mt-3 max-w-3xl break-words text-3xl font-black tracking-[-0.055em] text-slate-950 sm:text-4xl md:text-5xl">
-              Every consultation should explain how your vote is counted.
+              Before voting, you should know what your vote means.
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
-              Before submitting, people should know what the question is, which
-              options are available, who can participate, and which voting method
-              is being used.
+              A consultation should make the question easy to understand, show
+              the available choices, explain who can participate, and tell you
+              how the vote will be counted.
             </p>
           </section>
         </div>
@@ -178,8 +182,14 @@ export default function HomePage() {
             </p>
 
             <h2 className="mt-3 max-w-3xl break-words text-3xl font-black tracking-[-0.055em] text-slate-950 sm:text-4xl md:text-5xl">
-              Three ways a consultation can collect and explain votes.
+              Different consultations can use different voting methods.
             </h2>
+
+            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
+              Some topics need a simple vote. Others need extra context. The
+              platform shows the voting method clearly so people know how their
+              choice will be used.
+            </p>
           </section>
 
           <section className="grid gap-6 md:grid-cols-3">
@@ -218,12 +228,13 @@ export default function HomePage() {
             </p>
 
             <h2 className="mt-3 max-w-3xl break-words text-3xl font-black tracking-[-0.055em] text-slate-950 sm:text-4xl">
-              Go where you need to go.
+              Start with an open consultation.
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
-              Open consultations to participate, check results to understand
-              outcomes, or read articles for public updates and civic explainers.
+              Browse consultations to see where participation is open. Read
+              articles for updates and explanations. Check results to understand
+              the outcome after a consultation closes.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -245,52 +256,5 @@ export default function HomePage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function HeroTypewriter({ text }: { text: string }) {
-  return (
-    <div className="max-w-full bg-transparent text-left">
-      <style>
-        {`
-          @keyframes heroClassicTypewriter {
-            0% {
-              width: 0;
-            }
-            52% {
-              width: 100%;
-            }
-            78% {
-              width: 100%;
-            }
-            100% {
-              width: 0;
-            }
-          }
-
-          @keyframes heroClassicCursor {
-            0%, 48% {
-              border-color: #ffffff;
-            }
-
-            49%, 100% {
-              border-color: transparent;
-            }
-          }
-        `}
-      </style>
-
-      <span className="inline-block max-w-[calc(100vw-2.5rem)] bg-transparent font-mono text-[clamp(1.5rem,6.4vw,4.5rem)] font-black uppercase leading-none tracking-[-0.065em] text-white">
-        <span
-          className="inline-block overflow-hidden whitespace-nowrap border-r-[0.095em] border-white bg-transparent pr-[0.06em]"
-          style={{
-            animation:
-              "heroClassicTypewriter 4s steps(21, end) infinite, heroClassicCursor 0.72s step-end infinite",
-          }}
-        >
-          {text}
-        </span>
-      </span>
-    </div>
   );
 }
