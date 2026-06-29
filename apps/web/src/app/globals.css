@@ -159,6 +159,59 @@ main h3 {
 }
 
 /* -------------------------------------------------------
+   SAFE PLATFORM-WIDE TYPOGRAPHY CONNECTION
+   Only applies the font family/weight.
+   Does not override page-specific sizes, spacing, or typewriter.
+   ------------------------------------------------------- */
+
+main h1:not(.hero-title),
+main h2:not(.section-title),
+main h3:not(.card-title):not(.article-title):not(.consultation-title),
+main h4,
+main h5,
+main h6 {
+  font-family: var(--font-display) !important;
+  font-weight: 400 !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+}
+
+main article h1,
+main article h2:not(.card-title):not(.article-title):not(.consultation-title),
+main article h3:not(.card-title):not(.article-title):not(.consultation-title),
+main section h1,
+main section h2:not(.section-title),
+main section h3:not(.card-title):not(.article-title):not(.consultation-title) {
+  font-family: var(--font-display) !important;
+  font-weight: 400 !important;
+}
+
+main p,
+main li,
+main label,
+main input,
+main textarea,
+main select,
+main button,
+main a,
+main span {
+  font-family: var(--font-sans);
+}
+
+/* Keep specific display classes stronger than generic span/a rules. */
+main .hero-title,
+main .section-title,
+main .card-title,
+main .article-title,
+main .consultation-title,
+main .home-typewriter-line,
+main .home-typewriter-line span {
+  font-family: var(--font-display) !important;
+  font-weight: 400 !important;
+}
+
+/* -------------------------------------------------------
    HEADER TYPOGRAPHY
    ------------------------------------------------------- */
 
@@ -267,6 +320,7 @@ footer a {
 
 /* -------------------------------------------------------
    TYPEWRITER
+   Restored and protected. Do not override this globally.
    ------------------------------------------------------- */
 
 .home-typewriter-line {

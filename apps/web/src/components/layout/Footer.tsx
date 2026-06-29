@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useMemo, type ReactNode } from "react";
 import { useAuth } from "@/providers/auth-provider";
 import { isAdminRole } from "@/lib/roles";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { hasPermission } from "@/lib/permissions";
 import { ADMIN_NAV, PUBLIC_NAV } from "@/lib/navigation";
 import { ROUTES } from "@/lib/routes";
 
@@ -22,40 +22,41 @@ function getFooterProfile(
 ): FooterProfile {
   if (role === "SUPER_ADMIN") {
     return {
-      label: "Super admin",
+      label: "Full administration",
       description:
-        "Full access to consultations, articles, results, and admin sections.",
+        "Manage consultations, articles, participation activity, and public information from the admin area.",
       closing: "Full platform access.",
-      linkColumnTitle: "Admin access",
+      linkColumnTitle: "Management",
     };
   }
 
   if (role === "CONSULTATION_ADMIN") {
     return {
-      label: "Consultation admin",
+      label: "Consultation administration",
       description:
-        "Create and update consultations, check results, and keep voting pages ready.",
+        "Manage consultation pages, voting information, and participation records available to this role.",
       closing: "Consultation tools.",
-      linkColumnTitle: "Consultations",
+      linkColumnTitle: "Management",
     };
   }
 
   if (role === "CONTENT_ADMIN") {
     return {
-      label: "Content admin",
+      label: "Article administration",
       description:
-        "Create and update articles and media shown on the public site.",
-      closing: "Content tools.",
-      linkColumnTitle: "Articles",
+        "Manage public articles, updates, and media available to this role.",
+      closing: "Article tools.",
+      linkColumnTitle: "Management",
     };
   }
 
   if (role === "ANALYTICS_ADMIN") {
     return {
-      label: "Results admin",
-      description: "View consultation results and platform reports.",
+      label: "Results administration",
+      description:
+        "Review consultation results, analytics, and public outcome information available to this role.",
       closing: "Results access.",
-      linkColumnTitle: "Results",
+      linkColumnTitle: "Management",
     };
   }
 
@@ -63,9 +64,9 @@ function getFooterProfile(
     return {
       label: "Audit access",
       description:
-        "View consultations, results, reports, and assessment lookup pages.",
-      closing: "Read-only admin access.",
-      linkColumnTitle: "Audit access",
+        "Review consultations, results, participants, and assessment information available to this role.",
+      closing: "Review access.",
+      linkColumnTitle: "Management",
     };
   }
 
@@ -73,18 +74,18 @@ function getFooterProfile(
     return {
       label: "Signed-in participant",
       description:
-        "Browse consultations, read articles, and use your dashboard when participation requires an account.",
+        "Browse consultations, read public articles, and use your dashboard when participation requires an account.",
       closing: "Participant access.",
-      linkColumnTitle: "Your area",
+      linkColumnTitle: "Platform",
     };
   }
 
   return {
     label: "Civic participation platform",
     description:
-      "Browse public consultations and articles. Sign in when a voting step requires an account.",
-    closing: "Public civic participation.",
-    linkColumnTitle: "Explore",
+      "Browse public consultations, understand the voting method, read updates, and follow published results.",
+    closing: "Transparent civic participation.",
+    linkColumnTitle: "Platform",
   };
 }
 
@@ -111,12 +112,6 @@ export default function Footer() {
       return hasPermission(user.role, item.permission);
     });
   }, [user]);
-
-  const canCreateArticle = hasPermission(user?.role, PERMISSIONS.ARTICLE_CREATE);
-  const canUseAssessmentLookup = hasPermission(
-    user?.role,
-    PERMISSIONS.ASSESSMENT_SECRET_LOOKUP,
-  );
 
   return (
     <footer className="mt-20 bg-white text-slate-800">
@@ -171,24 +166,12 @@ export default function Footer() {
                     </FooterLink>
                   ))}
 
-                  {canCreateArticle ? (
-                    <FooterLink href="/admin/articles/create">
-                      Create article
-                    </FooterLink>
-                  ) : null}
+                  <FooterLink href={ROUTES.user.assessment}>
+                    My assessment
+                  </FooterLink>
 
-                  {canUseAssessmentLookup ? (
-                    <FooterLink href={ROUTES.admin.assessments}>
-                      Assessment lookup
-                    </FooterLink>
-                  ) : null}
-
-                  <FooterLink href={ROUTES.public.home}>Public home</FooterLink>
                   <FooterLink href={ROUTES.public.consultations}>
                     Public consultations
-                  </FooterLink>
-                  <FooterLink href={ROUTES.public.articles}>
-                    Public articles
                   </FooterLink>
                 </>
               ) : (
@@ -223,7 +206,7 @@ export default function Footer() {
             </FooterColumn>
 
             <FooterColumn title="Legal">
-              <FooterLink href={ROUTES.public.privacy}>Privacy</FooterLink>
+              <FooterLink href="/privacy">Privacy</FooterLink>
               <FooterLink href={ROUTES.public.terms}>Terms</FooterLink>
               <FooterLink href="/cookies">Cookies</FooterLink>
               <FooterLink href={ROUTES.public.contact}>Contact</FooterLink>
