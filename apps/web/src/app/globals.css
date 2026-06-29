@@ -44,37 +44,33 @@ main.overflow-x-hidden {
   border-radius: 0 !important;
 }
 
-/* Keep the homepage hero image untouched.
-   The hero uses /images/hero.jpg and should stay object-cover. */
+/* Keep the homepage hero image untouched. */
 main img[src*="hero"] {
   object-fit: cover !important;
   object-position: center center !important;
 }
 
-/* All other page photos show the full image instead of being cropped.
-   This affects homepage section photos, articles, consultations, admin previews, etc.
-   Header/footer logos are outside main, so they are not affected. */
+/* All other page photos show the full image instead of being cropped. */
 main img:not([src*="hero"]) {
   object-fit: contain !important;
   object-position: center center !important;
 }
 
-/* Keep normal responsive behavior for non-fill images. */
+/* Do not force height:auto globally.
+   Fixed image frames need their height to stay consistent across cards/screens. */
 main img:not([data-nimg="fill"]):not([src*="hero"]) {
   display: block;
   max-width: 100%;
-  height: auto;
 }
 
-/* Remove the separate photo-panel look around direct image wrappers.
-   This removes grey/white boxed backgrounds, borders, and photo-only shadows. */
+/* Remove the separate photo-panel look around direct image wrappers. */
 main :where(div, figure):has(> img:not([src*="hero"])) {
   background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
 
-/* Remove side padding that can make contained images look like they sit inside a white box. */
+/* Remove side padding that can make contained images look boxed. */
 main :where(div, figure):has(> img:not([src*="hero"])) {
   padding-left: 0 !important;
   padding-right: 0 !important;

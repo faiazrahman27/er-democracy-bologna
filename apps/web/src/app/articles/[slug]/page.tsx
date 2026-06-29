@@ -52,18 +52,18 @@ export default async function ArticleDetailPage({
           </div>
 
           <article className="mt-10">
-            <section className="grid gap-10 border-y border-slate-200 py-8 lg:grid-cols-[minmax(280px,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:py-12">
+            <section className="grid gap-10 border-y border-slate-200 py-8 md:grid-cols-[minmax(260px,0.82fr)_minmax(0,1.18fr)] md:items-center lg:py-12">
               <div className="min-w-0">
-                <div className="border border-slate-200 bg-white transition duration-300 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.10)]">
-                  <div className="relative overflow-hidden bg-slate-100">
+                <div className="mx-auto w-full max-w-[28rem] border border-slate-200 bg-white transition duration-300 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.10)] md:max-w-none">
+                  <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-transparent">
                     {article.coverImageUrl ? (
                       <img
                         src={article.coverImageUrl}
                         alt={article.coverImageAlt ?? article.title}
-                        className="aspect-square h-64 w-full object-cover sm:h-80 lg:h-[420px]"
+                        className="h-full w-full object-contain"
                       />
                     ) : (
-                      <div className="flex aspect-square h-64 w-full items-center justify-center bg-slate-100 px-6 text-center sm:h-80 lg:h-[420px]">
+                      <div className="flex h-full w-full items-center justify-center bg-slate-50 px-6 text-center">
                         <span className="text-sm font-bold text-slate-400">
                           Article image coming soon
                         </span>

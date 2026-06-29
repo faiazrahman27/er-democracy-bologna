@@ -85,27 +85,27 @@ export default async function ArticlesPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div className="mx-auto grid max-w-[28rem] gap-6 sm:gap-8 md:max-w-none md:grid-cols-2 lg:grid-cols-3">
                 {articles.map((article) => (
                   <article
                     key={article.id}
-                    className="group cursor-pointer border border-slate-200 bg-white shadow-none transition duration-300 hover:-translate-y-1 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.12)] active:-translate-y-1 active:scale-[0.99]"
+                    className="group flex h-full min-w-0 cursor-pointer flex-col border border-slate-200 bg-white shadow-none transition duration-300 hover:-translate-y-1 hover:border-green-600/40 hover:shadow-[0_24px_70px_rgba(15,23,42,0.12)] active:-translate-y-1 active:scale-[0.99]"
                   >
                     <Link
                       href={`/articles/${article.slug}`}
                       aria-label={`Read ${article.title}`}
-                      className="block"
+                      className="flex h-full flex-col"
                     >
-                      <div className="relative overflow-hidden bg-slate-100">
+                      <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-transparent">
                         {article.coverImageUrl ? (
                           <img
                             src={article.coverImageUrl}
                             alt={article.coverImageAlt || article.title}
-                            className="aspect-square h-64 w-full object-cover transition duration-700 group-hover:scale-[1.035] sm:h-72 md:h-80"
+                            className="h-full w-full object-contain transition duration-700 group-hover:scale-[1.012]"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="flex aspect-square h-64 w-full items-center justify-center bg-slate-100 px-6 text-center sm:h-72 md:h-80">
+                          <div className="flex h-full w-full items-center justify-center bg-slate-50 px-6 text-center">
                             <span className="text-sm font-bold text-slate-400">
                               Article image coming soon
                             </span>
@@ -119,7 +119,7 @@ export default async function ArticlesPage() {
                         </p>
                       </div>
 
-                      <div className="px-4 pb-5 pt-5 sm:px-5 sm:pb-6">
+                      <div className="flex flex-1 flex-col px-4 pb-5 pt-5 sm:px-5 sm:pb-6">
                         <h2 className="break-words text-xl font-black tracking-[-0.045em] text-slate-950 transition duration-300 group-hover:text-green-700 md:text-2xl">
                           {article.title}
                         </h2>
@@ -128,7 +128,7 @@ export default async function ArticlesPage() {
                           {getArticlePreview(article)}
                         </p>
 
-                        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="mt-auto flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
                           <span className="inline-flex items-center text-sm font-black text-slate-950 transition duration-300 group-hover:text-green-700">
                             <span className="relative mr-3 inline-flex h-10 w-10 items-center justify-center overflow-hidden border border-slate-300 bg-white transition duration-300 group-hover:border-green-700 group-hover:bg-green-700 group-hover:text-white">
                               <span className="transition duration-500 group-hover:translate-x-8 group-hover:opacity-0">
