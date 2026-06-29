@@ -44,39 +44,30 @@ main.overflow-x-hidden {
   border-radius: 0 !important;
 }
 
-/* Cleaner full-image display for consultation/admin preview images.
-   This targets object-contain images inside page content only.
-   Homepage hero, homepage section photos, article cards, and article cover crops stay unchanged. */
-main img.object-contain {
+/* Global image rule:
+   show the full image everywhere in page content.
+   This overrides object-cover crops from Tailwind without breaking Next/Image fill sizing. */
+main img {
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+/* Keep normal responsive behavior for non-fill images. */
+main img:not([data-nimg="fill"]) {
   display: block;
-  width: auto;
   max-width: 100%;
   height: auto;
-  object-fit: contain;
 }
 
-/* Remove the obvious grey/boxed photo panel around contained page images where supported. */
-main :where(div, figure):has(> img.object-contain) {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
+/* Remove separate photo-panel feeling around direct image wrappers. */
+main :where(div, figure):has(> img) {
+  background-color: transparent;
 }
 
-/* Keep spacing controlled without making the photo look like a separate box. */
-main :where(div, figure):has(> img.object-contain) {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-/* On smaller screens, let contained images breathe and stay fully visible. */
+/* Cleaner contained image areas on mobile. */
 @media (max-width: 760px) {
-  main img.object-contain {
-    max-height: 280px;
-  }
-
-  main :where(div, figure):has(> img.object-contain) {
-    min-height: auto !important;
-    padding-top: 0.75rem !important;
-    padding-bottom: 0.75rem !important;
+  main img {
+    object-fit: contain !important;
+    object-position: center center !important;
   }
 }
